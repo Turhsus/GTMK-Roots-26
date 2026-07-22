@@ -4,8 +4,15 @@ extends Resource
 ## One quest: the brief, the bag it has to fit in, the items on offer, the stat
 ## targets the bars fill toward, and the story beats the playout walks.
 
+## Stable unique key, e.g. "whisper_woods". Used to track which quests have been
+## cleared (so a completed quest isn't redrawn until its whole tier is exhausted).
+@export var id: String = ""
 @export var title: String = ""
 @export_multiline var brief: String = ""
+
+## Which difficulty tier this quest belongs to. The current tier is picked by how
+## many quests the player has cleared, and draws only ever pull from one tier.
+@export_range(0, 4) var difficulty: int = 0
 
 @export_group("Bag")
 @export var bag_cols: int = 6

@@ -48,6 +48,18 @@ func _ready() -> void:
 		_on_quest_changed(GameState.current_quest)
 
 
+## Switches to a different quest: clears the board and hands the quest to
+## GameState, which rebuilds the tray and resizes the grid off quest_changed.
+## Views placed in the bag live under BagGrid, not the tray, so populate() won't
+## sweep them — they're freed here. Tray views are freed by populate() itself.
+func load_quest(quest: QuestData) -> void:
+	for view in bag_grid.get_placed_views():
+		view.queue_free()
+	bag_grid.clear_board()
+	bag_grid.clear_preview()
+	GameState.set_quest(quest)
+
+
 ## Empties the bag and puts every item back in the tray — this is "Pack again".
 ## The views are the same nodes throughout, so returning them is a reparent.
 func reset_packing() -> void:

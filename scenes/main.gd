@@ -2,50 +2,53 @@ extends Control
 
 ## Root of the game. Owns the loop and nothing else:
 ##
-##   brief -> packing -> send off -> playout -> pack again -> packing
+##   choose a quest -> packing -> send off -> playout -> choose again
 ##
-## All three screens live in the tree the whole time and are shown one at a
-## time. Keeping the packing screen alive across a playout is deliberate: the
-## bag, the tray and every item node survive, so "Pack again" is a reset rather
-## than a rebuild, and the log can be generated from a bag that is still packed.
+## RunState draws the choices (from the current difficulty) and records whether
+## each quest was cleared; this scene just moves between screens. All screens
+## live in the tree the whole time and are shown one at a time — keeping the
+## packing screen alive means the log can be built from a bag that is still
+## packed, and switching quests is a reset rather than a rebuild.
+##
+## Clearing a quest means meeting all four stat targets; that is what advances
+## the difficulty. Whether it's cleared or not, the log plays and then the loop
+## offers a fresh set of quests to choose from.
 
-const QUEST: QuestData = preload("res://data/quests/whisper_woods.tres")
-
-@onready var brief_panel: BriefPanel = %BriefPanel
+@onready var quest_select: QuestSelect = %QuestSelect
 @onready var packing_scene: PackingScene = %PackingScene
 @onready var playout_scene: PlayoutScene = %PlayoutScene
 
 
-## Before the children, not in _ready: child _ready() runs first, and BagGrid and
-## ItemTray build themselves off the current quest the moment they are ready.
-func _enter_tree() -> void:
-	GameState.set_quest(QUEST)
-
-
 func _ready() -> void:
-	brief_panel.start_requested.connect(_on_start_requested)
+	quest_select.quest_chosen.connect(_on_quest_chosen)
 	packing_scene.sent_off.connect(_on_sent_off)
-	playout_scene.pack_again_requested.connect(_on_pack_again_requested)
-	_show(brief_panel)
+	playout_scene.pack_again_requested.connect(_on_next_quest_requested)
+	_offer_quests()
 
 
-func _on_start_requested() -> void:
+func _offer_quests() -> void:
+	quest_select.present(RunState.draw_choices())
+	_show(quest_select)
+
+
+func _on_quest_chosen(quest: QuestData) -> void:
+	packing_scene.load_quest(quest)
 	_show(packing_scene)
 
 
 func _on_sent_off() -> void:
-	var lines := NarrativeEngine.build_log(
-		GameState.current_quest, GameState.packed_items, GameState.stats
-	)
+	var quest := GameState.current_quest
+	var cleared := GameState.count_targets_met() == GameState.STAT_KEYS.size()
+	RunState.register_result(quest, cleared)
+	var lines := NarrativeEngine.build_log(quest, GameState.packed_items, GameState.stats)
 	_show(playout_scene)
 	playout_scene.play(lines)
 
 
-func _on_pack_again_requested() -> void:
-	packing_scene.reset_packing()
-	_show(packing_scene)
+func _on_next_quest_requested() -> void:
+	_offer_quests()
 
 
 func _show(screen: Control) -> void:
-	for candidate in [brief_panel, packing_scene, playout_scene]:
+	for candidate in [quest_select, packing_scene, playout_scene]:
 		(candidate as Control).visible = candidate == screen

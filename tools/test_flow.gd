@@ -1,8 +1,8 @@
 extends Node
 
-## Throwaway harness for the full loop: brief -> packing -> send off -> playout
-## -> pack again, plus NarrativeEngine's conditioning on its own.
-## Run: godot --headless --path . res://tools/TestFlow.tscn
+## Throwaway harness for the full loop: choose a quest -> packing -> send off ->
+## playout -> choose again, plus NarrativeEngine and RunState's progression on
+## their own. Run: godot --headless --path . res://tools/TestFlow.tscn
 
 const MAIN := preload("res://scenes/Main.tscn")
 const QUEST: QuestData = preload("res://data/quests/whisper_woods.tres")
@@ -12,6 +12,10 @@ var failures: int = 0
 
 func _ready() -> void:
 	_test_engine()
+	_test_progression()
+	# Progression tests mutate the shared RunState singleton; hand the flow test a
+	# clean slate (difficulty 0, nothing cleared) so its draws are predictable.
+	RunState.reset()
 	await _test_flow()
 
 	if failures == 0:
@@ -19,6 +23,54 @@ func _ready() -> void:
 	else:
 		print("%d FAILURE(S)" % failures)
 	get_tree().quit(1 if failures > 0 else 0)
+
+
+# --- RunState progression, with no scene tree involved -------------------------
+
+func _test_progression() -> void:
+	RunState.reset()
+	check(RunState.current_difficulty() == 0, "a fresh run starts at difficulty 0")
+
+	var first := RunState.draw_choices()
+	check(first.size() == mini(RunState.CHOICE_COUNT, RunState.POOL.by_difficulty(0).size()),
+		"the first draw offers up to three quests from tier 0, got %d" % first.size())
+	for quest in first:
+		check(quest.difficulty == 0, "every drawn quest is at the current tier")
+
+	# A failed quest doesn't advance difficulty and stays drawable.
+	RunState.register_result(first[0], false)
+	check(RunState.current_difficulty() == 0, "a failed quest doesn't raise difficulty")
+	check(RunState.completed_count == 0, "a failed quest isn't counted as cleared")
+
+	# One clear = one tier up (until the cap).
+	RunState.register_result(first[0], true)
+	check(RunState.completed_count == 1, "a cleared quest is counted")
+	check(RunState.current_difficulty() == 1, "one clear moves to difficulty 1")
+
+	# Difficulty is capped, and clears past the cap keep counting.
+	for i in 10:
+		RunState.register_result(QUEST, true)
+	check(RunState.current_difficulty() == RunState.MAX_DIFFICULTY,
+		"difficulty caps at %d" % RunState.MAX_DIFFICULTY)
+
+	# No-repeat within a tier: a cleared quest is held back until the tier is
+	# exhausted, then the tier resets and offers everything again.
+	RunState.reset()
+	var tier0 := RunState.POOL.by_difficulty(0)
+	if tier0.size() >= 2:
+		# Clear one, but stay at tier 0 by only counting toward the draw filter,
+		# not difficulty — draw at tier 0 directly to inspect the exclusion.
+		RunState._cleared_ids.append(tier0[0].id)
+		var narrowed := RunState.draw_choices()
+		check(not _has_id(narrowed, tier0[0].id),
+			"a cleared quest is held back while its tier still has others")
+		# Clear the rest too: now the tier is exhausted and must reset.
+		for quest in tier0:
+			if not RunState._cleared_ids.has(quest.id):
+				RunState._cleared_ids.append(quest.id)
+		var reset_draw := RunState.draw_choices()
+		check(not reset_draw.is_empty(), "an exhausted tier resets rather than going empty")
+	RunState.reset()
 
 
 # --- NarrativeEngine, with no scene tree involved at all -----------------------
@@ -75,22 +127,26 @@ func _test_flow() -> void:
 	add_child(main)
 	await get_tree().process_frame
 
-	var brief: BriefPanel = main.get_node("%BriefPanel")
+	var select: QuestSelect = main.get_node("%QuestSelect")
 	var packing: PackingScene = main.get_node("%PackingScene")
 	var playout: PlayoutScene = main.get_node("%PlayoutScene")
 
-	check(GameState.current_quest == QUEST, "Main sets the quest before its children build")
-	check(brief.title.text == QUEST.title, "the brief shows the quest title")
-	check(brief.visible and not packing.visible and not playout.visible,
-		"the brief is the first screen")
+	check(select.visible and not packing.visible and not playout.visible,
+		"the quest picker is the first screen")
+	check(select.card_row.get_child_count() == RunState.draw_choices().size(),
+		"the picker laid out one card per drawn quest, got %d" % select.card_row.get_child_count())
 
-	brief.start_requested.emit()
-	check(packing.visible and not brief.visible, "\"Start packing\" opens the packing screen")
+	# Choose Whisper Woods specifically, so the rest of the flow runs against
+	# known targets and a known pool. It is always one of the three tier-0 cards.
+	select.quest_chosen.emit(QUEST)
+	await get_tree().process_frame
+	check(packing.visible and not select.visible, "choosing a quest opens the packing screen")
+	check(GameState.current_quest == QUEST, "the chosen quest became the current one")
 	check(packing.item_tray.item_container.get_child_count() == QUEST.item_pool.size(),
-		"the tray filled from the quest pool")
+		"the tray filled from the chosen quest's pool, got %d" % packing.item_tray.item_container.get_child_count())
 
-	# The tray is a child, so it populated before PackingScene._ready() could
-	# connect to item_ready. Every item must still be draggable, and exactly once.
+	# The tray repopulated on the quest switch; every item must be draggable, and
+	# exactly once (the item_ready wiring is what once broke under Main).
 	var unwired := 0
 	var doubled := 0
 	for view in packing.item_tray.item_container.get_children():
@@ -102,14 +158,18 @@ func _test_flow() -> void:
 	check(unwired == 0, "every tray item is wired for dragging, %d are not" % unwired)
 	check(doubled == 0, "no tray item is wired twice, %d are" % doubled)
 
-	# Pack a couple of things the way a player would, then send off.
+	# Pack a couple of things — not enough to clear all four targets — then send.
 	var bread := _pack(packing, "bread", Vector2i(0, 0))
 	var sword := _pack(packing, "sword", Vector2i(5, 0))
 	check(GameState.packed_items.size() == 2, "two items are packed")
 	check(GameState.stats["food"] == bread.item.food, "stats followed the packing")
 
+	var before := RunState.completed_count
 	packing.sent_off.emit()
 	check(playout.visible and not packing.visible, "\"Send off\" opens the playout")
+	check(GameState.count_targets_met() < GameState.STAT_KEYS.size(),
+		"the light pack doesn't meet every target")
+	check(RunState.completed_count == before, "an unmet quest doesn't count as cleared")
 	check(playout.is_playing(), "the playout starts partway through, not all at once")
 	check(playout.lines_box.get_child_count() == 1, "the first line lands immediately")
 	var first: Label = playout.lines_box.get_child(0)
@@ -121,16 +181,24 @@ func _test_flow() -> void:
 	check(playout.lines_box.get_child_count() == expected,
 		"skipping reveals every line, got %d of %d" % [playout.lines_box.get_child_count(), expected])
 	check(not playout.is_playing(), "skipping ends the playout")
-	check(playout.pack_again_button.visible, "\"Pack again\" appears when the log is done")
+	check(playout.pack_again_button.visible, "the continue button appears when the log is done")
 
+	# Finishing the log returns to the picker, not straight to packing.
 	playout.pack_again_requested.emit()
-	check(packing.visible and not playout.visible, "\"Pack again\" returns to the packing screen")
-	check(GameState.packed_items.is_empty(), "packing again empties the bag")
-	check(GameState.stats["food"] == 0, "packing again zeroes the stats")
-	check(packing.bag_grid.is_cell_free(Vector2i(0, 0)), "packing again frees the board")
-	check(bread.get_parent() == packing.item_tray.item_container, "packed items went back to the tray")
+	check(select.visible and not playout.visible, "finishing the log reopens the quest picker")
+	check(select.card_row.get_child_count() > 0, "the picker offers a fresh set of quests")
+
+	# Choosing again switches quests: the old bag is cleared and the tray rebuilt.
+	select.quest_chosen.emit(QUEST)
+	await get_tree().process_frame
+	check(packing.visible, "choosing again returns to packing")
+	check(GameState.packed_items.is_empty(), "the new quest starts with an empty bag")
+	check(GameState.stats["food"] == 0, "the new quest zeroes the stats")
+	check(packing.bag_grid.is_cell_free(Vector2i(0, 0)), "the new quest frees the board")
+	check(not is_instance_valid(bread) or bread.get_parent() != packing.bag_grid.item_layer,
+		"the previous quest's placed items don't linger in the bag")
 	check(packing.item_tray.item_container.get_child_count() == QUEST.item_pool.size(),
-		"the tray is whole again, got %d" % packing.item_tray.item_container.get_child_count())
+		"the tray is whole for the new quest, got %d" % packing.item_tray.item_container.get_child_count())
 
 	# And the loop actually loops.
 	_pack(packing, "apple", Vector2i(0, 0))
@@ -171,6 +239,13 @@ func _item(id: String) -> ItemData:
 
 func _stats(food: int, health: int, attack: int, defense: int) -> Dictionary:
 	return {"food": food, "health": health, "attack": attack, "defense": defense}
+
+
+func _has_id(quests: Array, id: String) -> bool:
+	for quest in quests:
+		if quest != null and quest.id == id:
+			return true
+	return false
 
 
 func _find(views: Array, id: String) -> DraggableItem:
