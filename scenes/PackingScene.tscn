@@ -1,11 +1,11 @@
-[gd_scene load_steps=5 format=3]
+[gd_scene format=3 uid="uid://buybgjfm1brbj"]
 
-[ext_resource type="Script" path="res://scenes/packing_scene.gd" id="1_packing"]
+[ext_resource type="Script" uid="uid://3uhjl2tyews6" path="res://scenes/packing_scene.gd" id="1_packing"]
 [ext_resource type="PackedScene" path="res://scenes/BagGrid.tscn" id="2_grid"]
 [ext_resource type="PackedScene" path="res://scenes/ItemTray.tscn" id="3_tray"]
 [ext_resource type="PackedScene" path="res://scenes/StatsPanel.tscn" id="4_stats"]
 
-[node name="PackingScene" type="Control"]
+[node name="PackingScene" type="Control" unique_id=1241708757]
 layout_mode = 3
 anchors_preset = 15
 anchor_right = 1.0
@@ -14,7 +14,7 @@ grow_horizontal = 2
 grow_vertical = 2
 script = ExtResource("1_packing")
 
-[node name="Background" type="ColorRect" parent="."]
+[node name="Background" type="ColorRect" parent="." unique_id=1343558568]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -24,7 +24,7 @@ grow_vertical = 2
 mouse_filter = 2
 color = Color(0.17, 0.13, 0.11, 1)
 
-[node name="Margin" type="MarginContainer" parent="."]
+[node name="Margin" type="MarginContainer" parent="." unique_id=107073247]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -36,50 +36,50 @@ theme_override_constants/margin_top = 16
 theme_override_constants/margin_right = 24
 theme_override_constants/margin_bottom = 16
 
-[node name="Columns" type="HBoxContainer" parent="Margin"]
+[node name="Columns" type="HBoxContainer" parent="Margin" unique_id=1745694950]
 layout_mode = 2
 theme_override_constants/separation = 24
 
-[node name="BagColumn" type="VBoxContainer" parent="Margin/Columns"]
-layout_mode = 2
-theme_override_constants/separation = 8
-
-[node name="QuestTitle" type="Label" parent="Margin/Columns/BagColumn"]
-unique_name_in_owner = true
-layout_mode = 2
-text = "Quest"
-
-[node name="BagCenter" type="CenterContainer" parent="Margin/Columns/BagColumn"]
-layout_mode = 2
-size_flags_vertical = 3
-
-[node name="BagGrid" parent="Margin/Columns/BagColumn/BagCenter" instance=ExtResource("2_grid")]
-unique_name_in_owner = true
-layout_mode = 2
-
-[node name="SideColumn" type="VBoxContainer" parent="Margin/Columns"]
+[node name="SideColumn" type="VBoxContainer" parent="Margin/Columns" unique_id=1720918092]
 layout_mode = 2
 size_flags_horizontal = 3
 theme_override_constants/separation = 12
 
-[node name="StatsPanel" parent="Margin/Columns/SideColumn" instance=ExtResource("4_stats")]
+[node name="StatsPanel" parent="Margin/Columns/SideColumn" unique_id=1818831373 instance=ExtResource("4_stats")]
 unique_name_in_owner = true
 layout_mode = 2
 size_flags_vertical = 0
 
-[node name="ItemTray" parent="Margin/Columns/SideColumn" instance=ExtResource("3_tray")]
+[node name="ItemTray" parent="Margin/Columns/SideColumn" unique_id=1512273912 instance=ExtResource("3_tray")]
 unique_name_in_owner = true
 layout_mode = 2
 size_flags_vertical = 3
 
-[node name="SendButton" type="Button" parent="Margin/Columns/SideColumn"]
+[node name="SendButton" type="Button" parent="Margin/Columns/SideColumn" unique_id=1773969420]
 unique_name_in_owner = true
 custom_minimum_size = Vector2(0, 48)
 layout_mode = 2
 theme_override_font_sizes/font_size = 20
 text = "Send off"
 
-[node name="DragLayer" type="Control" parent="."]
+[node name="BagColumn" type="VBoxContainer" parent="Margin/Columns" unique_id=210754813]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="QuestTitle" type="Label" parent="Margin/Columns/BagColumn" unique_id=1601622728]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Quest"
+
+[node name="BagCenter" type="CenterContainer" parent="Margin/Columns/BagColumn" unique_id=290400677]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="BagGrid" parent="Margin/Columns/BagColumn/BagCenter" unique_id=1681554244 instance=ExtResource("2_grid")]
+unique_name_in_owner = true
+layout_mode = 2
+
+[node name="DragLayer" type="Control" parent="." unique_id=753836405]
 unique_name_in_owner = true
 layout_mode = 1
 anchors_preset = 15
