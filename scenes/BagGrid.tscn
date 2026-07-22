@@ -1,0 +1,31 @@
+[gd_scene load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://scenes/bag_grid.gd" id="1_grid"]
+[ext_resource type="Script" path="res://scenes/grid_highlight.gd" id="2_highlight"]
+
+[node name="BagGrid" type="Control"]
+custom_minimum_size = Vector2(576, 480)
+offset_right = 576.0
+offset_bottom = 480.0
+mouse_filter = 1
+script = ExtResource("1_grid")
+
+[node name="ItemLayer" type="Control" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+
+[node name="Highlight" type="Control" parent="."]
+clip_contents = true
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+script = ExtResource("2_highlight")

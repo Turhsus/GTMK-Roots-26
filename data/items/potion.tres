@@ -1,0 +1,17 @@
+[gd_resource type="Resource" script_class="ItemData" load_steps=3 format=3]
+
+[ext_resource type="Script" uid="uid://du5drbi85ateb" path="res://resources/item_data.gd" id="1_script"]
+[ext_resource type="Texture2D" uid="uid://cvfsrdmjljp5i" path="res://assets/items/potion.png" id="2_icon"]
+
+[resource]
+script = ExtResource("1_script")
+id = "potion"
+display_name = "Healing Potion"
+shape = Array[Vector2i]([Vector2i(0, 0)])
+icon = ExtResource("2_icon")
+food = 0
+health = 5
+attack = 0
+defense = 0
+tags = Array[String](["magic", "healing", "fragile"])
+flavor = "For scrapes. Don't drop it."

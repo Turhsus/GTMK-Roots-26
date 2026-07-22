@@ -1,0 +1,30 @@
+[gd_resource type="Resource" script_class="QuestData" load_steps=17 format=3]
+
+[ext_resource type="Script" uid="uid://b8mpss75xj6nx" path="res://resources/quest_data.gd" id="1_script"]
+[ext_resource type="Script" uid="uid://du5drbi85ateb" path="res://resources/item_data.gd" id="2_item"]
+[ext_resource type="Resource" path="res://data/items/apple.tres" id="3_apple"]
+[ext_resource type="Resource" path="res://data/items/blanket.tres" id="4_blanket"]
+[ext_resource type="Resource" path="res://data/items/boots.tres" id="5_boots"]
+[ext_resource type="Resource" path="res://data/items/bread.tres" id="6_bread"]
+[ext_resource type="Resource" path="res://data/items/lantern.tres" id="7_lantern"]
+[ext_resource type="Resource" path="res://data/items/map.tres" id="8_map"]
+[ext_resource type="Resource" path="res://data/items/potion.tres" id="9_potion"]
+[ext_resource type="Resource" path="res://data/items/rope.tres" id="10_rope"]
+[ext_resource type="Resource" path="res://data/items/shield.tres" id="11_shield"]
+[ext_resource type="Resource" path="res://data/items/spellbook.tres" id="12_spellbook"]
+[ext_resource type="Resource" path="res://data/items/sword.tres" id="13_sword"]
+[ext_resource type="Resource" path="res://data/items/torch.tres" id="14_torch"]
+[ext_resource type="Resource" path="res://data/items/waterskin.tres" id="15_waterskin"]
+[ext_resource type="Resource" path="res://data/items/whistle.tres" id="16_whistle"]
+
+[resource]
+script = ExtResource("1_script")
+title = "Rescue the Lost Kitten"
+brief = "Mrs. Ward's kitten wandered into Whisper Woods three nights ago.\nYou'll be gone about four days. Pack what they'll need — the bag only holds so much."
+bag_cols = 6
+bag_rows = 5
+item_pool = Array[ExtResource("2_item")]([ExtResource("3_apple"), ExtResource("4_blanket"), ExtResource("5_boots"), ExtResource("6_bread"), ExtResource("7_lantern"), ExtResource("8_map"), ExtResource("9_potion"), ExtResource("10_rope"), ExtResource("11_shield"), ExtResource("12_spellbook"), ExtResource("13_sword"), ExtResource("14_torch"), ExtResource("15_waterskin"), ExtResource("16_whistle")])
+target_food = 8
+target_health = 6
+target_attack = 6
+target_defense = 6

@@ -1,0 +1,17 @@
+[gd_resource type="Resource" script_class="ItemData" load_steps=3 format=3]
+
+[ext_resource type="Script" uid="uid://du5drbi85ateb" path="res://resources/item_data.gd" id="1_script"]
+[ext_resource type="Texture2D" uid="uid://v8ce2va32fin" path="res://assets/items/waterskin.png" id="2_icon"]
+
+[resource]
+script = ExtResource("1_script")
+id = "waterskin"
+display_name = "Waterskin"
+shape = Array[Vector2i]([Vector2i(0, 0), Vector2i(0, 1)])
+icon = ExtResource("2_icon")
+food = 4
+health = 1
+attack = 0
+defense = 0
+tags = Array[String](["food", "water"])
+flavor = "Filled to the neck from the well."
