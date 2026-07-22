@@ -1,8 +1,9 @@
-[gd_scene load_steps=4 format=3]
+[gd_scene load_steps=5 format=3]
 
 [ext_resource type="Script" path="res://scenes/packing_scene.gd" id="1_packing"]
 [ext_resource type="PackedScene" path="res://scenes/BagGrid.tscn" id="2_grid"]
 [ext_resource type="PackedScene" path="res://scenes/ItemTray.tscn" id="3_tray"]
+[ext_resource type="PackedScene" path="res://scenes/StatsPanel.tscn" id="4_stats"]
 
 [node name="PackingScene" type="Control"]
 layout_mode = 3
@@ -56,10 +57,20 @@ size_flags_vertical = 3
 unique_name_in_owner = true
 layout_mode = 2
 
-[node name="ItemTray" parent="Margin/Columns" instance=ExtResource("3_tray")]
-unique_name_in_owner = true
+[node name="SideColumn" type="VBoxContainer" parent="Margin/Columns"]
 layout_mode = 2
 size_flags_horizontal = 3
+theme_override_constants/separation = 12
+
+[node name="StatsPanel" parent="Margin/Columns/SideColumn" instance=ExtResource("4_stats")]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_vertical = 0
+
+[node name="ItemTray" parent="Margin/Columns/SideColumn" instance=ExtResource("3_tray")]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_vertical = 3
 
 [node name="DragLayer" type="Control" parent="."]
 unique_name_in_owner = true

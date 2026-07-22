@@ -44,6 +44,17 @@ func _ready() -> void:
 	check(not bag.is_cell_free(Vector2i(0, 0)), "cell (0,0) is now taken")
 	check(not bag.can_place(sword.get_shape(), Vector2i(0, 0)), "collision blocks a second item there")
 
+	# --- stats ---
+	var stats_panel = scene.get_node("%StatsPanel")
+	check(GameState.stats["attack"] == sword.item.attack,
+		"packing the sword sets attack to its contribution (%d)" % sword.item.attack)
+	var attack_row: Dictionary = stats_panel._rows["attack"]
+	check((attack_row["value"] as Label).text ==
+			"%d / %d" % [sword.item.attack, GameState.get_targets()["attack"]],
+		"the attack row reads current / target, got '%s'" % (attack_row["value"] as Label).text)
+	check((attack_row["bar"] as ProgressBar).max_value == GameState.get_targets()["attack"],
+		"a bar's full mark is the quest target")
+
 	# --- snapping math ---
 	check(bag.snap_to_cell(Vector2(200.0, 40.0)) == Vector2i(2, 0),
 		"a point 8 px past cell 2 still snaps to cell 2")
@@ -81,6 +92,13 @@ func _ready() -> void:
 	scene._end_drag(true)
 	check(sword.get_parent() == tray.item_container, "an invalid drop returns to the tray")
 	check(sword.rotation_steps == 0, "returning to the tray resets rotation")
+	check(GameState.stats["attack"] == 0, "un-packing takes the stat back off")
+
+	# --- pack again ---
+	GameState.reset_packing()
+	check(GameState.packed_items.is_empty(), "reset_packing empties the bag")
+	for key in GameState.STAT_KEYS:
+		check(GameState.stats[key] == 0, "reset zeroes %s" % key)
 
 	if failures == 0:
 		print("ALL PASS")
