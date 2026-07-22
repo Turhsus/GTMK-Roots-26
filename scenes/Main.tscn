@@ -1,9 +1,9 @@
 [gd_scene load_steps=5 format=3]
 
 [ext_resource type="Script" path="res://scenes/main.gd" id="1_main"]
-[ext_resource type="PackedScene" path="res://scenes/BriefPanel.tscn" id="2_brief"]
-[ext_resource type="PackedScene" path="res://scenes/PackingScene.tscn" id="3_packing"]
-[ext_resource type="PackedScene" path="res://scenes/PlayoutScene.tscn" id="4_playout"]
+[ext_resource type="PackedScene" path="res://scenes/brief/BriefPanel.tscn" id="2_brief"]
+[ext_resource type="PackedScene" path="res://scenes/packing/PackingScene.tscn" id="3_packing"]
+[ext_resource type="PackedScene" path="res://scenes/playout/PlayoutScene.tscn" id="4_playout"]
 
 [node name="Main" type="Control"]
 layout_mode = 3

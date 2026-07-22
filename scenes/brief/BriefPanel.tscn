@@ -1,6 +1,6 @@
 [gd_scene load_steps=2 format=3]
 
-[ext_resource type="Script" path="res://scenes/brief_panel.gd" id="1_brief"]
+[ext_resource type="Script" path="res://scenes/brief/brief_panel.gd" id="1_brief"]
 
 [node name="BriefPanel" type="Control"]
 layout_mode = 3

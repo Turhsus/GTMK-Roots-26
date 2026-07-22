@@ -8,7 +8,7 @@ extends PanelContainer
 
 signal item_ready(view: DraggableItem)
 
-const DRAGGABLE_ITEM := preload("res://scenes/DraggableItem.tscn")
+const DRAGGABLE_ITEM := preload("res://scenes/packing/DraggableItem.tscn")
 
 @onready var item_container: HFlowContainer = %ItemContainer
 

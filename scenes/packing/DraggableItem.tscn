@@ -1,6 +1,6 @@
 [gd_scene load_steps=2 format=3]
 
-[ext_resource type="Script" path="res://scenes/draggable_item.gd" id="1_item"]
+[ext_resource type="Script" path="res://scenes/packing/draggable_item.gd" id="1_item"]
 
 [node name="DraggableItem" type="Control"]
 custom_minimum_size = Vector2(96, 96)

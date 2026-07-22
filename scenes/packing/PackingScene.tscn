@@ -1,9 +1,9 @@
 [gd_scene format=3 uid="uid://buybgjfm1brbj"]
 
-[ext_resource type="Script" uid="uid://3uhjl2tyews6" path="res://scenes/packing_scene.gd" id="1_packing"]
-[ext_resource type="PackedScene" path="res://scenes/BagGrid.tscn" id="2_grid"]
-[ext_resource type="PackedScene" path="res://scenes/ItemTray.tscn" id="3_tray"]
-[ext_resource type="PackedScene" path="res://scenes/StatsPanel.tscn" id="4_stats"]
+[ext_resource type="Script" uid="uid://3uhjl2tyews6" path="res://scenes/packing/packing_scene.gd" id="1_packing"]
+[ext_resource type="PackedScene" path="res://scenes/packing/BagGrid.tscn" id="2_grid"]
+[ext_resource type="PackedScene" path="res://scenes/packing/ItemTray.tscn" id="3_tray"]
+[ext_resource type="PackedScene" path="res://scenes/packing/StatsPanel.tscn" id="4_stats"]
 
 [node name="PackingScene" type="Control" unique_id=1241708757]
 layout_mode = 3

@@ -197,18 +197,26 @@ Give the artist these constraints up front so code + art fit without rework.
 
 ```
 res://
-├── autoload/        GameState.gd, AudioManager.gd
+├── autoload/        game_state.gd, audio_manager.gd (singletons)
 ├── data/
 │   ├── items/       *.tres (one per item)
 │   └── quests/      whisper_woods.tres
-├── resources/       item_data.gd, quest_data.gd, narrative_event.gd (class_name defs)
-├── scenes/          Main, BriefPanel, PackingScene, BagGrid, ItemTray,
-│                    DraggableItem, StatsPanel, PlayoutScene (.tscn + .gd)
+├── resources/       item_data.gd, quest_data.gd, narrative_event.gd,
+│                    narrative_line.gd — pure Resource class_name defs
+├── systems/         narrative_engine.gd — stateless logic, not a Resource
+├── scenes/          grouped by game phase; Main.tscn/main.gd (the loop owner)
+│   │                sits at the top level
+│   ├── menu/        MainMenu
+│   ├── brief/       BriefPanel
+│   ├── packing/     PackingScene, BagGrid, grid_highlight,
+│   │                DraggableItem, ItemTray, StatsPanel
+│   └── playout/     PlayoutScene
 ├── assets/
 │   ├── items/       real + placeholder PNGs
 │   ├── ui/          bars, buttons, panels, font
 │   └── sfx/         place/rotate/invalid/send (optional)
-└── Main.tscn (entry scene)
+├── tools/           headless test harnesses + placeholder generators
+└── scenes/menu/MainMenu.tscn (entry scene; it loads scenes/Main.tscn)
 ```
 
 ---

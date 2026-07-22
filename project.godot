@@ -11,7 +11,7 @@ config_version=5
 [application]
 
 config/name="GMTK-Roots-26"
-run/main_scene="res://scenes/MainMenu.tscn"
+run/main_scene="res://scenes/menu/MainMenu.tscn"
 config/features=PackedStringArray("4.6", "Forward Plus")
 config/icon="res://icon.svg"
 

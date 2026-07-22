@@ -4,7 +4,7 @@ extends Node
 ## Run: godot --headless --path . res://tools/TestPacking.tscn
 ## (a scene, not --script, so the GameState/AudioManager autoloads exist)
 
-const PACKING := preload("res://scenes/PackingScene.tscn")
+const PACKING := preload("res://scenes/packing/PackingScene.tscn")
 
 var failures: int = 0
 

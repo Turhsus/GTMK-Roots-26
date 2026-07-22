@@ -1,6 +1,6 @@
 [gd_scene load_steps=2 format=3]
 
-[ext_resource type="Script" path="res://scenes/playout_scene.gd" id="1_playout"]
+[ext_resource type="Script" path="res://scenes/playout/playout_scene.gd" id="1_playout"]
 
 [node name="PlayoutScene" type="Control"]
 layout_mode = 3

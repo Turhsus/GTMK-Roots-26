@@ -1,7 +1,7 @@
 [gd_scene load_steps=3 format=3]
 
-[ext_resource type="Script" path="res://scenes/bag_grid.gd" id="1_grid"]
-[ext_resource type="Script" path="res://scenes/grid_highlight.gd" id="2_highlight"]
+[ext_resource type="Script" path="res://scenes/packing/bag_grid.gd" id="1_grid"]
+[ext_resource type="Script" path="res://scenes/packing/grid_highlight.gd" id="2_highlight"]
 
 [node name="BagGrid" type="Control"]
 custom_minimum_size = Vector2(576, 480)
