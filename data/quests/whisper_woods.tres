@@ -16,6 +16,8 @@
 [ext_resource type="Resource" path="res://data/items/torch.tres" id="14_torch"]
 [ext_resource type="Resource" path="res://data/items/waterskin.tres" id="15_waterskin"]
 [ext_resource type="Resource" path="res://data/items/whistle.tres" id="16_whistle"]
+[ext_resource type="Resource" path="res://data/items/cookpot.tres" id="19_cookpot"]
+[ext_resource type="Resource" path="res://data/items/slingshot.tres" id="20_slingshot"]
 [ext_resource type="Script" uid="uid://3jm4762kubo8" path="res://resources/narrative_line.gd" id="17_line"]
 [ext_resource type="Script" uid="uid://45ajj2ptcv0d" path="res://resources/narrative_event.gd" id="18_event"]
 
@@ -38,6 +40,14 @@ script = ExtResource("18_event")
 beat_id = "day_1_path"
 variants = Array[ExtResource("17_line")]([SubResource("line_path_map"), SubResource("line_path_light"), SubResource("line_path_lost")])
 
+[sub_resource type="Resource" id="line_hunger_cooked"]
+script = ExtResource("17_line")
+text = "Day two. They gathered sticks, filled the pot from a stream, and made something hot that was mostly soup. They ate it out of the pot with the big spoon, feeling extremely capable."
+require_stat = {
+"food": 4
+}
+require_tags = Array[String](["cooking"])
+
 [sub_resource type="Resource" id="line_hunger_full"]
 script = ExtResource("17_line")
 text = "Day two. They ate properly, sitting on a warm rock with their boots off, and still had plenty left over. There is nothing braver than a child who is not hungry."
@@ -59,7 +69,7 @@ text = "Day two. There was nothing in the bag to eat. They tried three kinds of 
 [sub_resource type="Resource" id="event_day_2_hunger"]
 script = ExtResource("18_event")
 beat_id = "day_2_hunger"
-variants = Array[ExtResource("17_line")]([SubResource("line_hunger_full"), SubResource("line_hunger_thin"), SubResource("line_hunger_none")])
+variants = Array[ExtResource("17_line")]([SubResource("line_hunger_cooked"), SubResource("line_hunger_full"), SubResource("line_hunger_thin"), SubResource("line_hunger_none")])
 
 [sub_resource type="Resource" id="line_night_warm"]
 script = ExtResource("17_line")
@@ -93,6 +103,11 @@ script = ExtResource("17_line")
 text = "Day three. Something long-legged and hungry came out of the ferns. They read one crooked line out of the book, mostly right, and a smell like hot pennies filled the clearing. The thing left."
 require_tags = Array[String](["magic"])
 
+[sub_resource type="Resource" id="line_encounter_sling"]
+script = ExtResource("17_line")
+text = "Day three. Something long-legged and hungry came out of the ferns. The first stone from the slingshot went wide. The second one didn't, and the thing took its dented pride back into the dark."
+require_tags = Array[String](["weapon", "wood"])
+
 [sub_resource type="Resource" id="line_encounter_guard"]
 script = ExtResource("17_line")
 text = "Day three. Something long-legged and hungry came out of the ferns. They got behind what they were carrying and made themselves loud, and it lost interest before they lost nerve."
@@ -107,7 +122,7 @@ text = "Day three. Something long-legged and hungry came out of the ferns. They 
 [sub_resource type="Resource" id="event_day_3_encounter"]
 script = ExtResource("18_event")
 beat_id = "day_3_encounter"
-variants = Array[ExtResource("17_line")]([SubResource("line_encounter_blade"), SubResource("line_encounter_magic"), SubResource("line_encounter_guard"), SubResource("line_encounter_run")])
+variants = Array[ExtResource("17_line")]([SubResource("line_encounter_blade"), SubResource("line_encounter_magic"), SubResource("line_encounter_sling"), SubResource("line_encounter_guard"), SubResource("line_encounter_run")])
 
 [sub_resource type="Resource" id="line_scrape_potion"]
 script = ExtResource("17_line")
@@ -154,7 +169,7 @@ script = ExtResource("1_script")
 title = "Rescue the Lost Kitten"
 brief = "Mrs. Ward's kitten wandered into Whisper Woods three nights ago.
 You'll be gone about four days. Pack what they'll need — the bag only holds so much."
-item_pool = Array[ExtResource("2_item")]([ExtResource("3_apple"), ExtResource("4_blanket"), ExtResource("5_boots"), ExtResource("6_bread"), ExtResource("7_lantern"), ExtResource("8_map"), ExtResource("9_potion"), ExtResource("10_rope"), ExtResource("11_shield"), ExtResource("12_spellbook"), ExtResource("13_sword"), ExtResource("14_torch"), ExtResource("15_waterskin"), ExtResource("16_whistle")])
+item_pool = Array[ExtResource("2_item")]([ExtResource("3_apple"), ExtResource("4_blanket"), ExtResource("5_boots"), ExtResource("6_bread"), ExtResource("19_cookpot"), ExtResource("7_lantern"), ExtResource("8_map"), ExtResource("9_potion"), ExtResource("10_rope"), ExtResource("11_shield"), ExtResource("20_slingshot"), ExtResource("12_spellbook"), ExtResource("13_sword"), ExtResource("14_torch"), ExtResource("15_waterskin"), ExtResource("16_whistle")])
 narrative = Array[ExtResource("18_event")]([SubResource("event_day_1_path"), SubResource("event_day_2_hunger"), SubResource("event_day_2_night"), SubResource("event_day_3_encounter"), SubResource("event_day_3_scrape"), SubResource("event_day_4_kitten")])
 target_food = 8
 target_health = 6

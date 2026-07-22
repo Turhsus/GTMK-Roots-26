@@ -12,6 +12,6 @@ icon = ExtResource("2_icon")
 food = 0
 health = 0
 attack = 0
-defense = 6
+defense = 5
 tags = Array[String](["armor", "metal"])
 flavor = "Heavier than it looks. Safer than it looks, too."

@@ -19,7 +19,8 @@ BORDER = 8
 
 ASSETS = Path(__file__).resolve().parent.parent / "assets" / "items"
 
-# id: (shape offsets, fill colour). Shapes match the MVP.md 8.2 starter list.
+# id: (shape offsets, fill colour). Shapes match the tuned .tres data (build
+# step 6) — the pool deliberately totals 41 cells against the 30-cell bag.
 ITEMS = {
     "bread":     ([(0, 0), (1, 0)],                 (198, 140, 83)),
     "waterskin": ([(0, 0), (0, 1)],                 (94, 150, 168)),
@@ -29,12 +30,14 @@ ITEMS = {
     "rope":      ([(0, 0), (1, 0)],                 (176, 152, 108)),
     "potion":    ([(0, 0)],                         (186, 106, 148)),
     "map":       ([(0, 0), (1, 0)],                 (206, 190, 150)),
-    "blanket":   ([(0, 0), (1, 0), (0, 1), (1, 1)], (176, 122, 128)),
+    "blanket":   ([(0, 0), (1, 0), (2, 0), (0, 1), (1, 1), (2, 1)], (176, 122, 128)),
     "lantern":   ([(0, 0)],                         (222, 186, 96)),
     "apple":     ([(0, 0)],                         (188, 92, 84)),
     "spellbook": ([(0, 0), (1, 0), (0, 1), (1, 1)], (120, 110, 168)),
-    "boots":     ([(0, 0), (1, 0)],                 (140, 106, 84)),
+    "boots":     ([(0, 0), (1, 0), (0, 1), (1, 1)], (140, 106, 84)),
     "whistle":   ([(0, 0)],                         (170, 178, 160)),
+    "cookpot":   ([(0, 0), (1, 0), (0, 1), (1, 1)], (186, 116, 82)),
+    "slingshot": ([(0, 0), (1, 0)],                 (150, 116, 78)),
 }
 
 

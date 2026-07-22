@@ -19,7 +19,8 @@ func _ready() -> void:
 	var drag_layer: Control = scene.get_node("%DragLayer")
 	var views: Array = tray.item_container.get_children()
 
-	check(views.size() == 14, "tray spawned 14 items, got %d" % views.size())
+	var pool_size: int = GameState.current_quest.item_pool.size()
+	check(views.size() == pool_size, "tray spawned the whole pool, got %d of %d" % [views.size(), pool_size])
 	check(bag.cols == 6 and bag.rows == 5, "bag is 6x5")
 
 	var sword: DraggableItem = _find(views, "sword")

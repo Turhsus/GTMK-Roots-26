@@ -153,13 +153,19 @@ func _end_drag(attempt_drop: bool) -> void:
 	bag_grid.clear_preview()
 	view.set_dragging(false)
 	if attempt_drop and _preview_valid:
+		var released_at := view.global_position
 		bag_grid.place(view, _preview_origin)
 		GameState.add_item(view.item)
+		view.play_snap_from(released_at)
 		AudioManager.play("place")
 		return
-	if attempt_drop and _was_over_board(view):
+	var rejected := attempt_drop and _was_over_board(view)
+	if rejected:
 		AudioManager.play("invalid")
 	item_tray.adopt(view)
+	if rejected:
+		# After adopt, so the tray's re-layout doesn't swallow the wobble.
+		view.play_shake()
 
 
 ## Distinguishes "tried to place it and it didn't fit" from "carried it back to
