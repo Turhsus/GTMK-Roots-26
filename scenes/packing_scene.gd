@@ -1,8 +1,10 @@
+class_name PackingScene
 extends Control
 
-## Packing screen: the bag on the left, the tray on the right. Until Main.tscn
-## owns the flow (brief -> packing -> playout), this scene loads the quest
-## itself so the grid and tray can be playtested on their own.
+## Packing screen: the bag on the left, the tray on the right. Main owns the
+## flow and sets the quest before this scene enters the tree; if nobody has
+## (running PackingScene.tscn on its own, or the test harness), it loads the
+## quest itself so the grid and tray can still be playtested standalone.
 ##
 ## It also drives the drag, because it is the only node that can see both the
 ## bag and the tray. A grabbed item is reparented to DragLayer (above
@@ -11,12 +13,17 @@ extends Control
 ## grid math rather than Godot's _get_drag_data, which only understands
 ## rectangles.
 
+## Raised when the player is done packing. Main turns it into a playout; the
+## bag is left exactly as packed so the log can be built from it.
+signal sent_off
+
 const QUEST: QuestData = preload("res://data/quests/whisper_woods.tres")
 
 @onready var quest_title: Label = %QuestTitle
 @onready var bag_grid: BagGrid = %BagGrid
 @onready var item_tray: ItemTray = %ItemTray
 @onready var drag_layer: Control = %DragLayer
+@onready var send_button: Button = %SendButton
 
 var _dragging: DraggableItem = null
 ## Where inside the item the player grabbed it, so it doesn't jump to a corner.
@@ -27,10 +34,39 @@ var _preview_valid: bool = false
 
 func _ready() -> void:
 	set_process(false)
-	quest_title.text = QUEST.title
-	# Connect before the quest lands, or the tray's first populate goes unheard.
 	item_tray.item_ready.connect(_on_item_ready)
-	GameState.set_quest(QUEST)
+	# The tray is a child, so its _ready() ran before this one. If the quest was
+	# already set by then (Main does that), it has *already* populated and fired
+	# item_ready for every item into an empty signal. Sweep up what is there.
+	for view in item_tray.item_container.get_children():
+		_on_item_ready(view)
+	GameState.quest_changed.connect(_on_quest_changed)
+	send_button.pressed.connect(_on_send_pressed)
+	if GameState.current_quest == null:
+		GameState.set_quest(QUEST)
+	else:
+		_on_quest_changed(GameState.current_quest)
+
+
+## Empties the bag and puts every item back in the tray — this is "Pack again".
+## The views are the same nodes throughout, so returning them is a reparent.
+func reset_packing() -> void:
+	for view in bag_grid.get_placed_views():
+		item_tray.adopt(view)
+	bag_grid.clear_board()
+	bag_grid.clear_preview()
+	GameState.reset_packing()
+
+
+func _on_quest_changed(quest: QuestData) -> void:
+	if quest == null:
+		return
+	quest_title.text = quest.title
+
+
+func _on_send_pressed() -> void:
+	AudioManager.play("send")
+	sent_off.emit()
 
 
 func _process(_delta: float) -> void:
@@ -60,8 +96,11 @@ func _input(event: InputEvent) -> void:
 			get_viewport().set_input_as_handled()
 
 
+## Idempotent: an item can arrive both through the signal and through the
+## catch-up sweep in _ready(), and connecting twice would start two drags.
 func _on_item_ready(view: DraggableItem) -> void:
-	view.grabbed.connect(_on_item_grabbed)
+	if not view.grabbed.is_connected(_on_item_grabbed):
+		view.grabbed.connect(_on_item_grabbed)
 
 
 func _on_item_grabbed(view: DraggableItem, grab_offset: Vector2) -> void:

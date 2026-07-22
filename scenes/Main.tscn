@@ -1,0 +1,29 @@
+[gd_scene load_steps=5 format=3]
+
+[ext_resource type="Script" path="res://scenes/main.gd" id="1_main"]
+[ext_resource type="PackedScene" path="res://scenes/BriefPanel.tscn" id="2_brief"]
+[ext_resource type="PackedScene" path="res://scenes/PackingScene.tscn" id="3_packing"]
+[ext_resource type="PackedScene" path="res://scenes/PlayoutScene.tscn" id="4_playout"]
+
+[node name="Main" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_main")
+
+[node name="PackingScene" parent="." instance=ExtResource("3_packing")]
+unique_name_in_owner = true
+visible = false
+layout_mode = 1
+
+[node name="PlayoutScene" parent="." instance=ExtResource("4_playout")]
+unique_name_in_owner = true
+visible = false
+layout_mode = 1
+
+[node name="BriefPanel" parent="." instance=ExtResource("2_brief")]
+unique_name_in_owner = true
+layout_mode = 1

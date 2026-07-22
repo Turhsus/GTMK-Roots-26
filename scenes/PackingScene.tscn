@@ -72,6 +72,13 @@ unique_name_in_owner = true
 layout_mode = 2
 size_flags_vertical = 3
 
+[node name="SendButton" type="Button" parent="Margin/Columns/SideColumn"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 48)
+layout_mode = 2
+theme_override_font_sizes/font_size = 20
+text = "Send off"
+
 [node name="DragLayer" type="Control" parent="."]
 unique_name_in_owner = true
 layout_mode = 1

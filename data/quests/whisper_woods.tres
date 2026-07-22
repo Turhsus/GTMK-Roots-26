@@ -1,4 +1,4 @@
-[gd_resource type="Resource" script_class="QuestData" load_steps=17 format=3]
+[gd_resource type="Resource" script_class="QuestData" load_steps=44 format=3]
 
 [ext_resource type="Script" uid="uid://b8mpss75xj6nx" path="res://resources/quest_data.gd" id="1_script"]
 [ext_resource type="Script" uid="uid://du5drbi85ateb" path="res://resources/item_data.gd" id="2_item"]
@@ -16,6 +16,138 @@
 [ext_resource type="Resource" path="res://data/items/torch.tres" id="14_torch"]
 [ext_resource type="Resource" path="res://data/items/waterskin.tres" id="15_waterskin"]
 [ext_resource type="Resource" path="res://data/items/whistle.tres" id="16_whistle"]
+[ext_resource type="Script" uid="uid://3jm4762kubo8" path="res://resources/narrative_line.gd" id="17_line"]
+[ext_resource type="Script" uid="uid://45ajj2ptcv0d" path="res://resources/narrative_event.gd" id="18_event"]
+
+[sub_resource type="Resource" id="line_path_map"]
+script = ExtResource("17_line")
+text = "Day one. The trail forked twice before noon, and both times they sat down cross-legged with the map spread over their knees like a proper explorer. They picked right both times."
+require_tags = Array[String](["navigation"])
+
+[sub_resource type="Resource" id="line_path_light"]
+script = ExtResource("17_line")
+text = "Day one. They lost the trail before dusk, but they had a light, and a light makes a path out of whatever it lands on. They kept walking longer than they meant to."
+require_tags = Array[String](["light"])
+
+[sub_resource type="Resource" id="line_path_lost"]
+script = ExtResource("17_line")
+text = "Day one. Every tree in Whisper Woods has the same opinion about which way is north. They went the long way around and told themselves it was on purpose."
+
+[sub_resource type="Resource" id="event_day_1_path"]
+script = ExtResource("18_event")
+beat_id = "day_1_path"
+variants = Array[ExtResource("17_line")]([SubResource("line_path_map"), SubResource("line_path_light"), SubResource("line_path_lost")])
+
+[sub_resource type="Resource" id="line_hunger_full"]
+script = ExtResource("17_line")
+text = "Day two. They ate properly, sitting on a warm rock with their boots off, and still had plenty left over. There is nothing braver than a child who is not hungry."
+require_stat = {
+"food": 8
+}
+
+[sub_resource type="Resource" id="line_hunger_thin"]
+script = ExtResource("17_line")
+text = "Day two. They counted what was left in the bag twice, then made it a rule: one bite in the morning, one at dusk. It held, barely, and they were very proud of the rule."
+require_stat = {
+"food": 4
+}
+
+[sub_resource type="Resource" id="line_hunger_none"]
+script = ExtResource("17_line")
+text = "Day two. There was nothing in the bag to eat. They tried three kinds of berry and spat out two of them, and by evening they were thinking about your kitchen table more than the kitten."
+
+[sub_resource type="Resource" id="event_day_2_hunger"]
+script = ExtResource("18_event")
+beat_id = "day_2_hunger"
+variants = Array[ExtResource("17_line")]([SubResource("line_hunger_full"), SubResource("line_hunger_thin"), SubResource("line_hunger_none")])
+
+[sub_resource type="Resource" id="line_night_warm"]
+script = ExtResource("17_line")
+text = "The second night came down cold. They rolled themselves into the blanket at the foot of a big grey stone and slept the whole night through, the way they do at home."
+require_tags = Array[String](["warmth"])
+
+[sub_resource type="Resource" id="line_night_comfort"]
+script = ExtResource("17_line")
+text = "The second night came down cold. They didn't have much, but they had something of yours to hold, and they turned it over in their hands until their eyes closed."
+require_tags = Array[String](["comfort"])
+
+[sub_resource type="Resource" id="line_night_cold"]
+script = ExtResource("17_line")
+text = "The second night came down cold, and they slept in a ball with their arms inside their sleeves, waking every hour to check that the dark was still just dark."
+
+[sub_resource type="Resource" id="event_day_2_night"]
+script = ExtResource("18_event")
+beat_id = "day_2_night"
+variants = Array[ExtResource("17_line")]([SubResource("line_night_warm"), SubResource("line_night_comfort"), SubResource("line_night_cold")])
+
+[sub_resource type="Resource" id="line_encounter_blade"]
+script = ExtResource("17_line")
+text = "Day three. Something long-legged and hungry came out of the ferns. They drew the blade and held it the way you showed them, and it decided it had somewhere else to be."
+require_stat = {
+"attack": 6
+}
+require_tags = Array[String](["weapon"])
+
+[sub_resource type="Resource" id="line_encounter_magic"]
+script = ExtResource("17_line")
+text = "Day three. Something long-legged and hungry came out of the ferns. They read one crooked line out of the book, mostly right, and a smell like hot pennies filled the clearing. The thing left."
+require_tags = Array[String](["magic"])
+
+[sub_resource type="Resource" id="line_encounter_guard"]
+script = ExtResource("17_line")
+text = "Day three. Something long-legged and hungry came out of the ferns. They got behind what they were carrying and made themselves loud, and it lost interest before they lost nerve."
+require_stat = {
+"defense": 6
+}
+
+[sub_resource type="Resource" id="line_encounter_run"]
+script = ExtResource("17_line")
+text = "Day three. Something long-legged and hungry came out of the ferns. They ran. They are fast, and they got away, but they left a shoe and most of their confidence behind."
+
+[sub_resource type="Resource" id="event_day_3_encounter"]
+script = ExtResource("18_event")
+beat_id = "day_3_encounter"
+variants = Array[ExtResource("17_line")]([SubResource("line_encounter_blade"), SubResource("line_encounter_magic"), SubResource("line_encounter_guard"), SubResource("line_encounter_run")])
+
+[sub_resource type="Resource" id="line_scrape_potion"]
+script = ExtResource("17_line")
+text = "There was a bad slip on the mossy side of the ravine and a cut that wanted attention. They drank half of what you packed for it, made a face, and were fine by supper."
+require_tags = Array[String](["healing"])
+
+[sub_resource type="Resource" id="line_scrape_tough"]
+script = ExtResource("17_line")
+text = "There was a bad slip on the mossy side of the ravine. They came up muddy and scraped, sat still for a minute, and then got up anyway. Whatever you packed had kept them strong enough for that."
+require_stat = {
+"health": 6
+}
+
+[sub_resource type="Resource" id="line_scrape_hurt"]
+script = ExtResource("17_line")
+text = "There was a bad slip on the mossy side of the ravine. Nothing in the bag was any use to a knee like that, so they wrapped it in a sleeve and went on limping."
+
+[sub_resource type="Resource" id="event_day_3_scrape"]
+script = ExtResource("18_event")
+beat_id = "day_3_scrape"
+variants = Array[ExtResource("17_line")]([SubResource("line_scrape_potion"), SubResource("line_scrape_tough"), SubResource("line_scrape_hurt")])
+
+[sub_resource type="Resource" id="line_kitten_sound"]
+script = ExtResource("17_line")
+text = "Day four. They found the print of a small paw in the creek mud and blew one clear note over the water. Half a minute later something grey and furious came crashing out of the reeds and climbed straight up their front."
+require_tags = Array[String](["sound"])
+
+[sub_resource type="Resource" id="line_kitten_food"]
+script = ExtResource("17_line")
+text = "Day four. They found the print of a small paw in the creek mud, sat down, and laid out a little of what was left to eat. They waited a long time without moving. It worked."
+require_tags = Array[String](["food"])
+
+[sub_resource type="Resource" id="line_kitten_hands"]
+script = ExtResource("17_line")
+text = "Day four. They found the print of a small paw in the creek mud and spent the whole afternoon calling into the reeds with nothing to offer but their own voice. In the end that was enough, and it cost them every scratch on their hands."
+
+[sub_resource type="Resource" id="event_day_4_kitten"]
+script = ExtResource("18_event")
+beat_id = "day_4_kitten"
+variants = Array[ExtResource("17_line")]([SubResource("line_kitten_sound"), SubResource("line_kitten_food"), SubResource("line_kitten_hands")])
 
 [resource]
 script = ExtResource("1_script")
@@ -24,6 +156,7 @@ brief = "Mrs. Ward's kitten wandered into Whisper Woods three nights ago.\nYou'l
 bag_cols = 6
 bag_rows = 5
 item_pool = Array[ExtResource("2_item")]([ExtResource("3_apple"), ExtResource("4_blanket"), ExtResource("5_boots"), ExtResource("6_bread"), ExtResource("7_lantern"), ExtResource("8_map"), ExtResource("9_potion"), ExtResource("10_rope"), ExtResource("11_shield"), ExtResource("12_spellbook"), ExtResource("13_sword"), ExtResource("14_torch"), ExtResource("15_waterskin"), ExtResource("16_whistle")])
+narrative = Array[ExtResource("18_event")]([SubResource("event_day_1_path"), SubResource("event_day_2_hunger"), SubResource("event_day_2_night"), SubResource("event_day_3_encounter"), SubResource("event_day_3_scrape"), SubResource("event_day_4_kitten")])
 target_food = 8
 target_health = 6
 target_attack = 6
