@@ -1,8 +1,9 @@
 class_name ItemTray
 extends PanelContainer
 
-## The tray beside the bag. Spawns one DraggableItem per item in the quest's
-## pool, at true 96 px-per-cell size, and flows them into rows. Items are never
+## The tray beside the bag. Spawns one DraggableItem per item in the player's
+## inventory (RunState.inventory — the run's owned items, not the quest's pool),
+## at true 96 px-per-cell size, and flows them into rows. Items are never
 ## re-instantiated: the same node moves tray -> drag layer -> bag and back, so
 ## "refill on removal" is just adopt().
 
@@ -19,7 +20,7 @@ func _ready() -> void:
 		_on_quest_changed(GameState.current_quest)
 
 
-## Rebuilds the tray from the pool.
+## Rebuilds the tray from a list of items.
 func populate(pool: Array[ItemData]) -> void:
 	for child in item_container.get_children():
 		child.queue_free()
@@ -41,7 +42,11 @@ func adopt(view: DraggableItem) -> void:
 	view.reparent(item_container, false)
 
 
-func _on_quest_changed(quest: QuestData) -> void:
-	if quest == null:
-		return
-	populate(quest.item_pool)
+## A quest switch is the moment to rebuild the tray. The content is the player's
+## inventory, not the quest — the quest only changes the bag, targets, and story
+## — but inventory itself only changes at send-off (between packing sessions), so
+## a quest boundary is exactly when a rebuild is both needed and safe. We
+## deliberately do NOT rebuild on inventory_changed: that fires during send-off,
+## and repopulating then would wipe the bag the log is about to be built from.
+func _on_quest_changed(_quest: QuestData) -> void:
+	populate(RunState.inventory)

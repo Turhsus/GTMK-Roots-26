@@ -142,8 +142,8 @@ func _test_flow() -> void:
 	await get_tree().process_frame
 	check(packing.visible and not select.visible, "choosing a quest opens the packing screen")
 	check(GameState.current_quest == QUEST, "the chosen quest became the current one")
-	check(packing.item_tray.item_container.get_child_count() == QUEST.item_pool.size(),
-		"the tray filled from the chosen quest's pool, got %d" % packing.item_tray.item_container.get_child_count())
+	check(packing.item_tray.item_container.get_child_count() == RunState.inventory.size(),
+		"the tray filled from the player's inventory, got %d" % packing.item_tray.item_container.get_child_count())
 
 	# The tray repopulated on the quest switch; every item must be draggable, and
 	# exactly once (the item_ready wiring is what once broke under Main).
@@ -165,8 +165,14 @@ func _test_flow() -> void:
 	check(GameState.stats["food"] == bread.item.food, "stats followed the packing")
 
 	var before := RunState.completed_count
+	var stock_before: int = RunState.inventory.size()
 	packing.sent_off.emit()
 	check(playout.visible and not packing.visible, "\"Send off\" opens the playout")
+	# Persistent, depleting inventory: the two packed items are spent on send-off.
+	check(RunState.inventory.size() == stock_before - 2,
+		"sending off spent the two packed items, %d left of %d" % [RunState.inventory.size(), stock_before])
+	check(not RunState.inventory.has(bread.item), "the packed bread left the inventory for good")
+	check(not RunState.inventory.has(sword.item), "the packed sword left the inventory for good")
 	check(GameState.count_targets_met() < GameState.STAT_KEYS.size(),
 		"the light pack doesn't meet every target")
 	check(RunState.completed_count == before, "an unmet quest doesn't count as cleared")
@@ -197,14 +203,24 @@ func _test_flow() -> void:
 	check(packing.bag_grid.is_cell_free(Vector2i(0, 0)), "the new quest frees the board")
 	check(not is_instance_valid(bread) or bread.get_parent() != packing.bag_grid.item_layer,
 		"the previous quest's placed items don't linger in the bag")
-	check(packing.item_tray.item_container.get_child_count() == QUEST.item_pool.size(),
-		"the tray is whole for the new quest, got %d" % packing.item_tray.item_container.get_child_count())
+	# The inventory is persistent: the new quest's tray is the depleted stash, not
+	# a fresh pool, and the spent items do not reappear.
+	check(packing.item_tray.item_container.get_child_count() == RunState.inventory.size(),
+		"the tray rebuilt from the depleted inventory, got %d" % packing.item_tray.item_container.get_child_count())
+	check(RunState.inventory.size() == stock_before - 2,
+		"the inventory stayed depleted across the quest switch")
+	check(_find(packing.item_tray.item_container.get_children(), "bread") == null,
+		"a spent item does not come back in the new quest's tray (bread)")
+	check(_find(packing.item_tray.item_container.get_children(), "sword") == null,
+		"a spent item does not come back in the new quest's tray (sword)")
 
-	# And the loop actually loops.
+	# And the loop actually loops — and keeps depleting.
+	var stock_second: int = RunState.inventory.size()
 	_pack(packing, "apple", Vector2i(0, 0))
 	packing.sent_off.emit()
 	check(playout.visible and playout.lines_box.get_child_count() == 1,
 		"a second playout starts clean, got %d lines" % playout.lines_box.get_child_count())
+	check(RunState.inventory.size() == stock_second - 1, "the second send-off spent another item")
 
 
 # --- helpers ------------------------------------------------------------------

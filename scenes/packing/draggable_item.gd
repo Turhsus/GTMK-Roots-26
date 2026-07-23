@@ -7,13 +7,25 @@ extends Control
 ## drag itself, since only it can see both the bag and the tray.
 
 signal grabbed(view: DraggableItem, grab_offset: Vector2)
+## Emitted on a plain click — a press and release that never turns into a drag.
+## PackingScene answers it with the stats menu, the same panel the hover tooltip
+## shows, so the player can inspect an item without picking it up.
+signal clicked(view: DraggableItem)
 
 const HOVER_LIFT := Vector2(0, -6)
+## How far the mouse may travel while the button is held before the press stops
+## being a click and becomes a drag.
+const DRAG_THRESHOLD := 6.0
 
 var item: ItemData
 ## 90-degree clockwise turns applied to `item.shape`.
 var rotation_steps: int = 0
 var is_dragging: bool = false
+
+## A left button is down but hasn't moved far enough to drag yet: releasing now
+## is a click, crossing DRAG_THRESHOLD starts the drag.
+var _press_active := false
+var _press_position := Vector2.ZERO
 
 ## All juice animates the icon, never this Control: the node's position and size
 ## are grid truth (snapping, tests), so cosmetic motion lives in an offset the
@@ -112,9 +124,21 @@ func play_shake() -> void:
 func _gui_input(event: InputEvent) -> void:
 	if is_dragging:
 		return
-	if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT and event.pressed:
-		accept_event()
-		grabbed.emit(self, event.position)
+	if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT:
+		if event.pressed:
+			accept_event()
+			_press_active = true
+			_press_position = event.position
+		elif _press_active:
+			# Let go without ever crossing the drag threshold: treat it as a
+			# click and open the stats menu instead of moving the item.
+			accept_event()
+			_press_active = false
+			clicked.emit(self)
+	elif event is InputEventMouseMotion and _press_active:
+		if event.position.distance_to(_press_position) > DRAG_THRESHOLD:
+			_press_active = false
+			grabbed.emit(self, _press_position)
 
 
 func _refresh() -> void:
@@ -133,7 +157,66 @@ func _refresh() -> void:
 		icon.rotation_degrees = _rot_target
 	_icon_base = (size - art_size) * 0.5
 	icon.position = _icon_base + juice_offset
-	tooltip_text = "%s\n%s" % [item.display_name, item.flavor]
+	# Non-empty so Godot's hover timer arms; the shown content is built by
+	# _make_custom_tooltip() below, not from this string.
+	tooltip_text = item.display_name
+
+
+## Godot calls this when the hover tooltip is due (after the project's tooltip
+## delay). Returning the shared panel makes the hover tooltip and the click menu
+## literally the same view of the item.
+func _make_custom_tooltip(_for_text: String) -> Object:
+	return build_info_panel(item)
+
+
+## The "what would this add" panel: the item's name, every stat it contributes,
+## and its flavor line. Static so PackingScene can raise the very same panel on a
+## click without redoing the layout.
+static func build_info_panel(source: ItemData) -> Control:
+	var panel := PanelContainer.new()
+	var style := StyleBoxFlat.new()
+	style.bg_color = Color(0.12, 0.09, 0.08, 0.98)
+	style.border_color = Color(0.55, 0.42, 0.26)
+	style.set_border_width_all(2)
+	style.set_corner_radius_all(6)
+	style.set_content_margin_all(10)
+	panel.add_theme_stylebox_override("panel", style)
+
+	var box := VBoxContainer.new()
+	box.add_theme_constant_override("separation", 4)
+	panel.add_child(box)
+
+	var name_label := Label.new()
+	name_label.text = source.display_name
+	name_label.add_theme_font_size_override("font_size", 18)
+	box.add_child(name_label)
+
+	var stat_added := false
+	var stats := source.get_stats()
+	for key in GameState.STAT_KEYS:
+		var value := int(stats.get(key, 0))
+		if value == 0:
+			continue
+		stat_added = true
+		var row := Label.new()
+		row.text = "%s %+d" % [key.capitalize(), value]
+		row.add_theme_color_override("font_color", Color("7aa356"))
+		box.add_child(row)
+	if not stat_added:
+		var none_label := Label.new()
+		none_label.text = "No stat bonus"
+		none_label.add_theme_color_override("font_color", Color("9a8f80"))
+		box.add_child(none_label)
+
+	if source.flavor != "":
+		var flavor := Label.new()
+		flavor.text = source.flavor
+		flavor.add_theme_color_override("font_color", Color("c9bba8"))
+		flavor.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		flavor.custom_minimum_size.x = 220
+		box.add_child(flavor)
+
+	return panel
 
 
 func _on_hover_changed(hovered: bool) -> void:

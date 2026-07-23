@@ -41,6 +41,10 @@ func _on_sent_off() -> void:
 	var cleared := GameState.count_targets_met() == GameState.STAT_KEYS.size()
 	RunState.register_result(quest, cleared)
 	var lines := NarrativeEngine.build_log(quest, GameState.packed_items, GameState.stats)
+	# Whatever went into the bag went off with the child: it's spent and leaves
+	# the inventory for good, so the next quest is packed from a smaller stash.
+	# (Read the log off packed_items first — consume only touches RunState.)
+	RunState.consume(GameState.packed_items)
 	_show(playout_scene)
 	playout_scene.play(lines)
 

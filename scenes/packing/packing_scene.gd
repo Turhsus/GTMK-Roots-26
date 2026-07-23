@@ -30,6 +30,9 @@ var _dragging: DraggableItem = null
 var _grab_offset := Vector2.ZERO
 var _preview_origin := Vector2i.ZERO
 var _preview_valid: bool = false
+## The open stats menu raised by a click, or null. Lives on DragLayer so the
+## tray's scroll box never clips it.
+var _info_menu: Control = null
 
 
 func _ready() -> void:
@@ -53,6 +56,7 @@ func _ready() -> void:
 ## Views placed in the bag live under BagGrid, not the tray, so populate() won't
 ## sweep them — they're freed here. Tray views are freed by populate() itself.
 func load_quest(quest: QuestData) -> void:
+	_close_info_menu()
 	for view in bag_grid.get_placed_views():
 		view.queue_free()
 	bag_grid.clear_board()
@@ -63,6 +67,7 @@ func load_quest(quest: QuestData) -> void:
 ## Empties the bag and puts every item back in the tray — this is "Pack again".
 ## The views are the same nodes throughout, so returning them is a reparent.
 func reset_packing() -> void:
+	_close_info_menu()
 	for view in bag_grid.get_placed_views():
 		item_tray.adopt(view)
 	bag_grid.clear_board()
@@ -77,6 +82,7 @@ func _on_quest_changed(quest: QuestData) -> void:
 
 
 func _on_send_pressed() -> void:
+	_close_info_menu()
 	AudioManager.play("send")
 	sent_off.emit()
 
@@ -91,6 +97,14 @@ func _process(_delta: float) -> void:
 ## Runs ahead of the GUI so the drag owns the mouse: a Control under the cursor
 ## would otherwise eat the release that ends it.
 func _input(event: InputEvent) -> void:
+	# A click anywhere, or Escape, dismisses an open stats menu. This runs ahead
+	# of the GUI, so clicking a different item closes this menu first and then
+	# that item's own click reopens it for the new item.
+	if _info_menu != null:
+		if event is InputEventMouseButton and event.pressed:
+			_close_info_menu()
+		elif event is InputEventKey and event.pressed and event.keycode == KEY_ESCAPE:
+			_close_info_menu()
 	if _dragging == null:
 		return
 	if event is InputEventKey and event.pressed and not event.echo and event.keycode == KEY_R:
@@ -113,11 +127,37 @@ func _input(event: InputEvent) -> void:
 func _on_item_ready(view: DraggableItem) -> void:
 	if not view.grabbed.is_connected(_on_item_grabbed):
 		view.grabbed.connect(_on_item_grabbed)
+	if not view.clicked.is_connected(_on_item_clicked):
+		view.clicked.connect(_on_item_clicked)
+
+
+## A plain click on an item raises its stats menu — the same panel the hover
+## tooltip shows — on the drag layer, which sits above everything and is never
+## clipped by the tray's scroll box.
+func _on_item_clicked(view: DraggableItem) -> void:
+	_close_info_menu()
+	var menu := DraggableItem.build_info_panel(view.item)
+	drag_layer.add_child(menu)
+	_info_menu = menu
+	var menu_size := menu.get_combined_minimum_size()
+	var viewport_size := get_viewport_rect().size
+	var target := get_global_mouse_position() + Vector2(12, 12)
+	var max_pos := viewport_size - menu_size - Vector2(8, 8)
+	menu.global_position = target.min(max_pos).max(Vector2(8, 8))
+
+
+func _close_info_menu() -> void:
+	if _info_menu != null and is_instance_valid(_info_menu):
+		_info_menu.queue_free()
+	_info_menu = null
 
 
 func _on_item_grabbed(view: DraggableItem, grab_offset: Vector2) -> void:
 	if _dragging != null:
 		return
+	# Picking an item up dismisses any open menu — inspecting is over, we're
+	# moving it now.
+	_close_info_menu()
 	# Picking an item back up frees its cells and un-packs it; dropping it
 	# re-adds it. A move across the bag is just those two halves.
 	if bag_grid.remove(view):

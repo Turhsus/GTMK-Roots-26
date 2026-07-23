@@ -21,6 +21,10 @@ GameState="*res://autoload/game_state.gd"
 RunState="*res://autoload/run_state.gd"
 AudioManager="*res://autoload/audio_manager.gd"
 
+[gui]
+
+timers/tooltip_delay_sec=1.2
+
 [display]
 
 window/size/viewport_width=1280
