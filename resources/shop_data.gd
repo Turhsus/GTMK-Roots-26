@@ -14,6 +14,11 @@ extends Resource
 ## One-line sign flavor shown when the shop is open.
 @export_multiline var blurb: String = ""
 
-## The items on the shelves, bought at each item's buy_price. Stock is unlimited:
-## the player can buy any number of copies, gold permitting.
+## The items on the shelves, bought at each item's buy_price.
 @export var stock: Array[ItemData] = []
+
+## How many items the shop will sell per gather phase — any mix from the shelves.
+## Once the player has bought this many the shop is sold out; every shop restocks
+## when the next gather opens. TownScreen tracks the counts (this resource is
+## shared and stays stateless).
+@export var stock_limit: int = 3

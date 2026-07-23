@@ -1,16 +1,67 @@
-[gd_resource type="Resource" script_class="ShopData" format=3]
+[gd_resource type="Resource" script_class="ShopData" format=3 uid="uid://bgvqu7a1h6vls"]
 
-[ext_resource type="Script" path="res://resources/shop_data.gd" id="1_script"]
+[ext_resource type="Script" uid="uid://cs53qfm8focrq" path="res://resources/shop_data.gd" id="1_script"]
 [ext_resource type="Script" uid="uid://du5drbi85ateb" path="res://resources/item_data.gd" id="2_item"]
-[ext_resource type="Resource" uid="uid://c1w8wtikvjvod" path="res://data/items/potion.tres" id="3_potion"]
-[ext_resource type="Resource" uid="uid://caug30xe4jtxj" path="res://data/items/blanket.tres" id="4_blanket"]
-[ext_resource type="Resource" path="res://data/items/whistle.tres" id="5_whistle"]
-[ext_resource type="Resource" path="res://data/items/lantern.tres" id="6_lantern"]
-[ext_resource type="Resource" path="res://data/items/torch.tres" id="7_torch"]
+[ext_resource type="Texture2D" uid="uid://cvfsrdmjljp5i" path="res://assets/items/potion.png" id="3_4tdck"]
+[ext_resource type="Texture2D" uid="uid://ppovwsae2ex" path="res://assets/items/blanket.png" id="4_ptmxv"]
+[ext_resource type="Texture2D" uid="uid://7obkn1x1oqkc" path="res://assets/items/whistle.png" id="5_c8owd"]
+[ext_resource type="Texture2D" uid="uid://cafem5fluj0p" path="res://assets/items/lantern.png" id="6_75kur"]
+[ext_resource type="Texture2D" uid="uid://dx0xeeubiuxnl" path="res://assets/items/torch.png" id="7_lhp4j"]
+
+[sub_resource type="Resource" id="Resource_gsk1q"]
+script = ExtResource("2_item")
+id = "potion"
+display_name = "Healing Potion"
+icon = ExtResource("3_4tdck")
+health = 3
+traits = Array[String](["magic", "healing", "fragile"])
+flavor = "For scrapes. Don't drop it."
+buy_price = 15
+
+[sub_resource type="Resource" id="Resource_dovhv"]
+script = ExtResource("2_item")
+id = "blanket"
+display_name = "Wool Blanket"
+shape = Array[Vector2i]([Vector2i(0, 0), Vector2i(1, 0), Vector2i(2, 0), Vector2i(0, 1), Vector2i(1, 1), Vector2i(2, 1)])
+icon = ExtResource("4_ptmxv")
+health = 2
+traits = Array[String](["comfort", "warmth"])
+flavor = "Smells like home. Takes up a third of the bag."
+max_durability = 3
+buy_price = 12
+
+[sub_resource type="Resource" id="Resource_4pd4n"]
+script = ExtResource("2_item")
+id = "whistle"
+display_name = "Tin Whistle"
+icon = ExtResource("5_c8owd")
+traits = Array[String](["sound", "comfort"])
+flavor = "Three notes for 'I'm alright'."
+buy_price = 6
+
+[sub_resource type="Resource" id="Resource_8jaly"]
+script = ExtResource("2_item")
+id = "lantern"
+display_name = "Little Lantern"
+icon = ExtResource("6_75kur")
+traits = Array[String](["light"])
+flavor = "Burns steady, even in wind."
+buy_price = 6
+
+[sub_resource type="Resource" id="Resource_2ki2o"]
+script = ExtResource("2_item")
+id = "torch"
+display_name = "Torch"
+shape = Array[Vector2i]([Vector2i(0, 0), Vector2i(0, 1)])
+icon = ExtResource("7_lhp4j")
+combat = 1
+traits = Array[String](["light", "fire"])
+flavor = "Good for dark places and scaring things off."
+buy_price = 8
 
 [resource]
 script = ExtResource("1_script")
 id = "apothecary"
 display_name = "The Apothecary"
 blurb = "Remedies, warm blankets, and a little light for the dark stretches of road."
-stock = Array[ExtResource("2_item")]([ExtResource("3_potion"), ExtResource("4_blanket"), ExtResource("5_whistle"), ExtResource("6_lantern"), ExtResource("7_torch")])
+stock = Array[ExtResource("2_item")]([SubResource("Resource_gsk1q"), SubResource("Resource_dovhv"), SubResource("Resource_4pd4n"), SubResource("Resource_8jaly"), SubResource("Resource_2ki2o")])

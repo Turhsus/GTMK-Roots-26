@@ -10,6 +10,7 @@ item_traits = Dictionary[String, int]({
 "food": 1,
 "healing": 1,
 "liquid": 1,
+"morale": 1,
 "sharp": 1,
 "weapon": 1
 })

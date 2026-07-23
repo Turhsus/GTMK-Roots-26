@@ -10,7 +10,9 @@ extends Control
 ##
 ## Rules (all chosen by the user): one shop visit per day; every day must be spent
 ## before the loop moves on (no early exit); buying is limited to a shop's own
-## themed stock; selling is allowed at any shop for the item's sell_price (half).
+## themed stock; a shop only supplies `stock_limit` items per gather (sold out
+## after that, restocked next gather); selling is allowed at any shop for the
+## item's sell_price (half).
 ##
 ## Like QuestSelect, the layout is built in code — the .tscn is just the frame
 ## (header + a scrolling Body the views are rebuilt into).
@@ -42,6 +44,10 @@ var _upcoming: Array[QuestData] = []
 ## The shop currently open, or null while the town square is showing. Held so a
 ## buy or sell can rebuild the open shop in place with refreshed prices.
 var _open_shop: ShopData = null
+## Items bought from each shop this gather, keyed by shop id. Each shop supplies
+## at most its `stock_limit` purchases per gather; the counts reset in begin() —
+## the shops restock between quests.
+var _purchases: Dictionary = {}
 
 
 func _ready() -> void:
@@ -54,12 +60,25 @@ func _ready() -> void:
 ## `start_day` is for resuming a saved gather: a load reopens the phase partway
 ## through, on the day the save was written. The days already spent are not
 ## re-billed to the global clock — they were billed when they were first spent.
-func begin(days: int, upcoming: Array[QuestData], start_day: int = 1) -> void:
+## `purchases` likewise restores the per-shop buy counts from a mid-gather save,
+## so a reload doesn't restock the shops.
+func begin(days: int, upcoming: Array[QuestData], start_day: int = 1,
+		purchases: Dictionary = {}) -> void:
 	_total_days = maxi(days, 1)
 	_current_day = clampi(start_day, 1, _total_days)
 	_upcoming = upcoming
+	_purchases = {}
+	for shop_id in purchases:
+		# int-cast: a JSON round trip turns the counts into floats.
+		_purchases[shop_id] = int(purchases[shop_id])
 	_refresh_header()
 	_show_square()
+
+
+## The per-shop buy counts, for the mid-gather autosave. Main stores this in the
+## save's loop half and hands it back to begin() on resume.
+func get_purchases() -> Dictionary:
+	return _purchases.duplicate()
 
 
 # --- days ---------------------------------------------------------------------
@@ -198,7 +217,11 @@ func _enter_shop(shop: ShopData) -> void:
 	blurb.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	body.add_child(blurb)
 
-	body.add_child(_subheading("On the shelves"))
+	var remaining := _remaining_stock(shop)
+	if remaining > 0:
+		body.add_child(_subheading("On the shelves — %d in stock" % remaining))
+	else:
+		body.add_child(_subheading("On the shelves — sold out"))
 	for item in shop.stock:
 		body.add_child(_build_buy_row(item))
 
@@ -220,11 +243,16 @@ func _enter_shop(shop: ShopData) -> void:
 	body.add_child(leave)
 
 
+## How many more items the shop can sell this gather.
+func _remaining_stock(shop: ShopData) -> int:
+	return maxi(shop.stock_limit - int(_purchases.get(shop.id, 0)), 0)
+
+
 func _build_buy_row(item: ItemData) -> Control:
 	var row := _trade_row(item.display_name, _stat_summary(item))
 	var buy := Button.new()
 	buy.text = "Buy   %dg" % item.buy_price
-	buy.disabled = RunState.gold < item.buy_price
+	buy.disabled = RunState.gold < item.buy_price or _remaining_stock(_open_shop) <= 0
 	buy.pressed.connect(_on_buy.bind(item))
 	row.add_child(buy)
 	return row
@@ -243,10 +271,11 @@ func _build_sell_row(item: ItemData, count: int) -> Control:
 
 
 func _on_buy(item: ItemData) -> void:
-	if RunState.spend_gold(item.buy_price):
+	if _remaining_stock(_open_shop) > 0 and RunState.spend_gold(item.buy_price):
 		RunState.gain(item)
+		_purchases[_open_shop.id] = int(_purchases.get(_open_shop.id, 0)) + 1
 		AudioManager.play("place")
-	# Rebuild in place: affordability of every row and the sell list have moved.
+	# Rebuild in place: affordability, stock and the sell list have all moved.
 	_enter_shop(_open_shop)
 
 
