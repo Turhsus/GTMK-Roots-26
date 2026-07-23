@@ -1,8 +1,8 @@
-[gd_scene load_steps=2 format=3]
+[gd_scene format=3 uid="uid://btpytn0tu7d6h"]
 
-[ext_resource type="Script" path="res://scenes/menu/main_menu.gd" id="1_menu"]
+[ext_resource type="Script" uid="uid://vupl4sxvu4ye" path="res://scenes/menu/main_menu.gd" id="1_menu"]
 
-[node name="MainMenu" type="Control"]
+[node name="MainMenu" type="Control" unique_id=428157586]
 layout_mode = 3
 anchors_preset = 15
 anchor_right = 1.0
@@ -11,7 +11,7 @@ grow_horizontal = 2
 grow_vertical = 2
 script = ExtResource("1_menu")
 
-[node name="Background" type="ColorRect" parent="."]
+[node name="Background" type="ColorRect" parent="." unique_id=1311178004]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -21,7 +21,7 @@ grow_vertical = 2
 mouse_filter = 2
 color = Color(0.17, 0.13, 0.11, 1)
 
-[node name="Center" type="CenterContainer" parent="."]
+[node name="Center" type="CenterContainer" parent="." unique_id=289881069]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -29,28 +29,28 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 
-[node name="Layout" type="VBoxContainer" parent="Center"]
+[node name="Layout" type="VBoxContainer" parent="Center" unique_id=1005644990]
 layout_mode = 2
 theme_override_constants/separation = 16
 
-[node name="Title" type="Label" parent="Center/Layout"]
+[node name="Title" type="Label" parent="Center/Layout" unique_id=4412277]
 layout_mode = 2
 theme_override_font_sizes/font_size = 48
 text = "Pack Your Child's Adventure"
 horizontal_alignment = 1
 
-[node name="Tagline" type="Label" parent="Center/Layout"]
+[node name="Tagline" type="Label" parent="Center/Layout" unique_id=1063441137]
 layout_mode = 2
 theme_override_colors/font_color = Color(0.85, 0.78, 0.7, 1)
 theme_override_font_sizes/font_size = 18
 text = "The bag only holds so much."
 horizontal_alignment = 1
 
-[node name="Spacer" type="Control" parent="Center/Layout"]
+[node name="Spacer" type="Control" parent="Center/Layout" unique_id=596326624]
 custom_minimum_size = Vector2(0, 24)
 layout_mode = 2
 
-[node name="ContinueButton" type="Button" parent="Center/Layout"]
+[node name="ContinueButton" type="Button" parent="Center/Layout" unique_id=1519915467]
 unique_name_in_owner = true
 custom_minimum_size = Vector2(220, 52)
 layout_mode = 2
@@ -58,7 +58,7 @@ size_flags_horizontal = 4
 theme_override_font_sizes/font_size = 22
 text = "Continue"
 
-[node name="PlayButton" type="Button" parent="Center/Layout"]
+[node name="PlayButton" type="Button" parent="Center/Layout" unique_id=82673187]
 unique_name_in_owner = true
 custom_minimum_size = Vector2(220, 52)
 layout_mode = 2
@@ -66,7 +66,7 @@ size_flags_horizontal = 4
 theme_override_font_sizes/font_size = 22
 text = "New Run"
 
-[node name="QuitButton" type="Button" parent="Center/Layout"]
+[node name="QuitButton" type="Button" parent="Center/Layout" unique_id=1632216508]
 unique_name_in_owner = true
 custom_minimum_size = Vector2(220, 44)
 layout_mode = 2
