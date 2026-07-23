@@ -27,9 +27,10 @@ func clear() -> void:
 
 func _draw() -> void:
 	var color := valid_color if _valid else invalid_color
+	var cell_size := BagGrid.current_cell_size()
 	for cell in _cells:
 		var rect := Rect2(
-			Vector2(cell) * BagGrid.CELL_SIZE + Vector2.ONE * 3,
-			Vector2.ONE * (BagGrid.CELL_SIZE - 6)
+			Vector2(cell) * cell_size + Vector2.ONE * 3,
+			Vector2.ONE * (cell_size - 6)
 		)
 		draw_rect(rect, color)

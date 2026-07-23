@@ -1,6 +1,7 @@
 [gd_scene format=3 uid="uid://buybgjfm1brbj"]
 
 [ext_resource type="Script" uid="uid://3uhjl2tyews6" path="res://scenes/packing/packing_scene.gd" id="1_packing"]
+[ext_resource type="Texture2D" uid="uid://bjpyo2b4rwlil" path="res://assets/ui/finalpacking_bg.png" id="2_b1ulo"]
 [ext_resource type="PackedScene" path="res://scenes/packing/BagGrid.tscn" id="2_grid"]
 [ext_resource type="PackedScene" path="res://scenes/packing/ItemTray.tscn" id="3_tray"]
 [ext_resource type="PackedScene" path="res://scenes/packing/StatsPanel.tscn" id="4_stats"]
@@ -14,70 +15,68 @@ grow_horizontal = 2
 grow_vertical = 2
 script = ExtResource("1_packing")
 
-[node name="Background" type="ColorRect" parent="." unique_id=1343558568]
-layout_mode = 1
-anchors_preset = 15
-anchor_right = 1.0
-anchor_bottom = 1.0
-grow_horizontal = 2
-grow_vertical = 2
-mouse_filter = 2
-color = Color(0.17, 0.13, 0.11, 1)
+[node name="TextureRect" type="TextureRect" parent="." unique_id=1918792171]
+layout_mode = 0
+offset_right = 1920.0
+offset_bottom = 1080.0
+texture = ExtResource("2_b1ulo")
 
-[node name="Margin" type="MarginContainer" parent="." unique_id=107073247]
-layout_mode = 1
-anchors_preset = 15
-anchor_right = 1.0
-anchor_bottom = 1.0
-grow_horizontal = 2
-grow_vertical = 2
-theme_override_constants/margin_left = 24
-theme_override_constants/margin_top = 16
-theme_override_constants/margin_right = 24
-theme_override_constants/margin_bottom = 16
-
-[node name="Columns" type="HBoxContainer" parent="Margin" unique_id=1745694950]
-layout_mode = 2
-theme_override_constants/separation = 24
-
-[node name="SideColumn" type="VBoxContainer" parent="Margin/Columns" unique_id=1720918092]
-layout_mode = 2
-size_flags_horizontal = 3
-theme_override_constants/separation = 12
-
-[node name="StatsPanel" parent="Margin/Columns/SideColumn" unique_id=1818831373 instance=ExtResource("4_stats")]
+[node name="StatsPanel" parent="." unique_id=1818831373 instance=ExtResource("4_stats")]
 unique_name_in_owner = true
-layout_mode = 2
+layout_mode = 0
+anchors_preset = 0
+anchor_right = 0.0
+anchor_bottom = 0.0
+offset_left = 24.0
+offset_top = 16.0
+offset_right = 779.0
+offset_bottom = 273.0
+grow_horizontal = 1
+grow_vertical = 1
 size_flags_vertical = 0
 
-[node name="ItemTray" parent="Margin/Columns/SideColumn" unique_id=1512273912 instance=ExtResource("3_tray")]
+[node name="ItemTray" parent="." unique_id=1512273912 instance=ExtResource("3_tray")]
 unique_name_in_owner = true
-layout_mode = 2
+layout_mode = 0
+anchors_preset = 0
+anchor_right = 0.0
+anchor_bottom = 0.0
+offset_left = 24.0
+offset_top = 281.0
+offset_right = 647.0
+offset_bottom = 1004.0
+grow_horizontal = 1
+grow_vertical = 1
 size_flags_vertical = 3
 
-[node name="SendButton" type="Button" parent="Margin/Columns/SideColumn" unique_id=1773969420]
+[node name="SendButton" type="Button" parent="." unique_id=1773969420]
 unique_name_in_owner = true
 custom_minimum_size = Vector2(0, 48)
-layout_mode = 2
+layout_mode = 0
+offset_left = 1608.0
+offset_top = 1003.0
+offset_right = 1898.0
+offset_bottom = 1051.0
 theme_override_font_sizes/font_size = 20
 text = "Send off"
 
-[node name="BagColumn" type="VBoxContainer" parent="Margin/Columns" unique_id=210754813]
-layout_mode = 2
-theme_override_constants/separation = 8
-
-[node name="QuestTitle" type="Label" parent="Margin/Columns/BagColumn" unique_id=1601622728]
+[node name="BagGrid" parent="." unique_id=1681554244 instance=ExtResource("2_grid")]
 unique_name_in_owner = true
-layout_mode = 2
+custom_minimum_size = Vector2(672, 672)
+anchors_preset = 0
+offset_left = 814.0
+offset_top = 206.0
+offset_right = 1486.0
+offset_bottom = 878.0
+
+[node name="QuestTitle" type="Label" parent="." unique_id=1601622728]
+unique_name_in_owner = true
+layout_mode = 0
+offset_left = 1134.0
+offset_top = 20.0
+offset_right = 1181.0
+offset_bottom = 43.0
 text = "Quest"
-
-[node name="BagCenter" type="CenterContainer" parent="Margin/Columns/BagColumn" unique_id=290400677]
-layout_mode = 2
-size_flags_vertical = 3
-
-[node name="BagGrid" parent="Margin/Columns/BagColumn/BagCenter" unique_id=1681554244 instance=ExtResource("2_grid")]
-unique_name_in_owner = true
-layout_mode = 2
 
 [node name="DragLayer" type="Control" parent="." unique_id=753836405]
 unique_name_in_owner = true

@@ -22,6 +22,10 @@ extends Control
 ## Clearing a quest means meeting all four stat targets; that is what advances the
 ## difficulty and pays the reward. Cleared or not, the log plays, then town.
 
+## DEBUG: skip the adventure-log playout entirely — send-off jumps straight to
+## what follows it (perk offer / gather). Flip back to false to restore the log.
+const DEBUG_SKIP_PLAYOUT: bool = true
+
 @onready var quest_select: QuestSelect = %QuestSelect
 @onready var packing_scene: PackingScene = %PackingScene
 @onready var playout_scene: PlayoutScene = %PlayoutScene
@@ -79,6 +83,10 @@ func _on_sent_off() -> void:
 	# this quest's length; it's the gather budget owed.
 	RunState.apply_wear(GameState.packed_items)
 	_gather_days = quest.days
+	if DEBUG_SKIP_PLAYOUT:
+		# Skip showing the log; go straight to what the "continue" button would do.
+		_on_playout_done()
+		return
 	_show(playout_scene)
 	playout_scene.play(lines)
 

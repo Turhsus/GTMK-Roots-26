@@ -21,7 +21,7 @@ func _ready() -> void:
 
 	var stock_size: int = RunState.inventory.size()
 	check(views.size() == stock_size, "tray spawned the whole inventory, got %d of %d" % [views.size(), stock_size])
-	check(bag.cols == 6 and bag.rows == 5, "bag is 6x5")
+	check(bag.cols == 6 and bag.rows == 6, "bag is 6x6")
 
 	var sword: DraggableItem = _find(views, "sword")
 	check(sword != null, "sword is in the tray")
@@ -65,12 +65,13 @@ func _ready() -> void:
 	# custom_minimum_size, not size: in the tray the flow container stretches
 	# items to the row height, so `size` is not the shape box there.
 	var rope: DraggableItem = _find(views, "rope")
+	var cell := BagGrid.current_cell_size()
 	var before := rope.custom_minimum_size
-	check(before == Vector2(192, 96), "rope is a 2x1 box, got %s" % before)
+	check(before == Vector2(2, 1) * cell, "rope is a 2x1 box, got %s" % before)
 	rope.rotate_once()
 	check(rope.custom_minimum_size == Vector2(before.y, before.x),
 		"rotating swaps the bounding box: %s -> %s" % [before, rope.custom_minimum_size])
-	check(bag.can_place(rope.get_shape(), Vector2i(0, 4)) == false,
+	check(bag.can_place(rope.get_shape(), Vector2i(0, bag.rows - 1)) == false,
 		"a rotated 1x2 no longer fits on the bottom row")
 	rope.rotate_once()
 	rope.rotate_once()

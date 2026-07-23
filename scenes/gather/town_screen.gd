@@ -17,6 +17,10 @@ extends Control
 
 signal gather_done
 
+## DEBUG: shows a "Skip gather" button on the town square that ends the whole
+## phase at once, no matter how many days are left. Flip to false to remove it.
+const DEBUG_SKIP_GATHER: bool = true
+
 const SHOPS: Array[ShopData] = [
 	preload("res://data/shops/grocer.tres"),
 	preload("res://data/shops/apothecary.tres"),
@@ -88,6 +92,19 @@ func _show_square() -> void:
 	body.add_child(_spacer(16))
 	body.add_child(_subheading("Coming up — you'll choose one when you set out:"))
 	body.add_child(_build_quest_preview())
+
+	if DEBUG_SKIP_GATHER:
+		body.add_child(_spacer(16))
+		var skip := Button.new()
+		skip.text = "DEBUG: Skip gather"
+		skip.custom_minimum_size = Vector2(0, 40)
+		skip.pressed.connect(_skip_gather)
+		body.add_child(skip)
+
+
+## DEBUG: ends the gather phase immediately, whatever day it is.
+func _skip_gather() -> void:
+	gather_done.emit()
 
 
 func _build_shop_button(shop: ShopData) -> Button:

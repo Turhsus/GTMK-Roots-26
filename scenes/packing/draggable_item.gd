@@ -144,12 +144,13 @@ func _gui_input(event: InputEvent) -> void:
 func _refresh() -> void:
 	if item == null:
 		return
-	custom_minimum_size = Vector2(ItemData.get_shape_size(get_shape())) * BagGrid.CELL_SIZE
+	var cell := BagGrid.current_cell_size()
+	custom_minimum_size = Vector2(ItemData.get_shape_size(get_shape())) * cell
 	size = custom_minimum_size
 	icon.texture = item.icon
 	# The art is drawn for the unrotated shape, so the icon keeps its original
 	# box and spins inside ours — a 2x1 sprite turned 90 degrees fills our 1x2.
-	var art_size := Vector2(item.get_size()) * BagGrid.CELL_SIZE
+	var art_size := Vector2(item.get_size()) * cell
 	icon.size = art_size
 	icon.pivot_offset = art_size * 0.5
 	# The rotate tween owns the angle while it runs; everyone else lands it.
