@@ -13,16 +13,7 @@ extends Resource
 
 ## Every trait an item may carry, e.g. {"light": 1, "food": 1, "metal": 1}.
 @export var item_traits: Dictionary[String, int] = {}
-## Every trait a quest may carry, e.g. {"cold": 1, "combat": 1}. Quest requirements
-## will be authored and matched against this vocabulary.
-@export var quest_traits: Dictionary[String, int] = {}
-
 
 ## Is `name` a known item trait? Cheap membership check for validation/lookups.
 func has_item_trait(name: String) -> bool:
 	return item_traits.has(name)
-
-
-## Is `name` a known quest trait?
-func has_quest_trait(name: String) -> bool:
-	return quest_traits.has(name)

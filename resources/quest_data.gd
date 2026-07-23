@@ -2,8 +2,9 @@
 class_name QuestData
 extends Resource
 
-## One quest: the brief, the bag it has to fit in, the items on offer, the stat
-## targets the bars fill toward, and the story beats the playout walks.
+## One quest: the brief, the items on offer, the stat targets the bars fill
+## toward, and the story beats the playout walks. (The bag is not the quest's
+## to define — BagGrid owns its fixed size.)
 ##
 ## `@tool` so the inspector can turn the `traits` array into a dropdown of the
 ## canonical vocabulary (see _validate_property) instead of a free-text field.
@@ -31,18 +32,16 @@ const _REGISTRY = preload("res://data/trait_registry.tres")
 ## follows.
 @export var gold_reward: int = 0
 
-@export_group("Bag")
-@export var bag_cols: int = 6
-@export var bag_rows: int = 5
-
 @export_group("Content")
 ## This quest's traits, e.g. ["cold", "combat", "long"]. The vocabulary future
 ## quest-requirement logic reads (e.g. "needs items carrying trait X"). Author them
-## from the canonical list in TraitRegistry.quest_traits (see the Traits autoload)
+## from the canonical list in TraitRegistry.quest_traits (see the Traits-- autoload)
 ## so spellings stay consistent across quests.
 @export var traits: Array[String] = []
-## Items the tray offers for this quest.
-@export var item_pool: Array[ItemData] = []
+## Items this quest lends the player for its duration: added to the tray (the
+## run inventory) when the quest is selected, and taken back when the quest is
+## completed (see RunState.lend_quest_items / reclaim_quest_items).
+@export var quest_items: Array[ItemData] = []
 ## Items this quest secretly needs packed. Never shown in the UI as a checklist —
 ## the brief is meant to hint at them (e.g. "the nights get cold" for a blanket).
 ## Later gameplay can read this to reward or narrate around them.
@@ -66,7 +65,7 @@ func _validate_property(property: Dictionary) -> void:
 	if property.name == "traits":
 		property.hint = PROPERTY_HINT_TYPE_STRING
 		property.hint_string = "%d/%d:%s" % [TYPE_STRING, PROPERTY_HINT_ENUM,
-			",".join(_REGISTRY.quest_traits.keys())]
+			",".join(_REGISTRY.item_traits.keys())]
 
 
 func get_targets() -> Dictionary:
@@ -76,7 +75,3 @@ func get_targets() -> Dictionary:
 		"combat": target_combat,
 		"utility": target_utility,
 	}
-
-
-func get_grid_size() -> Vector2i:
-	return Vector2i(bag_cols, bag_rows)

@@ -49,8 +49,7 @@ const STARTING_GOLD := 50
 const TOTAL_DAYS := 10
 
 ## The items the player owns at the start of a run. This is the whole tray now —
-## quests no longer decide what is available, only the bag size, targets, and
-## story. Authored here (one obvious place) rather than in a .tres; list an item
+## quests no longer decide what is available, only the targets and story. Authored here (one obvious place) rather than in a .tres; list an item
 ## twice to start with two of it. Inventory is depleting: whatever is packed is
 ## spent on send-off and does not come back this pass.
 const STARTER_INVENTORY: Array[ItemData] = [
@@ -80,6 +79,11 @@ var owned_perks: Array[PerkData] = []
 ## and ends (see main.gd); it is not what limits an individual gather phase — that
 ## budget is still the finished quest's `days`.
 var days_remaining: int = TOTAL_DAYS
+## The inventory copies on loan from the current quest (its `quest_items`), added
+## when the quest is selected and taken back when it completes — see
+## lend_quest_items / reclaim_quest_items. Tracked by identity so reclaiming
+## removes exactly the loaned copies, never a same-id item the player owns.
+var _quest_item_loans: Array[ItemData] = []
 
 
 ## Every item and perk this run can involve, keyed by id, so a save file can name
@@ -193,6 +197,33 @@ func release(item: ItemData) -> bool:
 	return false
 
 
+## Lends the quest's `quest_items` to the player for the quest's duration: each
+## enters the inventory as its own owned copy (full durability, independent of the
+## authored resource) so the tray offers it alongside everything owned. Called when
+## a quest is selected (see main.gd); the copies are remembered so
+## reclaim_quest_items can take back exactly these when the quest completes.
+func lend_quest_items(quest: QuestData) -> void:
+	if quest == null or quest.quest_items.is_empty():
+		return
+	for item in quest.quest_items:
+		var copy: ItemData = item.make_owned_copy()
+		inventory.append(copy)
+		_quest_item_loans.append(copy)
+	inventory_changed.emit(inventory)
+
+
+## Takes back the loaned quest items when the quest completes, cleared or not.
+## A loaned copy that was packed and worn out on the trip is already gone from the
+## inventory — erasing by identity just skips it. Safe to call with nothing on loan.
+func reclaim_quest_items() -> void:
+	if _quest_item_loans.is_empty():
+		return
+	for item in _quest_item_loans:
+		inventory.erase(item)
+	_quest_item_loans.clear()
+	inventory_changed.emit(inventory)
+
+
 ## Grants a perk, ignoring one already owned (perks are unique). The permanent
 ## upgrade takes effect immediately: the food bonus shows the next time the stats
 ## recompute, the wear skip on the next send-off.
@@ -300,7 +331,12 @@ func to_dict() -> Dictionary:
 	var items: Array = []
 	for item in inventory:
 		# Durability is per-copy, so it travels with the entry rather than the id.
-		items.append({"id": item.id, "durability": item.durability})
+		var entry := {"id": item.id, "durability": item.durability}
+		# A copy on loan from the current quest is flagged so a resumed run can
+		# still take it back when the quest completes.
+		if _quest_item_loans.has(item):
+			entry["on_loan"] = true
+		items.append(entry)
 	var perk_ids: Array = []
 	for perk in owned_perks:
 		perk_ids.append(perk.id)
@@ -327,6 +363,7 @@ func from_dict(data: Dictionary) -> void:
 	days_remaining = int(data.get("days_remaining", TOTAL_DAYS))
 
 	inventory.clear()
+	_quest_item_loans.clear()
 	for entry in data.get("inventory", []):
 		if typeof(entry) != TYPE_DICTIONARY:
 			continue
@@ -338,6 +375,8 @@ func from_dict(data: Dictionary) -> void:
 		# down to 2, a save holding 3 must not come back over-durable.
 		copy.durability = clampi(int(entry.get("durability", copy.durability)), 1, copy.max_durability)
 		inventory.append(copy)
+		if bool(entry.get("on_loan", false)):
+			_quest_item_loans.append(copy)
 
 	owned_perks.clear()
 	for perk_id in data.get("perks", []):
@@ -403,6 +442,7 @@ func _build_lookups() -> void:
 ## resources, the shop stock, or another copy of the same item.
 func _stock_starter_inventory() -> void:
 	inventory.clear()
+	_quest_item_loans.clear()
 	for item in STARTER_INVENTORY:
 		inventory.append(item.make_owned_copy())
 	inventory_changed.emit(inventory)

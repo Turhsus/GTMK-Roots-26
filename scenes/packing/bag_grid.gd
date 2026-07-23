@@ -157,10 +157,8 @@ func clear_preview() -> void:
 	highlight.clear()
 
 
-## The grid is fixed 6x6, so a quest switch only clears the board — it never
-## resizes. (The quest's bag_cols/bag_rows are deliberately not read here.)
 ## The grid is fixed 6x6 and takes its size from the node, so a quest switch only
-## clears the board. (The quest's bag_cols/bag_rows are deliberately not read.)
+## clears the board — quests never define the bag size.
 func _on_quest_changed(quest: QuestData) -> void:
 	if quest == null:
 		return

@@ -19,26 +19,3 @@ item_traits = Dictionary[String, int]({
 "warmth": 1,
 "weapon": 1
 })
-quest_traits = Dictionary[String, int]({
-"armor": 1,
-"book": 1,
-"climbing": 1,
-"clothing": 1,
-"comfort": 1,
-"cooking": 1,
-"fire": 1,
-"food": 1,
-"fragile": 1,
-"healing": 1,
-"light": 1,
-"magic": 1,
-"metal": 1,
-"navigation": 1,
-"sound": 1,
-"tool": 1,
-"travel": 1,
-"warmth": 1,
-"water": 1,
-"weapon": 1,
-"wood": 1
-})

@@ -73,8 +73,7 @@ Each item is a data asset so designers/artists can add items without touching co
 |---|---|---|
 | `title` | String | "Rescue the Lost Kitten" |
 | `brief` | String | Shown before packing |
-| `bag_cols` / `bag_rows` | int | Grid size (start 6×5) |
-| `item_pool` | Array[ItemData] | Items available in the tray |
+| `quest_items` | Array[ItemData] | Items the quest lends: added to the tray on select, taken back on completion |
 | `target_food/health/combat/utility` | int | Soft thresholds used to color bars + weight the narrative |
 | `narrative` | Array[NarrativeEvent] | Ordered story beats (see 5.4) |
 
@@ -128,7 +127,7 @@ Main.tscn                # root; owns flow: Brief → Packing → Playout → ba
   `place(...)`, `remove(...)`; converts mouse → cell coords; draws hover highlight.
 - **DraggableItem.gd** — follows mouse while dragging; asks BagGrid to validate; handles
   rotation (rotate the `shape` offsets 90°); returns to tray on invalid drop.
-- **ItemTray.gd** — instantiates one DraggableItem per `item_pool` entry; refills on removal.
+- **ItemTray.gd** — instantiates one DraggableItem per owned item in `RunState.inventory` (incl. any quest loans); refills on removal.
 - **StatsPanel.gd** — listens to `GameState.stats_changed`; tweens bar fills.
 - **NarrativeEngine.gd** — pure function: `(packed_items, stats, quest) → Array[String]`.
 

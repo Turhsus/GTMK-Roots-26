@@ -19,15 +19,5 @@ var item_traits: Dictionary[String, int]:
 		return REGISTRY.item_traits
 
 
-## The quest-trait master list, {name: int}.
-var quest_traits: Dictionary[String, int]:
-	get:
-		return REGISTRY.quest_traits
-
-
 func has_item_trait(name: String) -> bool:
 	return REGISTRY.has_item_trait(name)
-
-
-func has_quest_trait(name: String) -> bool:
-	return REGISTRY.has_quest_trait(name)

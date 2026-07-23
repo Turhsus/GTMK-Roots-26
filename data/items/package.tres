@@ -1,0 +1,14 @@
+[gd_resource type="Resource" script_class="ItemData" format=3 uid="uid://b5cuj5rp6sql1"]
+
+[ext_resource type="Script" uid="uid://du5drbi85ateb" path="res://resources/item_data.gd" id="1_0s6hw"]
+[ext_resource type="Texture2D" uid="uid://lmi2j4ebdlwi" path="res://assets/items/boots.png" id="1_kgvyc"]
+
+[resource]
+script = ExtResource("1_0s6hw")
+id = "package"
+display_name = "A Package"
+shape = Array[Vector2i]([Vector2i(0, 0), Vector2i(1, 0), Vector2i(0, 1), Vector2i(1, 1)])
+icon = ExtResource("1_kgvyc")
+flavor = "A package. Usually needs delivering."
+buy_price = -1
+metadata/_custom_type_script = "uid://du5drbi85ateb"

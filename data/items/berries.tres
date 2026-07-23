@@ -1,0 +1,13 @@
+[gd_resource type="Resource" script_class="ItemData" format=3 uid="uid://cp48saiwrmtot"]
+
+[ext_resource type="Script" uid="uid://du5drbi85ateb" path="res://resources/item_data.gd" id="1_dkr2t"]
+
+[resource]
+script = ExtResource("1_dkr2t")
+id = "berries"
+display_name = "Berries"
+food = 1
+traits = Array[String](["food"])
+flavor = "Delicious, Juicy, gone"
+buy_price = 2
+metadata/_custom_type_script = "uid://du5drbi85ateb"

@@ -80,12 +80,16 @@ func _ready() -> void:
 
 ## The forced opener: the tutorial quest, packed directly with no selection.
 func _start_tutorial() -> void:
+	# Lend before load_quest: the tray rebuilds off the inventory on quest_changed,
+	# so the loaned items must already be in it to show up.
+	RunState.lend_quest_items(RunState.TUTORIAL)
 	packing_scene.load_quest(RunState.TUTORIAL)
 	_show(packing_scene)
 	_save_checkpoint(PHASE_PACKING)
 
 
 func _on_quest_chosen(quest: QuestData) -> void:
+	RunState.lend_quest_items(quest)
 	packing_scene.load_quest(quest)
 	_show(packing_scene)
 	_save_checkpoint(PHASE_PACKING)
@@ -108,6 +112,9 @@ func _on_sent_off() -> void:
 	# the log off packed_items first — apply_wear only touches RunState.) Remember
 	# this quest's length; it's the gather budget owed.
 	RunState.apply_wear(GameState.packed_items)
+	# The quest is over: whatever it lent for the trip goes back. After wear, so a
+	# loaned item that was packed and spent is simply gone rather than double-removed.
+	RunState.reclaim_quest_items()
 	_gather_days = quest.days
 	if DEBUG_SKIP_PLAYOUT:
 		# Skip showing the log; go straight to what the "continue" button would do.

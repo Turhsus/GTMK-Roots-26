@@ -1,0 +1,13 @@
+[gd_resource type="Resource" script_class="QuestData" format=3 uid="uid://ba4csicviisrr"]
+
+[ext_resource type="Script" uid="uid://45ajj2ptcv0d" path="res://resources/narrative_event.gd" id="1_7rdj7"]
+[ext_resource type="Script" uid="uid://du5drbi85ateb" path="res://resources/item_data.gd" id="2_wofs7"]
+[ext_resource type="Script" uid="uid://b8mpss75xj6nx" path="res://resources/quest_data.gd" id="3_0ey1s"]
+
+[resource]
+script = ExtResource("3_0ey1s")
+id = "rescue"
+title = "A Trapped Chipmunk!"
+brief = "Elfie the Chipmunk has found herself trapped underneath a dislodged beaver damn! Make sure you pack something to dislodge the wood, and bring items to make sure Elfie is alright."
+difficulty = 1
+metadata/_custom_type_script = "uid://b8mpss75xj6nx"

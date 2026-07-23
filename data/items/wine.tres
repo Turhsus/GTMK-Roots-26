@@ -1,0 +1,16 @@
+[gd_resource type="Resource" script_class="ItemData" format=3 uid="uid://de2u8bqn3wgoi"]
+
+[ext_resource type="Script" uid="uid://du5drbi85ateb" path="res://resources/item_data.gd" id="1_fputx"]
+
+[resource]
+script = ExtResource("1_fputx")
+id = "wine"
+display_name = "Wine"
+shape = Array[Vector2i]([Vector2i(0, 0), Vector2i(0, 1)])
+food = 2
+combat = -1
+utility = 1
+traits = Array[String](["liquid", "morale", "cooking", "food", "versatile"])
+flavor = "Liquid courage"
+buy_price = 20
+metadata/_custom_type_script = "uid://du5drbi85ateb"

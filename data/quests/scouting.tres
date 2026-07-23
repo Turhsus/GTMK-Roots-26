@@ -1,0 +1,12 @@
+[gd_resource type="Resource" script_class="QuestData" format=3 uid="uid://d2p4tque4o3f5"]
+
+[ext_resource type="Script" uid="uid://45ajj2ptcv0d" path="res://resources/narrative_event.gd" id="1_t6vdn"]
+[ext_resource type="Script" uid="uid://du5drbi85ateb" path="res://resources/item_data.gd" id="2_t6hnn"]
+[ext_resource type="Script" uid="uid://b8mpss75xj6nx" path="res://resources/quest_data.gd" id="3_570y3"]
+
+[resource]
+script = ExtResource("3_570y3")
+difficulty = 1
+gold_reward = 10
+traits = Array[String](["warmth"])
+metadata/_custom_type_script = "uid://b8mpss75xj6nx"
