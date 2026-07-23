@@ -1,8 +1,16 @@
+@tool
 class_name QuestData
 extends Resource
 
 ## One quest: the brief, the bag it has to fit in, the items on offer, the stat
 ## targets the bars fill toward, and the story beats the playout walks.
+##
+## `@tool` so the inspector can turn the `traits` array into a dropdown of the
+## canonical vocabulary (see _validate_property) instead of a free-text field.
+
+## The single trait master list, preloaded so the inspector dropdown can read it.
+## Same resource the Traits autoload exposes at runtime, so there's one source.
+const _REGISTRY = preload("res://data/trait_registry.tres")
 
 ## Stable unique key, e.g. "whisper_woods". Used to track which quests have been
 ## cleared (so a completed quest isn't redrawn until its whole tier is exhausted).
@@ -49,6 +57,16 @@ extends Resource
 @export var target_health: int = 10
 @export var target_combat: int = 10
 @export var target_utility: int = 10
+
+
+## Inspector hook: render each element of the `traits` array as a dropdown of the
+## registry's quest traits, so authoring picks from the canonical list instead of
+## typing (and mistyping) a name. Editing trait_registry.tres updates the choices.
+func _validate_property(property: Dictionary) -> void:
+	if property.name == "traits":
+		property.hint = PROPERTY_HINT_TYPE_STRING
+		property.hint_string = "%d/%d:%s" % [TYPE_STRING, PROPERTY_HINT_ENUM,
+			",".join(_REGISTRY.quest_traits.keys())]
 
 
 func get_targets() -> Dictionary:
