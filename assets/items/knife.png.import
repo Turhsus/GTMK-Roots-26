@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://dmq0v7slaqu26"
-path="res://.godot/imported/slingshot.png-5f4d0f3301d18615d4f544b8f42124ce.ctex"
+uid="uid://cfe6ehrjg2g5y"
+path="res://.godot/imported/knife.png-50d31e4507dc19ae2319e330c3ca00c9.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/items/slingshot.png"
-dest_files=["res://.godot/imported/slingshot.png-5f4d0f3301d18615d4f544b8f42124ce.ctex"]
+source_file="res://assets/items/knife.png"
+dest_files=["res://.godot/imported/knife.png-50d31e4507dc19ae2319e330c3ca00c9.ctex"]
 
 [params]
 

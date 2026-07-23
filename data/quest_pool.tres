@@ -1,9 +1,9 @@
 [gd_resource type="Resource" script_class="QuestPool" format=3 uid="uid://c8qp00lr5t2wq"]
 
 [ext_resource type="Script" uid="uid://dx5420scjdaed" path="res://resources/quest_pool.gd" id="1_pool"]
-[ext_resource type="Resource" uid="uid://cgjoynicb88n8" path="res://data/quests/tutorial.tres" id="2_in411"]
 [ext_resource type="Script" uid="uid://b8mpss75xj6nx" path="res://resources/quest_data.gd" id="2_qd"]
+[ext_resource type="Resource" uid="uid://ba4csicviisrr" path="res://data/quests/rescue.tres" id="3_x8sy5"]
 
 [resource]
 script = ExtResource("1_pool")
-quests = Array[ExtResource("2_qd")]([ExtResource("2_in411")])
+quests = Array[ExtResource("2_qd")]([ExtResource("3_x8sy5")])
