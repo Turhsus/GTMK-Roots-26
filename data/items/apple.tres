@@ -1,14 +1,15 @@
-[gd_resource type="Resource" script_class="ItemData" format=3 uid="uid://dtircw5ldq12v"]
+[gd_resource type="Resource" script_class="ItemData" format=3 uid="uid://dt3m0eps7hja5"]
 
 [ext_resource type="Script" uid="uid://du5drbi85ateb" path="res://resources/item_data.gd" id="1_script"]
 [ext_resource type="Texture2D" uid="uid://dnevl3y31xywo" path="res://assets/items/apple.png" id="2_icon"]
 
 [resource]
 script = ExtResource("1_script")
-id = "apple"
-display_name = "Apple"
+id = "Apple"
+display_name = "apple"
 icon = ExtResource("2_icon")
 food = 1
-traits = Array[String](["food", "light"])
-flavor = "Crisp, and it fits anywhere."
-buy_price = 8
+traits = Array[String](["food"])
+flavor = "Any wayward doctors won't come by if you pack this."
+buy_price = 2
+metadata/_custom_type_script = "uid://du5drbi85ateb"

@@ -17,7 +17,7 @@ extends Control
 ## bag is left exactly as packed so the log can be built from it.
 signal sent_off
 
-const QUEST: QuestData = preload("res://data/quests/whisper_woods.tres")
+const QUEST: QuestData = preload("res://data/quests/tutorial.tres")
 
 @onready var quest_title: Label = %QuestTitle
 @onready var bag_grid: BagGrid = %BagGrid

@@ -1,4 +1,4 @@
-[gd_resource type="Resource" script_class="ItemData" format=3 uid="uid://rwo5oe1ljvau"]
+[gd_resource type="Resource" script_class="ItemData" format=3 uid="uid://bke744dbx8hys"]
 
 [ext_resource type="Script" uid="uid://du5drbi85ateb" path="res://resources/item_data.gd" id="1_script"]
 [ext_resource type="Texture2D" uid="uid://thgl34evreq" path="res://assets/items/sword.png" id="2_icon"]
@@ -6,10 +6,12 @@
 [resource]
 script = ExtResource("1_script")
 id = "sword"
-display_name = "Short Sword"
+display_name = "Sword"
 shape = Array[Vector2i]([Vector2i(0, 0), Vector2i(0, 1), Vector2i(0, 2)])
 icon = ExtResource("2_icon")
-combat = 5
-traits = Array[String](["weapon", "metal"])
-flavor = "Blunted edge. Still looks brave."
-buy_price = 30
+combat = 3
+traits = Array[String](["weapon", "sharp"])
+flavor = "A trusty, reliable weapon. Weak, but durable."
+max_durability = 5
+buy_price = 10
+metadata/_custom_type_script = "uid://du5drbi85ateb"

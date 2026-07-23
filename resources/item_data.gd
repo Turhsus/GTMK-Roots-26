@@ -29,12 +29,13 @@ const _REGISTRY = preload("res://data/trait_registry.tres")
 @export var combat: int = 0
 @export var utility: int = 0
 
-@export_group("Narrative")
 ## This item's traits, e.g. ["light", "food", "fragile"]. Doubles as the narrative
 ## hooks the playout reads and, going forward, the vocabulary quest requirements
 ## match against. Author them from the canonical list in TraitRegistry.item_traits
 ## (see the Traits autoload) so spellings stay consistent across items.
 @export var traits: Array[String] = []
+
+@export_group("Narrative")
 ## One-line tooltip text.
 @export var flavor: String = ""
 

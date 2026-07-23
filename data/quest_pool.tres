@@ -1,11 +1,7 @@
 [gd_resource type="Resource" script_class="QuestPool" format=3 uid="uid://c8qp00lr5t2wq"]
 
-[ext_resource type="Script" path="res://resources/quest_pool.gd" id="1_pool"]
+[ext_resource type="Script" uid="uid://dx5420scjdaed" path="res://resources/quest_pool.gd" id="1_pool"]
 [ext_resource type="Script" uid="uid://b8mpss75xj6nx" path="res://resources/quest_data.gd" id="2_qd"]
-[ext_resource type="Resource" uid="uid://bk037c22w4bt7" path="res://data/quests/whisper_woods.tres" id="3_whisper"]
-[ext_resource type="Resource" uid="uid://cn41k8xq2vh5m" path="res://data/quests/night_market.tres" id="4_market"]
-[ext_resource type="Resource" uid="uid://dp72saws3jk6n" path="res://data/quests/cinder_ford.tres" id="5_ford"]
 
 [resource]
 script = ExtResource("1_pool")
-quests = Array[ExtResource("2_qd")]([ExtResource("3_whisper"), ExtResource("4_market"), ExtResource("5_ford")])

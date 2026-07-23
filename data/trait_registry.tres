@@ -1,31 +1,17 @@
-[gd_resource type="Resource" script_class="TraitRegistry" format=3 uid="uid://cn8traitregdb001"]
+[gd_resource type="Resource" script_class="TraitRegistry" format=3 uid="uid://bpi8fle71nnlw"]
 
-[ext_resource type="Script" path="res://resources/trait_registry.gd" id="1_reg"]
+[ext_resource type="Script" uid="uid://crmeqqn3uichd" path="res://resources/trait_registry.gd" id="1_reg"]
 
 [resource]
 script = ExtResource("1_reg")
 item_traits = Dictionary[String, int]({
-"armor": 1,
-"book": 1,
-"climbing": 1,
-"clothing": 1,
-"comfort": 1,
 "cooking": 1,
-"fire": 1,
+"cutting": 1,
 "food": 1,
-"fragile": 1,
 "healing": 1,
-"light": 1,
-"magic": 1,
-"metal": 1,
-"navigation": 1,
-"sound": 1,
-"tool": 1,
-"travel": 1,
-"warmth": 1,
-"water": 1,
-"weapon": 1,
-"wood": 1
+"liquid": 1,
+"sharp": 1,
+"weapon": 1
 })
 quest_traits = Dictionary[String, int]({
 "armor": 1,

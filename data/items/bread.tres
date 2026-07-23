@@ -1,4 +1,4 @@
-[gd_resource type="Resource" script_class="ItemData" format=3 uid="uid://niovwlayn5ww"]
+[gd_resource type="Resource" script_class="ItemData" format=3 uid="uid://0svfd6i1o7e8"]
 
 [ext_resource type="Script" uid="uid://du5drbi85ateb" path="res://resources/item_data.gd" id="1_script"]
 [ext_resource type="Texture2D" uid="uid://dc7vmi571d0re" path="res://assets/items/bread.png" id="2_icon"]
@@ -6,10 +6,11 @@
 [resource]
 script = ExtResource("1_script")
 id = "bread"
-display_name = "Loaf of Bread"
+display_name = "Bread"
 shape = Array[Vector2i]([Vector2i(0, 0), Vector2i(1, 0)])
 icon = ExtResource("2_icon")
-food = 4
+food = 3
 traits = Array[String](["food"])
-flavor = "Baked this morning, still warm."
-buy_price = 14
+flavor = "A loaf of bread."
+buy_price = 5
+metadata/_custom_type_script = "uid://du5drbi85ateb"
