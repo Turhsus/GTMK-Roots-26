@@ -300,13 +300,15 @@ func _target_summary(quest: QuestData) -> String:
 
 
 ## The owned inventory folded into {item, count} entries, in first-seen order, so
-## the sell list shows one row per distinct item.
+## the sell list shows one row per distinct item. Owned copies are now distinct
+## instances (each with its own durability), so entries group by `id` rather than
+## by resource identity.
 func _dedup_inventory() -> Array:
 	var result: Array = []
 	for item in RunState.inventory:
 		var found := false
 		for entry in result:
-			if entry["item"] == item:
+			if entry["item"].id == item.id:
 				entry["count"] += 1
 				found = true
 				break

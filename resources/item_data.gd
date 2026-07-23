@@ -27,6 +27,17 @@ extends Resource
 ## One-line tooltip text.
 @export var flavor: String = ""
 
+@export_group("Durability")
+## How many quests a fresh copy of this item survives. Each send-off wears every
+## packed item by one; a copy that reaches 0 is worn out and thrown away. Most
+## items are single-use (1); a few sturdy ones (the blanket) last several trips.
+@export var max_durability: int = 1
+
+## Trips left in *this* copy. Owned copies are duplicated per inventory slot (see
+## make_owned_copy) so each wears independently of every other copy and of the
+## shared preloaded template. Stays -1 on the template — only an owned copy sets it.
+var durability: int = -1
+
 @export_group("Economy")
 ## What this item costs to buy in a shop during the gather phase. The sell price
 ## is derived from it (half, see sell_price) so a bought item never fully refunds.
@@ -39,6 +50,16 @@ extends Resource
 func sell_price() -> int:
 	@warning_ignore("integer_division")
 	return buy_price / 2
+
+
+## A fresh owned copy for the player's inventory: its own duplicated resource with
+## full durability, so its wear ticks down independently of every other copy (and
+## never touches the shared preloaded template or the shop's stock). RunState
+## stocks the starter pack and every purchase through this.
+func make_owned_copy() -> ItemData:
+	var copy := duplicate() as ItemData
+	copy.durability = max_durability
+	return copy
 
 
 ## Stat contributions keyed the same way as GameState.STAT_KEYS.

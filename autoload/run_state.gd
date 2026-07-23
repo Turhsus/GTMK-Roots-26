@@ -11,8 +11,8 @@ extends Node
 ## Emitted after a quest is registered, whether or not it was cleared.
 signal progress_changed(completed: int, difficulty: int)
 ## Emitted whenever the owned inventory changes: stocked at the start of a run,
-## shrunk each time a pack is sent off (see consume), and moved both ways in the
-## gather phase as the player buys and sells (see gain / release).
+## worn down each time a pack is sent off (see apply_wear), and moved both ways in
+## the gather phase as the player buys and sells (see gain / release).
 signal inventory_changed(inventory: Array[ItemData])
 ## Emitted whenever the player's gold changes: the starting purse, a quest reward,
 ## and every buy or sell in town.
@@ -60,7 +60,7 @@ var completed_count: int = 0
 ## whole tier is exhausted, at which point the tier resets (see draw_choices).
 var _cleared_ids: Array[String] = []
 ## The player's owned items for this run — the source the tray builds from.
-## Grows and shrinks via consume() / gain() / release(); stocked from
+## Grows and shrinks via apply_wear() / gain() / release(); stocked from
 ## STARTER_INVENTORY on a fresh run.
 var inventory: Array[ItemData] = []
 ## Coins on hand. Starts at STARTING_GOLD, earned by clearing quests, spent (and
@@ -77,16 +77,21 @@ func current_difficulty() -> int:
 	return mini(completed_count, MAX_DIFFICULTY)
 
 
-## Spends the given items out of the inventory for good — this is send-off, where
-## everything packed goes with the child and doesn't come home. Each entry drops
-## one matching copy, so packing one of two apples leaves the other behind.
-## (Restock hook: a future "regain items between quests" pass is the inverse of
-## this — add to `inventory` and emit inventory_changed.)
-func consume(items: Array[ItemData]) -> void:
+## Wears down every packed item by one trip — this is send-off, where the pack
+## goes out on the quest. Each copy loses a point of durability; one that hits zero
+## is worn out and thrown away for good, while sturdier items (a blanket lasts
+## three) come home with less left and can be packed again. This replaces the old
+## rule of spending the whole pack outright. The packed items are the very
+## inventory copies (the tray builds off `inventory`), so erasing by identity here
+## removes exactly the slot that was packed.
+## (Restock hook unchanged: to regain items, append to `inventory` and emit.)
+func apply_wear(items: Array[ItemData]) -> void:
 	if items.is_empty():
 		return
 	for item in items:
-		inventory.erase(item)
+		item.durability -= 1
+		if item.durability <= 0:
+			inventory.erase(item)
 	inventory_changed.emit(inventory)
 
 
@@ -122,25 +127,31 @@ func spend_gold(amount: int) -> bool:
 	return true
 
 
-## Adds one owned copy of an item — a purchase in town. The inverse of a single
-## release()/consume() drop. The tray doesn't rebuild on inventory_changed (that
-## fires mid-send-off), so a buy shows up when the next quest's packing loads.
+## Adds one owned copy of an item — a purchase in town. A bought item is fresh, so
+## it enters at full durability via make_owned_copy (which also gives it its own
+## instance, independent of the shop's stock and any copy already owned). The tray
+## doesn't rebuild on inventory_changed (that fires mid-send-off), so a buy shows up
+## when the next quest's packing loads.
 func gain(item: ItemData) -> void:
 	if item == null:
 		return
-	inventory.append(item)
+	inventory.append(item.make_owned_copy())
 	inventory_changed.emit(inventory)
 
 
 ## Drops one owned copy of an item and reports whether it had one to drop — a sale
-## in town. Erase removes a single matching entry, so selling one of two potions
-## keeps the other.
+## in town. Owned copies are distinct instances now (each tracks its own wear), so
+## this matches on `id` and drops the first such copy, leaving any others (and their
+## separate durability) in place.
 func release(item: ItemData) -> bool:
-	if item == null or not inventory.has(item):
+	if item == null:
 		return false
-	inventory.erase(item)
-	inventory_changed.emit(inventory)
-	return true
+	for owned in inventory:
+		if owned.id == item.id:
+			inventory.erase(owned)
+			inventory_changed.emit(inventory)
+			return true
+	return false
 
 
 ## Up to CHOICE_COUNT quests from the current tier, cleared ones held back until
@@ -181,10 +192,13 @@ func reset() -> void:
 	progress_changed.emit(completed_count, current_difficulty())
 
 
-## Fills the inventory from the authored starter list. duplicate() so consuming
-## items mutates this run's copy, never the shared const array.
+## Fills the inventory from the authored starter list. Each entry is its own owned
+## copy (make_owned_copy) so wearing one down never touches the shared const
+## resources, the shop stock, or another copy of the same item.
 func _stock_starter_inventory() -> void:
-	inventory = STARTER_INVENTORY.duplicate()
+	inventory.clear()
+	for item in STARTER_INVENTORY:
+		inventory.append(item.make_owned_copy())
 	inventory_changed.emit(inventory)
 
 

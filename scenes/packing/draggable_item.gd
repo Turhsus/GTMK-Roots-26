@@ -208,6 +208,19 @@ static func build_info_panel(source: ItemData) -> Control:
 		none_label.add_theme_color_override("font_color", Color("9a8f80"))
 		box.add_child(none_label)
 
+	# Durability — how many more trips this copy has in it. Single-use items say so;
+	# sturdier ones show trips left out of the total.
+	var dura := Label.new()
+	if source.max_durability > 1:
+		if source.durability >= 0 and source.durability < source.max_durability:
+			dura.text = "Durability: %d of %d trips left" % [source.durability, source.max_durability]
+		else:
+			dura.text = "Durability: lasts %d trips" % source.max_durability
+	else:
+		dura.text = "Single use"
+	dura.add_theme_color_override("font_color", Color("9a8f80"))
+	box.add_child(dura)
+
 	if source.flavor != "":
 		var flavor := Label.new()
 		flavor.text = source.flavor

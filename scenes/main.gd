@@ -61,10 +61,11 @@ func _on_sent_off() -> void:
 	# gather phase that follows.
 	RunState.register_result(quest, cleared)
 	var lines := NarrativeEngine.build_log(quest, GameState.packed_items, GameState.stats)
-	# Whatever went into the bag went off with the child: it's spent and leaves the
-	# inventory for good. (Read the log off packed_items first — consume only
-	# touches RunState.) Remember this quest's length; it's the gather budget owed.
-	RunState.consume(GameState.packed_items)
+	# Everything in the bag takes the trip and wears by one: single-use items are
+	# spent, sturdier ones (the blanket) come home with less durability left. (Read
+	# the log off packed_items first — apply_wear only touches RunState.) Remember
+	# this quest's length; it's the gather budget owed.
+	RunState.apply_wear(GameState.packed_items)
 	_gather_days = quest.days
 	_show(playout_scene)
 	playout_scene.play(lines)

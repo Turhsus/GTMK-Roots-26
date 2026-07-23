@@ -13,8 +13,10 @@ var failures: int = 0
 func _ready() -> void:
 	_test_engine()
 	_test_progression()
-	# Progression tests mutate the shared RunState singleton; hand the flow test a
-	# clean slate (difficulty 0, nothing cleared) so its draws are predictable.
+	_test_durability()
+	# The tests above mutate the shared RunState singleton; hand the flow test a
+	# clean slate (difficulty 0, nothing cleared, a full pack) so its draws and
+	# inventory are predictable.
 	RunState.reset()
 	await _test_flow()
 
@@ -80,6 +82,47 @@ func _test_progression() -> void:
 				RunState._cleared_ids.append(quest.id)
 		var reset_draw := RunState.draw_choices()
 		check(not reset_draw.is_empty(), "an exhausted tier resets rather than going empty")
+	RunState.reset()
+
+
+# --- item durability, at the RunState level ------------------------------------
+
+func _test_durability() -> void:
+	RunState.reset()
+	var apple := _owned("apple")
+	var blanket := _owned("blanket")
+	check(apple != null and blanket != null, "the fresh inventory holds an apple and a blanket")
+	check(apple.max_durability == 1, "a plain item lasts one trip")
+	check(blanket.max_durability == 3, "the blanket lasts three trips")
+	check(apple.durability == apple.max_durability and blanket.durability == blanket.max_durability,
+		"a fresh owned copy starts at full durability")
+
+	# A single-use item is worn out and gone after one send-off.
+	RunState.apply_wear([apple])
+	check(not RunState.inventory.has(apple), "a 1-durability item is worn out in one quest")
+
+	# A sturdy item survives, losing one trip each send-off, until it too runs out.
+	RunState.apply_wear([blanket])
+	check(RunState.inventory.has(blanket) and blanket.durability == 2, "the blanket has 2 trips left after one")
+	RunState.apply_wear([blanket])
+	check(RunState.inventory.has(blanket) and blanket.durability == 1, "and 1 trip left after two")
+	RunState.apply_wear([blanket])
+	check(not RunState.inventory.has(blanket), "the blanket is worn out after three trips")
+
+	# Wear is per-copy: a freshly bought blanket doesn't inherit a worn one's damage,
+	# and the shared template is never mutated.
+	RunState.reset()
+	RunState.apply_wear([_owned("blanket")])  # the starter blanket drops to 2
+	RunState.gain(load("res://data/items/blanket.tres"))  # a bought one enters at 3
+	var durs: Array[int] = []
+	for item in RunState.inventory:
+		if item.id == "blanket":
+			durs.append(item.durability)
+	durs.sort()
+	check(durs.size() == 2 and durs[0] == 2 and durs[1] == 3,
+		"each blanket copy wears independently, got %s" % [durs])
+	check((load("res://data/items/blanket.tres") as ItemData).durability == -1,
+		"the shared item template is never worn")
 	RunState.reset()
 
 
@@ -211,7 +254,7 @@ func _test_flow() -> void:
 	town._on_buy(apple_item)
 	check(RunState.gold == pre_buy_gold - apple_item.buy_price, "buying spends the item's price")
 	check(RunState.inventory.size() == pre_buy_stock + 1, "buying adds a copy to the inventory")
-	check(RunState.inventory.has(apple_item), "the bought item is owned")
+	check(_owned(apple_item.id) != null, "the bought item is owned")
 	town._on_sell(apple_item)
 	check(RunState.gold == pre_buy_gold - apple_item.buy_price + apple_item.sell_price(),
 		"selling returns half the buy price")
@@ -286,6 +329,15 @@ func _log_for(items: Array[ItemData]) -> Array[String]:
 
 func _item(id: String) -> ItemData:
 	return load("res://data/items/%s.tres" % id)
+
+
+## The first owned inventory copy with this id, or null. Owned copies are distinct
+## instances now, so lookups go by id rather than matching a shared resource.
+func _owned(id: String) -> ItemData:
+	for item in RunState.inventory:
+		if item.id == id:
+			return item
+	return null
 
 
 func _stats(food: int, health: int, attack: int, defense: int) -> Dictionary:
