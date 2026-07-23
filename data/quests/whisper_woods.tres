@@ -2,7 +2,7 @@
 
 [ext_resource type="Script" uid="uid://b8mpss75xj6nx" path="res://resources/quest_data.gd" id="1_script"]
 [ext_resource type="Script" uid="uid://du5drbi85ateb" path="res://resources/item_data.gd" id="2_item"]
-[ext_resource type="Resource" path="res://data/items/apple.tres" id="3_apple"]
+[ext_resource type="Resource" uid="uid://dtircw5ldq12v" path="res://data/items/apple.tres" id="3_apple"]
 [ext_resource type="Resource" uid="uid://caug30xe4jtxj" path="res://data/items/blanket.tres" id="4_blanket"]
 [ext_resource type="Resource" uid="uid://bx0b3ugs28k2u" path="res://data/items/boots.tres" id="5_boots"]
 [ext_resource type="Resource" uid="uid://niovwlayn5ww" path="res://data/items/bread.tres" id="6_bread"]
@@ -18,8 +18,8 @@
 [ext_resource type="Resource" path="res://data/items/whistle.tres" id="16_whistle"]
 [ext_resource type="Script" uid="uid://3jm4762kubo8" path="res://resources/narrative_line.gd" id="17_line"]
 [ext_resource type="Script" uid="uid://45ajj2ptcv0d" path="res://resources/narrative_event.gd" id="18_event"]
-[ext_resource type="Resource" path="res://data/items/cookpot.tres" id="19_cookpot"]
-[ext_resource type="Resource" path="res://data/items/slingshot.tres" id="20_slingshot"]
+[ext_resource type="Resource" uid="uid://dtswmlli5jini" path="res://data/items/cookpot.tres" id="19_cookpot"]
+[ext_resource type="Resource" uid="uid://bydrraq3tyull" path="res://data/items/slingshot.tres" id="20_slingshot"]
 
 [sub_resource type="Resource" id="line_path_map"]
 script = ExtResource("17_line")
@@ -167,11 +167,11 @@ variants = Array[ExtResource("17_line")]([SubResource("line_kitten_sound"), SubR
 [resource]
 script = ExtResource("1_script")
 id = "whisper_woods"
-days = 4
-gold_reward = 30
 title = "Rescue the Lost Kitten"
 brief = "Mrs. Ward's kitten wandered into Whisper Woods three nights ago.
 You'll be gone about four days. Pack what they'll need — the bag only holds so much."
+days = 4
+gold_reward = 30
 item_pool = Array[ExtResource("2_item")]([ExtResource("3_apple"), ExtResource("4_blanket"), ExtResource("5_boots"), ExtResource("6_bread"), ExtResource("19_cookpot"), ExtResource("7_lantern"), ExtResource("8_map"), ExtResource("9_potion"), ExtResource("10_rope"), ExtResource("11_shield"), ExtResource("20_slingshot"), ExtResource("12_spellbook"), ExtResource("13_sword"), ExtResource("14_torch"), ExtResource("15_waterskin"), ExtResource("16_whistle")])
 narrative = Array[ExtResource("18_event")]([SubResource("event_day_1_path"), SubResource("event_day_2_hunger"), SubResource("event_day_2_night"), SubResource("event_day_3_encounter"), SubResource("event_day_3_scrape"), SubResource("event_day_4_kitten")])
 target_food = 8

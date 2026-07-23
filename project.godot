@@ -21,10 +21,6 @@ GameState="*res://autoload/game_state.gd"
 RunState="*res://autoload/run_state.gd"
 AudioManager="*res://autoload/audio_manager.gd"
 
-[gui]
-
-timers/tooltip_delay_sec=1.2
-
 [display]
 
 window/size/viewport_width=1280
@@ -32,12 +28,14 @@ window/size/viewport_height=720
 window/stretch/mode="canvas_items"
 window/stretch/aspect="expand"
 
+[gui]
+
+timers/tooltip_delay_sec=1.2
+
 [physics]
 
 3d/physics_engine="Jolt Physics"
 
 [rendering]
 
-renderer/rendering_method="forward_plus"
-renderer/rendering_method.web="gl_compatibility"
 rendering_device/driver.windows="d3d12"

@@ -1,4 +1,4 @@
-[gd_resource type="Resource" script_class="ItemData" load_steps=3 format=3]
+[gd_resource type="Resource" script_class="ItemData" format=3 uid="uid://dtircw5ldq12v"]
 
 [ext_resource type="Script" uid="uid://du5drbi85ateb" path="res://resources/item_data.gd" id="1_script"]
 [ext_resource type="Texture2D" uid="uid://dnevl3y31xywo" path="res://assets/items/apple.png" id="2_icon"]
@@ -7,12 +7,8 @@
 script = ExtResource("1_script")
 id = "apple"
 display_name = "Apple"
-shape = Array[Vector2i]([Vector2i(0, 0)])
 icon = ExtResource("2_icon")
-food = 2
-health = 0
-attack = 0
-defense = 0
+food = 1
 tags = Array[String](["food"])
 flavor = "Crisp, and it fits anywhere."
 buy_price = 8

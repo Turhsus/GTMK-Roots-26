@@ -1,6 +1,7 @@
-[gd_resource type="Resource" script_class="QuestData" format=3]
+[gd_resource type="Resource" script_class="QuestData" format=3 uid="uid://b2s3p3dhw7lmf"]
 
 [ext_resource type="Script" uid="uid://b8mpss75xj6nx" path="res://resources/quest_data.gd" id="1_script"]
+[ext_resource type="Script" uid="uid://du5drbi85ateb" path="res://resources/item_data.gd" id="1_tcgay"]
 [ext_resource type="Script" uid="uid://3jm4762kubo8" path="res://resources/narrative_line.gd" id="2_line"]
 [ext_resource type="Script" uid="uid://45ajj2ptcv0d" path="res://resources/narrative_event.gd" id="3_event"]
 
@@ -35,16 +36,13 @@ variants = Array[ExtResource("2_line")]([SubResource("line_home_cosy"), SubResou
 [resource]
 script = ExtResource("1_script")
 id = "tutorial"
-difficulty = 0
-days = 3
-gold_reward = 20
 title = "The First Errand"
 brief = "A parcel for Gran, just across the meadow and back. Nothing dangerous — but
 it's their first time going alone. Pack them a little something to eat, and
 something to keep them warm if they dawdle."
+gold_reward = 20
 bag_cols = 5
 bag_rows = 4
-item_pool = Array[Resource]([])
 narrative = Array[ExtResource("3_event")]([SubResource("event_setoff"), SubResource("event_home")])
 target_food = 4
 target_health = 2

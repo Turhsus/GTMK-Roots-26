@@ -58,11 +58,10 @@ variants = Array[ExtResource("13_line")]([SubResource("line_bank_healed"), SubRe
 [resource]
 script = ExtResource("1_script")
 id = "cinder_ford"
-days = 3
-gold_reward = 25
 title = "Cross the Cinder Ford"
 brief = "The quickest way to Gran's is straight across the Cinder Ford,
 and the river's up. Pack them something to lean on when the water pushes back."
+gold_reward = 25
 bag_rows = 4
 item_pool = Array[ExtResource("2_item")]([ExtResource("3_shield"), ExtResource("4_sword"), ExtResource("5_slingshot"), ExtResource("6_spellbook"), ExtResource("7_boots"), ExtResource("8_rope"), ExtResource("9_potion"), ExtResource("10_bread"), ExtResource("11_waterskin"), ExtResource("12_torch")])
 narrative = Array[ExtResource("14_event")]([SubResource("event_crossing"), SubResource("event_far_bank")])

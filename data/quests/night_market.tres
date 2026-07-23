@@ -2,7 +2,7 @@
 
 [ext_resource type="Script" uid="uid://b8mpss75xj6nx" path="res://resources/quest_data.gd" id="1_script"]
 [ext_resource type="Script" uid="uid://du5drbi85ateb" path="res://resources/item_data.gd" id="2_item"]
-[ext_resource type="Resource" path="res://data/items/apple.tres" id="3_apple"]
+[ext_resource type="Resource" uid="uid://dtircw5ldq12v" path="res://data/items/apple.tres" id="3_apple"]
 [ext_resource type="Resource" uid="uid://niovwlayn5ww" path="res://data/items/bread.tres" id="4_bread"]
 [ext_resource type="Resource" uid="uid://bn653kmyice7b" path="res://data/items/waterskin.tres" id="5_waterskin"]
 [ext_resource type="Resource" uid="uid://dtswmlli5jini" path="res://data/items/cookpot.tres" id="6_cookpot"]
@@ -53,11 +53,11 @@ variants = Array[ExtResource("13_line")]([SubResource("line_supper_full"), SubRe
 [resource]
 script = ExtResource("1_script")
 id = "night_market"
-days = 2
-gold_reward = 15
 title = "The Night Market"
 brief = "There's a market that only opens after dark at the edge of town.
 It's just one evening out — pack light, but pack something to eat."
+days = 2
+gold_reward = 15
 bag_cols = 5
 bag_rows = 4
 item_pool = Array[ExtResource("2_item")]([ExtResource("4_bread"), ExtResource("3_apple"), ExtResource("5_waterskin"), ExtResource("6_cookpot"), ExtResource("7_blanket"), ExtResource("8_lantern"), ExtResource("9_whistle"), ExtResource("10_potion"), ExtResource("11_boots"), ExtResource("12_map")])
