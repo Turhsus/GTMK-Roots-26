@@ -15,6 +15,7 @@ func _ready() -> void:
 	_test_progression()
 	_test_durability()
 	_test_perks()
+	_test_day_clock()
 	# The tests above mutate the shared RunState singleton; hand the flow test a
 	# clean slate (difficulty 0, nothing cleared, a full pack) so its draws and
 	# inventory are predictable.
@@ -125,6 +126,36 @@ func _test_durability() -> void:
 	check((load("res://data/items/blanket.tres") as ItemData).durability == -1,
 		"the shared item template is never worn")
 	RunState.reset()
+
+
+# --- the global day clock, at the RunState level -------------------------------
+
+func _test_day_clock() -> void:
+	RunState.reset()
+	check(RunState.days_remaining == RunState.TOTAL_DAYS,
+		"a fresh run starts with the full day clock, got %d" % RunState.days_remaining)
+	check(not RunState.days_are_up(), "a fresh run's clock hasn't run out")
+
+	# Each day spent ticks the clock down by one and reports it.
+	var seen: Array[int] = []
+	var sub := func(days: int) -> void: seen.append(days)
+	RunState.days_changed.connect(sub)
+	RunState.spend_day()
+	check(RunState.days_remaining == RunState.TOTAL_DAYS - 1, "spending a day drops the clock by one")
+	check(seen.size() == 1 and seen[0] == RunState.days_remaining, "spending a day reports the new count")
+	RunState.days_changed.disconnect(sub)
+
+	# The clock runs out at zero (and stays "up" if it somehow overshoots).
+	while RunState.days_remaining > 0:
+		RunState.spend_day()
+	check(RunState.days_are_up(), "the clock is up once it reaches zero")
+	RunState.spend_day()
+	check(RunState.days_are_up(), "the clock stays up past zero")
+
+	# A fresh run winds it back to full.
+	RunState.reset()
+	check(RunState.days_remaining == RunState.TOTAL_DAYS and not RunState.days_are_up(),
+		"reset restores the full day clock")
 
 
 # --- adventuring perks, at the RunState level ----------------------------------

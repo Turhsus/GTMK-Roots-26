@@ -20,6 +20,10 @@ signal gold_changed(gold: int)
 ## Emitted whenever the earned perks change — i.e. when a perk is picked after a
 ## failed quest (see add_perk), and cleared on reset.
 signal perks_changed(perks: Array[PerkData])
+## Emitted whenever the run's global day clock ticks down (one per town day spent)
+## or is reset. When it reaches zero the run is winding up: the current gather is
+## allowed to finish, then one final quest plays and the game ends (see main.gd).
+signal days_changed(days_remaining: int)
 
 const POOL: QuestPool = preload("res://data/quest_pool.tres")
 ## The forced first quest. It is not in the pool — the loop hands it to the player
@@ -40,6 +44,9 @@ const MAX_DIFFICULTY := 4
 const CHOICE_COUNT := 3
 ## Gold in the purse at the very start of a run.
 const STARTING_GOLD := 50
+## The whole run's length: a global day clock that counts down across town visits.
+## When it runs out the game is wrapping up — one last quest, then the end screen.
+const TOTAL_DAYS := 10
 
 ## The items the player owns at the start of a run. This is the whole tray now —
 ## quests no longer decide what is available, only the bag size, targets, and
@@ -81,6 +88,11 @@ var gold: int = STARTING_GOLD
 ## perk once owned is never offered again (see offer_perks). Their effects are read
 ## through food_bonus (folded into the food stat) and apply_wear (the wear skip).
 var owned_perks: Array[PerkData] = []
+## The run's global day clock. Starts at TOTAL_DAYS and drops by one for each day
+## spent in town (see spend_day). Once it hits zero the loop plays one final quest
+## and ends (see main.gd); it is not what limits an individual gather phase — that
+## budget is still the finished quest's `days`.
+var days_remaining: int = TOTAL_DAYS
 
 
 func _ready() -> void:
@@ -126,6 +138,20 @@ func register_result(quest: QuestData, success: bool) -> void:
 		completed_count += 1
 		add_gold(quest.gold_reward)
 	progress_changed.emit(completed_count, current_difficulty())
+
+
+## Spends one day off the run's global clock — called once per day passed in town.
+## Kept separate from the per-gather day budget: a gather still runs its full length
+## even if this crosses zero partway through (main.gd waits until the gather ends).
+func spend_day() -> void:
+	days_remaining -= 1
+	days_changed.emit(days_remaining)
+
+
+## Whether the global day clock has run out — the cue to play the final quest and
+## wrap the run up (checked once a gather phase finishes; see main.gd).
+func days_are_up() -> bool:
+	return days_remaining <= 0
 
 
 ## Adds coins to the purse (a quest reward, or a sale). Ignores non-positive
@@ -263,6 +289,8 @@ func reset() -> void:
 	gold_changed.emit(gold)
 	owned_perks.clear()
 	perks_changed.emit(owned_perks)
+	days_remaining = TOTAL_DAYS
+	days_changed.emit(days_remaining)
 	progress_changed.emit(completed_count, current_difficulty())
 
 

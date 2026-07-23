@@ -29,6 +29,7 @@ const SHOPS: Array[ShopData] = [
 
 @onready var day_label: Label = %DayLabel
 @onready var gold_label: Label = %GoldLabel
+@onready var days_left_label: Label = %DaysLeftLabel
 @onready var body: VBoxContainer = %Body
 
 var _total_days: int = 0
@@ -55,9 +56,11 @@ func begin(days: int, upcoming: Array[QuestData]) -> void:
 
 # --- days ---------------------------------------------------------------------
 
-## Ends the current day. When the budget runs out the phase is over and the loop
-## moves on to quest selection; otherwise it's back to the square for the next day.
+## Ends the current day. Every day passed here also ticks the run's global clock
+## down (see RunState.spend_day). When this gather's budget runs out the phase is
+## over and the loop moves on; otherwise it's back to the square for the next day.
 func _end_day() -> void:
+	RunState.spend_day()
 	_current_day += 1
 	if _current_day > _total_days:
 		gather_done.emit()
@@ -69,6 +72,17 @@ func _end_day() -> void:
 func _refresh_header() -> void:
 	day_label.text = "Day %d of %d in town" % [_current_day, _total_days]
 	gold_label.text = "%d gold" % RunState.gold
+	_refresh_days_left()
+
+
+## The run's global day clock, shown top-right. Reads straight off RunState so it
+## stays right whether a day was spent normally or the gather was skipped.
+func _refresh_days_left() -> void:
+	var left := maxi(RunState.days_remaining, 0)
+	if left <= 1:
+		days_left_label.text = "Final days!" if left == 1 else "Time's up"
+	else:
+		days_left_label.text = "%d days left" % left
 
 
 func _on_gold_changed(_gold: int) -> void:
@@ -102,8 +116,11 @@ func _show_square() -> void:
 		body.add_child(skip)
 
 
-## DEBUG: ends the gather phase immediately, whatever day it is.
+## DEBUG: ends the gather phase immediately, whatever day it is. Still bills the
+## global clock for the days it skips, so the endgame is reachable while testing.
 func _skip_gather() -> void:
+	for _day in range(_current_day, _total_days + 1):
+		RunState.spend_day()
 	gather_done.emit()
 
 

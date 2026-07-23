@@ -21,6 +21,11 @@ extends Control
 ##
 ## Clearing a quest means meeting all four stat targets; that is what advances the
 ## difficulty and pays the reward. Cleared or not, the log plays, then town.
+##
+## The whole run is on a clock: RunState.days_remaining counts down one per day
+## spent in town. When it runs out, the gather in progress still finishes, then one
+## final quest is packed and played, and the run ends on the thank-you screen —
+## no perk, no further gather (see _on_gather_done / _on_playout_done).
 
 ## DEBUG: skip the adventure-log playout entirely — send-off jumps straight to
 ## what follows it (perk offer / gather). Flip back to false to restore the log.
@@ -31,6 +36,7 @@ const DEBUG_SKIP_PLAYOUT: bool = true
 @onready var playout_scene: PlayoutScene = %PlayoutScene
 @onready var town_screen: TownScreen = %TownScreen
 @onready var perk_select: PerkSelect = %PerkSelect
+@onready var thank_you_screen: ThankYouScreen = %ThankYouScreen
 
 ## The three quests drawn for the next selection, previewed in town and then
 ## offered on QuestSelect — the same set for both, so the preview isn't a lie.
@@ -43,6 +49,10 @@ var _gather_days: int = 0
 ## playout a failure can offer a perk that addresses what went wrong.
 var _last_cleared: bool = false
 var _last_missed_stats: Array[String] = []
+## Set once the global day clock has run out: the quest now being packed is the
+## run's last. After its playout the loop ends on the thank-you screen rather than
+## offering a perk or another gather (see _on_playout_done).
+var _is_final_quest: bool = false
 
 
 func _ready() -> void:
@@ -95,6 +105,11 @@ func _on_sent_off() -> void:
 ## perk that addresses what fell short before heading to town. A clear — or a failure
 ## with every relevant perk already earned — skips straight to the gather phase.
 func _on_playout_done() -> void:
+	# The final quest ends the run outright — no lesson, no next gather.
+	if _is_final_quest:
+		thank_you_screen.show_end()
+		_show(thank_you_screen)
+		return
 	if not _last_cleared:
 		var offers := RunState.offer_perks(_last_missed_stats)
 		if not offers.is_empty():
@@ -118,8 +133,12 @@ func _begin_gather() -> void:
 	_show(town_screen)
 
 
-## The gather days are spent: choose the next quest from the previewed set.
+## The gather days are spent: choose the next quest from the previewed set. If the
+## run's global day clock has now run out, that pick is the final quest — flag it so
+## its playout ends the game instead of looping back to another gather.
 func _on_gather_done() -> void:
+	if RunState.days_are_up():
+		_is_final_quest = true
 	quest_select.present(_upcoming)
 	_show(quest_select)
 
@@ -136,5 +155,5 @@ func _missed_stats() -> Array[String]:
 
 
 func _show(screen: Control) -> void:
-	for candidate in [quest_select, packing_scene, playout_scene, town_screen, perk_select]:
+	for candidate in [quest_select, packing_scene, playout_scene, town_screen, perk_select, thank_you_screen]:
 		(candidate as Control).visible = candidate == screen

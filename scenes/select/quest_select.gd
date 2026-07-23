@@ -12,13 +12,18 @@ const CARD_WIDTH := 300
 
 @onready var header: Label = %Header
 @onready var card_row: HBoxContainer = %CardRow
+@onready var days_left_label: Label = %DaysLeftLabel
 
 
 ## Lays out a card per quest. Called every time the picker is shown, so it clears
 ## the previous round first.
 func present(quests: Array[QuestData]) -> void:
 	_ensure_debug_picker()
-	header.text = "Quest %d  •  Difficulty %d" % [RunState.completed_count + 1, RunState.current_difficulty()]
+	_refresh_days_left()
+	if RunState.days_are_up():
+		header.text = "One last quest before you go"
+	else:
+		header.text = "Quest %d  •  Difficulty %d" % [RunState.completed_count + 1, RunState.current_difficulty()]
 	for child in card_row.get_children():
 		# Detach as well as free: queue_free() only lands at frame end, and a
 		# re-present within the same frame would otherwise stack old cards.
@@ -29,6 +34,16 @@ func present(quests: Array[QuestData]) -> void:
 		return
 	for quest in quests:
 		card_row.add_child(_build_card(quest))
+
+
+## The run's global day clock, shown top-right — the same reminder the town shows,
+## so it's on screen whichever phase the player is in.
+func _refresh_days_left() -> void:
+	var left := maxi(RunState.days_remaining, 0)
+	if left <= 1:
+		days_left_label.text = "Final quest" if left == 1 else "Time's up"
+	else:
+		days_left_label.text = "%d days left" % left
 
 
 func _build_card(quest: QuestData) -> Control:
