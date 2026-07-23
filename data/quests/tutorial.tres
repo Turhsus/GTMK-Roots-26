@@ -1,0 +1,52 @@
+[gd_resource type="Resource" script_class="QuestData" format=3]
+
+[ext_resource type="Script" uid="uid://b8mpss75xj6nx" path="res://resources/quest_data.gd" id="1_script"]
+[ext_resource type="Script" uid="uid://3jm4762kubo8" path="res://resources/narrative_line.gd" id="2_line"]
+[ext_resource type="Script" uid="uid://45ajj2ptcv0d" path="res://resources/narrative_event.gd" id="3_event"]
+
+[sub_resource type="Resource" id="line_setoff_fed"]
+script = ExtResource("2_line")
+text = "They set off down the lane with the whole morning ahead of them, stopping once to eat something you'd tucked in the top of the bag, swinging their legs off a low wall like they had all the time in the world."
+require_tags = Array[String](["food"])
+
+[sub_resource type="Resource" id="line_setoff_plain"]
+script = ExtResource("2_line")
+text = "They set off down the lane with the whole morning ahead of them, walking a little too fast the way children do on their first errand alone, checking twice that the parcel was still where you'd put it."
+
+[sub_resource type="Resource" id="event_setoff"]
+script = ExtResource("3_event")
+beat_id = "setoff"
+variants = Array[ExtResource("2_line")]([SubResource("line_setoff_fed"), SubResource("line_setoff_plain")])
+
+[sub_resource type="Resource" id="line_home_cosy"]
+script = ExtResource("2_line")
+text = "They were home before the lamps were lit, cheeks pink, full of the small things they'd seen — and glad, when the evening cooled, of the warm thing you'd thought to pack. A good first day. The kind you build on."
+require_tags = Array[String](["comfort"])
+
+[sub_resource type="Resource" id="line_home_tired"]
+script = ExtResource("2_line")
+text = "They were home before the lamps were lit, cheeks pink and a little foot-sore, full of the small things they'd seen. A good first day. The kind you build on."
+
+[sub_resource type="Resource" id="event_home"]
+script = ExtResource("3_event")
+beat_id = "home"
+variants = Array[ExtResource("2_line")]([SubResource("line_home_cosy"), SubResource("line_home_tired")])
+
+[resource]
+script = ExtResource("1_script")
+id = "tutorial"
+difficulty = 0
+days = 3
+gold_reward = 20
+title = "The First Errand"
+brief = "A parcel for Gran, just across the meadow and back. Nothing dangerous — but
+it's their first time going alone. Pack them a little something to eat, and
+something to keep them warm if they dawdle."
+bag_cols = 5
+bag_rows = 4
+item_pool = Array[Resource]([])
+narrative = Array[ExtResource("3_event")]([SubResource("event_setoff"), SubResource("event_home")])
+target_food = 4
+target_health = 2
+target_attack = 0
+target_defense = 0

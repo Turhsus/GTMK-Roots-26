@@ -1,0 +1,16 @@
+[gd_resource type="Resource" script_class="ShopData" format=3]
+
+[ext_resource type="Script" path="res://resources/shop_data.gd" id="1_script"]
+[ext_resource type="Script" uid="uid://du5drbi85ateb" path="res://resources/item_data.gd" id="2_item"]
+[ext_resource type="Resource" uid="uid://c1w8wtikvjvod" path="res://data/items/potion.tres" id="3_potion"]
+[ext_resource type="Resource" uid="uid://caug30xe4jtxj" path="res://data/items/blanket.tres" id="4_blanket"]
+[ext_resource type="Resource" path="res://data/items/whistle.tres" id="5_whistle"]
+[ext_resource type="Resource" path="res://data/items/lantern.tres" id="6_lantern"]
+[ext_resource type="Resource" path="res://data/items/torch.tres" id="7_torch"]
+
+[resource]
+script = ExtResource("1_script")
+id = "apothecary"
+display_name = "The Apothecary"
+blurb = "Remedies, warm blankets, and a little light for the dark stretches of road."
+stock = Array[ExtResource("2_item")]([ExtResource("3_potion"), ExtResource("4_blanket"), ExtResource("5_whistle"), ExtResource("6_lantern"), ExtResource("7_torch")])

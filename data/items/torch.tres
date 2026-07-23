@@ -15,3 +15,4 @@ attack = 1
 defense = 0
 tags = Array[String](["light", "fire"])
 flavor = "Good for dark places and scaring things off."
+buy_price = 8

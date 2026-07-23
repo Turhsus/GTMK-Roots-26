@@ -27,6 +27,19 @@ extends Resource
 ## One-line tooltip text.
 @export var flavor: String = ""
 
+@export_group("Economy")
+## What this item costs to buy in a shop during the gather phase. The sell price
+## is derived from it (half, see sell_price) so a bought item never fully refunds.
+## 0 means the item isn't priced yet.
+@export var buy_price: int = 0
+
+
+## What a shop pays for this item: half the buy price, rounded down. Selling is
+## always a loss against buying, so hoarding to resell never nets gold.
+func sell_price() -> int:
+	@warning_ignore("integer_division")
+	return buy_price / 2
+
 
 ## Stat contributions keyed the same way as GameState.STAT_KEYS.
 func get_stats() -> Dictionary:

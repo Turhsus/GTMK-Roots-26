@@ -1,9 +1,10 @@
-[gd_scene load_steps=5 format=3]
+[gd_scene load_steps=6 format=3]
 
 [ext_resource type="Script" path="res://scenes/main.gd" id="1_main"]
 [ext_resource type="PackedScene" path="res://scenes/select/QuestSelect.tscn" id="2_select"]
 [ext_resource type="PackedScene" path="res://scenes/packing/PackingScene.tscn" id="3_packing"]
 [ext_resource type="PackedScene" path="res://scenes/playout/PlayoutScene.tscn" id="4_playout"]
+[ext_resource type="PackedScene" path="res://scenes/gather/TownScreen.tscn" id="5_town"]
 
 [node name="Main" type="Control"]
 layout_mode = 3
@@ -20,6 +21,11 @@ visible = false
 layout_mode = 1
 
 [node name="PlayoutScene" parent="." instance=ExtResource("4_playout")]
+unique_name_in_owner = true
+visible = false
+layout_mode = 1
+
+[node name="TownScreen" parent="." instance=ExtResource("5_town")]
 unique_name_in_owner = true
 visible = false
 layout_mode = 1

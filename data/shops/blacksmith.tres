@@ -1,0 +1,18 @@
+[gd_resource type="Resource" script_class="ShopData" format=3]
+
+[ext_resource type="Script" path="res://resources/shop_data.gd" id="1_script"]
+[ext_resource type="Script" uid="uid://du5drbi85ateb" path="res://resources/item_data.gd" id="2_item"]
+[ext_resource type="Resource" uid="uid://rwo5oe1ljvau" path="res://data/items/sword.tres" id="3_sword"]
+[ext_resource type="Resource" uid="uid://1kq75rmrj8ss" path="res://data/items/shield.tres" id="4_shield"]
+[ext_resource type="Resource" uid="uid://bx0b3ugs28k2u" path="res://data/items/boots.tres" id="5_boots"]
+[ext_resource type="Resource" path="res://data/items/rope.tres" id="6_rope"]
+[ext_resource type="Resource" uid="uid://bydrraq3tyull" path="res://data/items/slingshot.tres" id="7_slingshot"]
+[ext_resource type="Resource" uid="uid://qfyee478w7ai" path="res://data/items/spellbook.tres" id="8_spellbook"]
+[ext_resource type="Resource" path="res://data/items/map.tres" id="9_map"]
+
+[resource]
+script = ExtResource("1_script")
+id = "blacksmith"
+display_name = "The Blacksmith"
+blurb = "Steel and stout boots and good rope. \"Best you can do is send them prepared.\""
+stock = Array[ExtResource("2_item")]([ExtResource("3_sword"), ExtResource("4_shield"), ExtResource("5_boots"), ExtResource("6_rope"), ExtResource("7_slingshot"), ExtResource("8_spellbook"), ExtResource("9_map")])

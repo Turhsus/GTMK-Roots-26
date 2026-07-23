@@ -3,23 +3,23 @@
 [ext_resource type="Script" uid="uid://b8mpss75xj6nx" path="res://resources/quest_data.gd" id="1_script"]
 [ext_resource type="Script" uid="uid://du5drbi85ateb" path="res://resources/item_data.gd" id="2_item"]
 [ext_resource type="Resource" path="res://data/items/apple.tres" id="3_apple"]
-[ext_resource type="Resource" path="res://data/items/blanket.tres" id="4_blanket"]
-[ext_resource type="Resource" path="res://data/items/boots.tres" id="5_boots"]
-[ext_resource type="Resource" path="res://data/items/bread.tres" id="6_bread"]
+[ext_resource type="Resource" uid="uid://caug30xe4jtxj" path="res://data/items/blanket.tres" id="4_blanket"]
+[ext_resource type="Resource" uid="uid://bx0b3ugs28k2u" path="res://data/items/boots.tres" id="5_boots"]
+[ext_resource type="Resource" uid="uid://niovwlayn5ww" path="res://data/items/bread.tres" id="6_bread"]
 [ext_resource type="Resource" path="res://data/items/lantern.tres" id="7_lantern"]
 [ext_resource type="Resource" path="res://data/items/map.tres" id="8_map"]
-[ext_resource type="Resource" path="res://data/items/potion.tres" id="9_potion"]
+[ext_resource type="Resource" uid="uid://c1w8wtikvjvod" path="res://data/items/potion.tres" id="9_potion"]
 [ext_resource type="Resource" path="res://data/items/rope.tres" id="10_rope"]
-[ext_resource type="Resource" path="res://data/items/shield.tres" id="11_shield"]
-[ext_resource type="Resource" path="res://data/items/spellbook.tres" id="12_spellbook"]
-[ext_resource type="Resource" path="res://data/items/sword.tres" id="13_sword"]
+[ext_resource type="Resource" uid="uid://1kq75rmrj8ss" path="res://data/items/shield.tres" id="11_shield"]
+[ext_resource type="Resource" uid="uid://qfyee478w7ai" path="res://data/items/spellbook.tres" id="12_spellbook"]
+[ext_resource type="Resource" uid="uid://rwo5oe1ljvau" path="res://data/items/sword.tres" id="13_sword"]
 [ext_resource type="Resource" path="res://data/items/torch.tres" id="14_torch"]
-[ext_resource type="Resource" path="res://data/items/waterskin.tres" id="15_waterskin"]
+[ext_resource type="Resource" uid="uid://bn653kmyice7b" path="res://data/items/waterskin.tres" id="15_waterskin"]
 [ext_resource type="Resource" path="res://data/items/whistle.tres" id="16_whistle"]
-[ext_resource type="Resource" path="res://data/items/cookpot.tres" id="19_cookpot"]
-[ext_resource type="Resource" path="res://data/items/slingshot.tres" id="20_slingshot"]
 [ext_resource type="Script" uid="uid://3jm4762kubo8" path="res://resources/narrative_line.gd" id="17_line"]
 [ext_resource type="Script" uid="uid://45ajj2ptcv0d" path="res://resources/narrative_event.gd" id="18_event"]
+[ext_resource type="Resource" path="res://data/items/cookpot.tres" id="19_cookpot"]
+[ext_resource type="Resource" path="res://data/items/slingshot.tres" id="20_slingshot"]
 
 [sub_resource type="Resource" id="line_path_map"]
 script = ExtResource("17_line")
@@ -167,7 +167,8 @@ variants = Array[ExtResource("17_line")]([SubResource("line_kitten_sound"), SubR
 [resource]
 script = ExtResource("1_script")
 id = "whisper_woods"
-difficulty = 0
+days = 4
+gold_reward = 30
 title = "Rescue the Lost Kitten"
 brief = "Mrs. Ward's kitten wandered into Whisper Woods three nights ago.
 You'll be gone about four days. Pack what they'll need — the bag only holds so much."

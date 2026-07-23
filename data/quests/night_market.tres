@@ -3,14 +3,14 @@
 [ext_resource type="Script" uid="uid://b8mpss75xj6nx" path="res://resources/quest_data.gd" id="1_script"]
 [ext_resource type="Script" uid="uid://du5drbi85ateb" path="res://resources/item_data.gd" id="2_item"]
 [ext_resource type="Resource" path="res://data/items/apple.tres" id="3_apple"]
-[ext_resource type="Resource" path="res://data/items/bread.tres" id="4_bread"]
-[ext_resource type="Resource" path="res://data/items/waterskin.tres" id="5_waterskin"]
-[ext_resource type="Resource" path="res://data/items/cookpot.tres" id="6_cookpot"]
-[ext_resource type="Resource" path="res://data/items/blanket.tres" id="7_blanket"]
+[ext_resource type="Resource" uid="uid://niovwlayn5ww" path="res://data/items/bread.tres" id="4_bread"]
+[ext_resource type="Resource" uid="uid://bn653kmyice7b" path="res://data/items/waterskin.tres" id="5_waterskin"]
+[ext_resource type="Resource" uid="uid://dtswmlli5jini" path="res://data/items/cookpot.tres" id="6_cookpot"]
+[ext_resource type="Resource" uid="uid://caug30xe4jtxj" path="res://data/items/blanket.tres" id="7_blanket"]
 [ext_resource type="Resource" path="res://data/items/lantern.tres" id="8_lantern"]
 [ext_resource type="Resource" path="res://data/items/whistle.tres" id="9_whistle"]
-[ext_resource type="Resource" path="res://data/items/potion.tres" id="10_potion"]
-[ext_resource type="Resource" path="res://data/items/boots.tres" id="11_boots"]
+[ext_resource type="Resource" uid="uid://c1w8wtikvjvod" path="res://data/items/potion.tres" id="10_potion"]
+[ext_resource type="Resource" uid="uid://bx0b3ugs28k2u" path="res://data/items/boots.tres" id="11_boots"]
 [ext_resource type="Resource" path="res://data/items/map.tres" id="12_map"]
 [ext_resource type="Script" uid="uid://3jm4762kubo8" path="res://resources/narrative_line.gd" id="13_line"]
 [ext_resource type="Script" uid="uid://45ajj2ptcv0d" path="res://resources/narrative_event.gd" id="14_event"]
@@ -53,7 +53,8 @@ variants = Array[ExtResource("13_line")]([SubResource("line_supper_full"), SubRe
 [resource]
 script = ExtResource("1_script")
 id = "night_market"
-difficulty = 0
+days = 2
+gold_reward = 15
 title = "The Night Market"
 brief = "There's a market that only opens after dark at the edge of town.
 It's just one evening out — pack light, but pack something to eat."

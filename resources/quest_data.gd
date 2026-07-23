@@ -14,6 +14,15 @@ extends Resource
 ## many quests the player has cleared, and draws only ever pull from one tier.
 @export_range(0, 4) var difficulty: int = 0
 
+## How many days this quest takes the child. This is also the gather budget it
+## grants: after this quest plays out, the town phase lasts exactly this many days
+## (one shop visit each). So a longer quest earns more prep time for the next one.
+@export var days: int = 3
+## Gold handed over when this quest is cleared (all four targets met). A failed
+## quest still plays its log but pays nothing. Spent in the gather phase that
+## follows.
+@export var gold_reward: int = 0
+
 @export_group("Bag")
 @export var bag_cols: int = 6
 @export var bag_rows: int = 5

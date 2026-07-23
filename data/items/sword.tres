@@ -1,4 +1,4 @@
-[gd_resource type="Resource" script_class="ItemData" load_steps=3 format=3]
+[gd_resource type="Resource" script_class="ItemData" format=3 uid="uid://rwo5oe1ljvau"]
 
 [ext_resource type="Script" uid="uid://du5drbi85ateb" path="res://resources/item_data.gd" id="1_script"]
 [ext_resource type="Texture2D" uid="uid://thgl34evreq" path="res://assets/items/sword.png" id="2_icon"]
@@ -9,9 +9,7 @@ id = "sword"
 display_name = "Short Sword"
 shape = Array[Vector2i]([Vector2i(0, 0), Vector2i(0, 1), Vector2i(0, 2)])
 icon = ExtResource("2_icon")
-food = 0
-health = 0
 attack = 5
-defense = 0
 tags = Array[String](["weapon", "metal"])
 flavor = "Blunted edge. Still looks brave."
+buy_price = 30

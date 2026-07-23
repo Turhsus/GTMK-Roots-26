@@ -1,0 +1,15 @@
+[gd_resource type="Resource" script_class="ShopData" format=3]
+
+[ext_resource type="Script" path="res://resources/shop_data.gd" id="1_script"]
+[ext_resource type="Script" uid="uid://du5drbi85ateb" path="res://resources/item_data.gd" id="2_item"]
+[ext_resource type="Resource" path="res://data/items/apple.tres" id="3_apple"]
+[ext_resource type="Resource" uid="uid://niovwlayn5ww" path="res://data/items/bread.tres" id="4_bread"]
+[ext_resource type="Resource" uid="uid://bn653kmyice7b" path="res://data/items/waterskin.tres" id="5_waterskin"]
+[ext_resource type="Resource" uid="uid://dtswmlli5jini" path="res://data/items/cookpot.tres" id="6_cookpot"]
+
+[resource]
+script = ExtResource("1_script")
+id = "grocer"
+display_name = "The Grocer"
+blurb = "Bushels and bread and barrels of good water. \"Send them off with a full belly, love.\""
+stock = Array[ExtResource("2_item")]([ExtResource("3_apple"), ExtResource("4_bread"), ExtResource("5_waterskin"), ExtResource("6_cookpot")])

@@ -11,14 +11,24 @@ extends Node
 ## Emitted after a quest is registered, whether or not it was cleared.
 signal progress_changed(completed: int, difficulty: int)
 ## Emitted whenever the owned inventory changes: stocked at the start of a run,
-## and shrunk each time a pack is sent off (see consume).
+## shrunk each time a pack is sent off (see consume), and moved both ways in the
+## gather phase as the player buys and sells (see gain / release).
 signal inventory_changed(inventory: Array[ItemData])
+## Emitted whenever the player's gold changes: the starting purse, a quest reward,
+## and every buy or sell in town.
+signal gold_changed(gold: int)
 
 const POOL: QuestPool = preload("res://data/quest_pool.tres")
+## The forced first quest. It is not in the pool — the loop hands it to the player
+## directly before the normal draw-of-three ever runs (see main.gd). A gentle,
+## short intro; clearing it kicks off the first gather phase.
+const TUTORIAL: QuestData = preload("res://data/quests/tutorial.tres")
 ## Difficulty is capped here; past this every quest is drawn from the top tier.
 const MAX_DIFFICULTY := 4
 ## How many quests to lay out for the player to choose between.
 const CHOICE_COUNT := 3
+## Gold in the purse at the very start of a run.
+const STARTING_GOLD := 50
 
 ## The items the player owns at the start of a run. This is the whole tray now —
 ## quests no longer decide what is available, only the bag size, targets, and
@@ -50,8 +60,12 @@ var completed_count: int = 0
 ## whole tier is exhausted, at which point the tier resets (see draw_choices).
 var _cleared_ids: Array[String] = []
 ## The player's owned items for this run — the source the tray builds from.
-## Shrinks only, via consume(); stocked from STARTER_INVENTORY on a fresh run.
+## Grows and shrinks via consume() / gain() / release(); stocked from
+## STARTER_INVENTORY on a fresh run.
 var inventory: Array[ItemData] = []
+## Coins on hand. Starts at STARTING_GOLD, earned by clearing quests, spent (and
+## partly recouped by selling) in the gather phase.
+var gold: int = STARTING_GOLD
 
 
 func _ready() -> void:
@@ -76,14 +90,57 @@ func consume(items: Array[ItemData]) -> void:
 	inventory_changed.emit(inventory)
 
 
-## Records the outcome of a sent-off quest. Only a clear advances difficulty;
-## a failed quest can be drawn again straight away.
+## Records the outcome of a sent-off quest. Only a clear advances difficulty and
+## pays the reward; a failed quest can be drawn again straight away and pays
+## nothing. The reward lands here so the gold is on hand for the gather phase that
+## follows the playout.
 func register_result(quest: QuestData, success: bool) -> void:
 	if success and quest != null:
 		if not _cleared_ids.has(quest.id):
 			_cleared_ids.append(quest.id)
 		completed_count += 1
+		add_gold(quest.gold_reward)
 	progress_changed.emit(completed_count, current_difficulty())
+
+
+## Adds coins to the purse (a quest reward, or a sale). Ignores non-positive
+## amounts so a zero-reward quest doesn't churn the signal.
+func add_gold(amount: int) -> void:
+	if amount <= 0:
+		return
+	gold += amount
+	gold_changed.emit(gold)
+
+
+## Tries to spend `amount`. Returns false and leaves the purse untouched if it
+## can't be afforded, so callers can gate a purchase on the return value.
+func spend_gold(amount: int) -> bool:
+	if amount < 0 or amount > gold:
+		return false
+	gold -= amount
+	gold_changed.emit(gold)
+	return true
+
+
+## Adds one owned copy of an item — a purchase in town. The inverse of a single
+## release()/consume() drop. The tray doesn't rebuild on inventory_changed (that
+## fires mid-send-off), so a buy shows up when the next quest's packing loads.
+func gain(item: ItemData) -> void:
+	if item == null:
+		return
+	inventory.append(item)
+	inventory_changed.emit(inventory)
+
+
+## Drops one owned copy of an item and reports whether it had one to drop — a sale
+## in town. Erase removes a single matching entry, so selling one of two potions
+## keeps the other.
+func release(item: ItemData) -> bool:
+	if item == null or not inventory.has(item):
+		return false
+	inventory.erase(item)
+	inventory_changed.emit(inventory)
+	return true
 
 
 ## Up to CHOICE_COUNT quests from the current tier, cleared ones held back until
@@ -119,6 +176,8 @@ func reset() -> void:
 	completed_count = 0
 	_cleared_ids.clear()
 	_stock_starter_inventory()
+	gold = STARTING_GOLD
+	gold_changed.emit(gold)
 	progress_changed.emit(completed_count, current_difficulty())
 
 
