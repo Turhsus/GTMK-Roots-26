@@ -9,6 +9,6 @@ id = "apple"
 display_name = "Apple"
 icon = ExtResource("2_icon")
 food = 1
-tags = Array[String](["food"])
+traits = Array[String](["food"])
 flavor = "Crisp, and it fits anywhere."
 buy_price = 8

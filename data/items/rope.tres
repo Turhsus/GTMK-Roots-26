@@ -12,6 +12,6 @@ icon = ExtResource("2_icon")
 food = 0
 health = 0
 combat = 1
-tags = Array[String](["tool", "climbing"])
+traits = Array[String](["tool", "climbing"])
 flavor = "Ten paces of it, knotted every arm's length."
 buy_price = 8

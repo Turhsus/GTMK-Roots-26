@@ -10,6 +10,6 @@ display_name = "Short Sword"
 shape = Array[Vector2i]([Vector2i(0, 0), Vector2i(0, 1), Vector2i(0, 2)])
 icon = ExtResource("2_icon")
 combat = 5
-tags = Array[String](["weapon", "metal"])
+traits = Array[String](["weapon", "metal"])
 flavor = "Blunted edge. Still looks brave."
 buy_price = 30

@@ -22,8 +22,11 @@ extends Resource
 @export var utility: int = 0
 
 @export_group("Narrative")
-## Hooks for narrative conditions, e.g. ["light", "food", "fragile"].
-@export var tags: Array[String] = []
+## This item's traits, e.g. ["light", "food", "fragile"]. Doubles as the narrative
+## hooks the playout reads and, going forward, the vocabulary quest requirements
+## match against. Author them from the canonical list in TraitRegistry.item_traits
+## (see the Traits autoload) so spellings stay consistent across items.
+@export var traits: Array[String] = []
 ## One-line tooltip text.
 @export var flavor: String = ""
 

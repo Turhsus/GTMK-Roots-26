@@ -54,7 +54,7 @@ func get_targets() -> Dictionary:
 func get_packed_tags() -> Array[String]:
 	var tags: Array[String] = []
 	for item in packed_items:
-		for tag in item.tags:
+		for tag in item.traits:
 			if not tags.has(tag):
 				tags.append(tag)
 	return tags

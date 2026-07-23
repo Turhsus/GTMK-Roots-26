@@ -45,7 +45,7 @@ static func collect_tags(packed_items: Array[ItemData]) -> Array[String]:
 	for item in packed_items:
 		if item == null:
 			continue
-		for tag in item.tags:
+		for tag in item.traits:
 			if not tags.has(tag):
 				tags.append(tag)
 	return tags

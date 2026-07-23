@@ -28,6 +28,11 @@ extends Resource
 @export var bag_rows: int = 5
 
 @export_group("Content")
+## This quest's traits, e.g. ["cold", "combat", "long"]. The vocabulary future
+## quest-requirement logic reads (e.g. "needs items carrying trait X"). Author them
+## from the canonical list in TraitRegistry.quest_traits (see the Traits autoload)
+## so spellings stay consistent across quests.
+@export var traits: Array[String] = []
 ## Items the tray offers for this quest.
 @export var item_pool: Array[ItemData] = []
 ## Items this quest secretly needs packed. Never shown in the UI as a checklist —

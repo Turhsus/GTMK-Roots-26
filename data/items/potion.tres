@@ -9,6 +9,6 @@ id = "potion"
 display_name = "Healing Potion"
 icon = ExtResource("2_icon")
 health = 3
-tags = Array[String](["magic", "healing", "fragile"])
+traits = Array[String](["magic", "healing", "fragile"])
 flavor = "For scrapes. Don't drop it."
 buy_price = 15

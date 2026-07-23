@@ -11,6 +11,6 @@ shape = Array[Vector2i]([Vector2i(0, 0), Vector2i(0, 1)])
 icon = ExtResource("2_icon")
 food = 3
 health = 1
-tags = Array[String](["food", "water"])
+traits = Array[String](["food", "water"])
 flavor = "Filled to the neck from the well."
 buy_price = 16
