@@ -56,6 +56,7 @@ const TOTAL_DAYS := 10
 const STARTER_INVENTORY: Array[ItemData] = [
 	preload("res://data/items/apple.tres"),
 	preload("res://data/items/sword.tres"),
+	preload("res://data/items/cheese_wedge.tres"),
 ]
 
 ## Quests cleared so far. Difficulty is derived from this: one clear per tier.

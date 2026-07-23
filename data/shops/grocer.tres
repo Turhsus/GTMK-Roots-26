@@ -2,59 +2,9 @@
 
 [ext_resource type="Script" uid="uid://cs53qfm8focrq" path="res://resources/shop_data.gd" id="1_script"]
 [ext_resource type="Script" uid="uid://du5drbi85ateb" path="res://resources/item_data.gd" id="2_item"]
-[ext_resource type="Texture2D" uid="uid://dnevl3y31xywo" path="res://assets/items/apple.png" id="3_05pgc"]
-[ext_resource type="Texture2D" uid="uid://dc7vmi571d0re" path="res://assets/items/bread.png" id="4_5tj5y"]
-[ext_resource type="Texture2D" uid="uid://v8ce2va32fin" path="res://assets/items/waterskin.png" id="5_2xjab"]
-[ext_resource type="Texture2D" uid="uid://v8se2suqple" path="res://assets/items/cookpot.png" id="6_fb0gg"]
-
-[sub_resource type="Resource" id="Resource_lq8bq"]
-script = ExtResource("2_item")
-id = "apple"
-display_name = "Apple"
-icon = ExtResource("3_05pgc")
-food = 1
-traits = Array[String](["food", "light"])
-flavor = "Crisp, and it fits anywhere."
-buy_price = 8
-
-[sub_resource type="Resource" id="Resource_cftjg"]
-script = ExtResource("2_item")
-id = "bread"
-display_name = "Loaf of Bread"
-shape = Array[Vector2i]([Vector2i(0, 0), Vector2i(1, 0)])
-icon = ExtResource("4_5tj5y")
-food = 4
-traits = Array[String](["food"])
-flavor = "Baked this morning, still warm."
-buy_price = 14
-
-[sub_resource type="Resource" id="Resource_cfj3h"]
-script = ExtResource("2_item")
-id = "waterskin"
-display_name = "Waterskin"
-shape = Array[Vector2i]([Vector2i(0, 0), Vector2i(0, 1)])
-icon = ExtResource("5_2xjab")
-food = 3
-health = 1
-traits = Array[String](["food", "water"])
-flavor = "Filled to the neck from the well."
-buy_price = 16
-
-[sub_resource type="Resource" id="Resource_hn6l7"]
-script = ExtResource("2_item")
-id = "cookpot"
-display_name = "Copper Cookpot"
-shape = Array[Vector2i]([Vector2i(0, 0), Vector2i(1, 0), Vector2i(0, 1), Vector2i(1, 1)])
-icon = ExtResource("6_fb0gg")
-food = 3
-health = 1
-traits = Array[String](["cooking", "metal"])
-flavor = "A hot supper fixes most of what the woods can do."
-buy_price = 20
 
 [resource]
 script = ExtResource("1_script")
 id = "grocer"
 display_name = "The Grocer"
 blurb = "Bushels and bread and barrels of good water. \"Send them off with a full belly, love.\""
-stock = Array[ExtResource("2_item")]([SubResource("Resource_lq8bq"), SubResource("Resource_cftjg"), SubResource("Resource_cfj3h"), SubResource("Resource_hn6l7")])
