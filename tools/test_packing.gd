@@ -47,13 +47,13 @@ func _ready() -> void:
 
 	# --- stats ---
 	var stats_panel = scene.get_node("%StatsPanel")
-	check(GameState.stats["attack"] == sword.item.attack,
-		"packing the sword sets attack to its contribution (%d)" % sword.item.attack)
-	var attack_row: Dictionary = stats_panel._rows["attack"]
-	check((attack_row["value"] as Label).text ==
-			"%d / %d" % [sword.item.attack, GameState.get_targets()["attack"]],
-		"the attack row reads current / target, got '%s'" % (attack_row["value"] as Label).text)
-	check((attack_row["bar"] as ProgressBar).max_value == GameState.get_targets()["attack"],
+	check(GameState.stats["combat"] == sword.item.combat,
+		"packing the sword sets combat to its contribution (%d)" % sword.item.combat)
+	var combat_row: Dictionary = stats_panel._rows["combat"]
+	check((combat_row["value"] as Label).text ==
+			"%d / %d" % [sword.item.combat, GameState.get_targets()["combat"]],
+		"the combat row reads current / target, got '%s'" % (combat_row["value"] as Label).text)
+	check((combat_row["bar"] as ProgressBar).max_value == GameState.get_targets()["combat"],
 		"a bar's full mark is the quest target")
 
 	# --- snapping math ---
@@ -94,7 +94,7 @@ func _ready() -> void:
 	scene._end_drag(true)
 	check(sword.get_parent() == tray.item_container, "an invalid drop returns to the tray")
 	check(sword.rotation_steps == 0, "returning to the tray resets rotation")
-	check(GameState.stats["attack"] == 0, "un-packing takes the stat back off")
+	check(GameState.stats["combat"] == 0, "un-packing takes the stat back off")
 
 	# --- pack again ---
 	GameState.reset_packing()

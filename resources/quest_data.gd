@@ -42,16 +42,16 @@ extends Resource
 ## pass/fail gate.
 @export var target_food: int = 10
 @export var target_health: int = 10
-@export var target_attack: int = 10
-@export var target_defense: int = 10
+@export var target_combat: int = 10
+@export var target_utility: int = 10
 
 
 func get_targets() -> Dictionary:
 	return {
 		"food": target_food,
 		"health": target_health,
-		"attack": target_attack,
-		"defense": target_defense,
+		"combat": target_combat,
+		"utility": target_utility,
 	}
 
 

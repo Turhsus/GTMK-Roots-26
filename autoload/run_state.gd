@@ -103,11 +103,11 @@ func current_difficulty() -> int:
 func apply_wear(items: Array[ItemData]) -> void:
 	if items.is_empty():
 		return
-	var skip_chance := defense_wear_skip_chance()
+	var skip_chance := combat_wear_skip_chance()
 	for item in items:
-		# Crafty perk: a defense item sometimes comes home untouched — it isn't spent
-		# this trip, so it skips the wear entirely. Rolled per defense item packed.
-		if skip_chance > 0.0 and item.defense > 0 and randf() < skip_chance:
+		# Crafty perk: a combat item sometimes comes home untouched — it isn't spent
+		# this trip, so it skips the wear entirely. Rolled per combat item packed.
+		if skip_chance > 0.0 and item.combat > 0 and randf() < skip_chance:
 			continue
 		item.durability -= 1
 		if item.durability <= 0:
@@ -200,20 +200,20 @@ func food_bonus() -> int:
 	return bonus
 
 
-## The chance a single defense item escapes wear on send-off, combined across owned
+## The chance a single combat item escapes wear on send-off, combined across owned
 ## perks. Perks are unique, so today this is just the crafty perk's 0.1 when owned;
 ## combining as independent rolls (1 − product of misses) keeps it sane if more
 ## wear-skip perks are ever added — it approaches 1 rather than overflowing it.
-func defense_wear_skip_chance() -> float:
+func combat_wear_skip_chance() -> float:
 	var keep_worn := 1.0
 	for perk in owned_perks:
-		keep_worn *= 1.0 - perk.defense_wear_skip_chance
+		keep_worn *= 1.0 - perk.combat_wear_skip_chance
 	return 1.0 - keep_worn
 
 
 ## The perks to offer after a failed quest: those not yet owned whose trigger_stat is
 ## among the missed targets. Contextual — a food shortfall surfaces the forage perk,
-## a defense shortfall the crafty one; a perk with no trigger_stat is always eligible.
+## a combat shortfall the crafty one; a perk with no trigger_stat is always eligible.
 ## Empty means nothing new to offer (a clear, or every relevant perk already earned),
 ## in which case the loop skips the lesson screen (see main.gd).
 func offer_perks(missed_stats: Array[String]) -> Array[PerkData]:

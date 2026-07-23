@@ -46,5 +46,5 @@ bag_rows = 4
 narrative = Array[ExtResource("3_event")]([SubResource("event_setoff"), SubResource("event_home")])
 target_food = 4
 target_health = 2
-target_attack = 0
-target_defense = 0
+target_combat = 0
+target_utility = 0

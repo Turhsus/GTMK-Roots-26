@@ -18,8 +18,8 @@ extends Resource
 @export_group("Stats")
 @export var food: int = 0
 @export var health: int = 0
-@export var attack: int = 0
-@export var defense: int = 0
+@export var combat: int = 0
+@export var utility: int = 0
 
 @export_group("Narrative")
 ## Hooks for narrative conditions, e.g. ["light", "food", "fragile"].
@@ -67,8 +67,8 @@ func get_stats() -> Dictionary:
 	return {
 		"food": food,
 		"health": health,
-		"attack": attack,
-		"defense": defense,
+		"combat": combat,
+		"utility": utility,
 	}
 
 

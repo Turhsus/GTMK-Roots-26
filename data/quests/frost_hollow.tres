@@ -40,5 +40,5 @@ required_items = Array[ExtResource("2_item")]([ExtResource("3_blanket")])
 narrative = Array[ExtResource("9_event")]([SubResource("event_night")])
 target_food = 4
 target_health = 4
-target_attack = 0
-target_defense = 0
+target_combat = 0
+target_utility = 0

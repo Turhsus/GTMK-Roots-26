@@ -6,6 +6,6 @@
 script = ExtResource("1_script")
 id = "crafty"
 title = "Crafty"
-description = "Your little one has learned to be crafty. There is a 10% chance a defence item is not used on quests."
-trigger_stat = "defense"
-defense_wear_skip_chance = 0.1
+description = "Your little one has learned to be crafty. There is a 10% chance a combat item is not used on quests."
+trigger_stat = "combat"
+combat_wear_skip_chance = 0.1

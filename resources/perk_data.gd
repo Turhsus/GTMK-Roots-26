@@ -17,7 +17,7 @@ extends Resource
 
 ## The stat target whose shortfall makes this perk relevant. When a quest is failed,
 ## only perks whose trigger_stat is among the missed targets are offered — so a food
-## shortfall surfaces the forage perk, a defense shortfall the crafty one. One of
+## shortfall surfaces the forage perk, a combat shortfall the crafty one. One of
 ## GameState.STAT_KEYS, or "" to always be eligible regardless of what fell short.
 @export var trigger_stat: String = ""
 
@@ -26,6 +26,6 @@ extends Resource
 ## Summed across owned perks in RunState.food_bonus and folded into the food stat, so
 ## it shows on the bars from an empty bag on and the player packs around it.
 @export var food_bonus: int = 0
-## Per-item chance in [0, 1] that a defense item escapes wear on send-off (Crafty
-## sets this to 0.1). Read per defense item in RunState.apply_wear.
-@export var defense_wear_skip_chance: float = 0.0
+## Per-item chance in [0, 1] that a combat item escapes wear on send-off (Crafty
+## sets this to 0.1). Read per combat item in RunState.apply_wear.
+@export var combat_wear_skip_chance: float = 0.0

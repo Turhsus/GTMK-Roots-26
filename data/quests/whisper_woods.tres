@@ -94,7 +94,7 @@ variants = Array[ExtResource("17_line")]([SubResource("line_night_warm"), SubRes
 script = ExtResource("17_line")
 text = "Day three. Something long-legged and hungry came out of the ferns. They drew the blade and held it the way you showed them, and it decided it had somewhere else to be."
 require_stat = {
-"attack": 6
+"combat": 6
 }
 require_tags = Array[String](["weapon"])
 
@@ -112,7 +112,7 @@ require_tags = Array[String](["weapon", "wood"])
 script = ExtResource("17_line")
 text = "Day three. Something long-legged and hungry came out of the ferns. They got behind what they were carrying and made themselves loud, and it lost interest before they lost nerve."
 require_stat = {
-"defense": 6
+"combat": 6
 }
 
 [sub_resource type="Resource" id="line_encounter_run"]
@@ -176,5 +176,5 @@ item_pool = Array[ExtResource("2_item")]([ExtResource("3_apple"), ExtResource("4
 narrative = Array[ExtResource("18_event")]([SubResource("event_day_1_path"), SubResource("event_day_2_hunger"), SubResource("event_day_2_night"), SubResource("event_day_3_encounter"), SubResource("event_day_3_scrape"), SubResource("event_day_4_kitten")])
 target_food = 8
 target_health = 6
-target_attack = 6
-target_defense = 6
+target_combat = 12
+target_utility = 0

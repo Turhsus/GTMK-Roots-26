@@ -135,18 +135,18 @@ func _test_perks() -> void:
 	var crafty: PerkData = load("res://data/perks/crafty.tres")
 	check(RunState.owned_perks.is_empty(), "a fresh run owns no perks")
 	check(RunState.food_bonus() == 0, "no perks means no food bonus")
-	check(RunState.defense_wear_skip_chance() == 0.0, "no perks means no wear skip")
+	check(RunState.combat_wear_skip_chance() == 0.0, "no perks means no wear skip")
 
 	# Offering is contextual: a missed target surfaces the perk that addresses it.
 	var on_food := RunState.offer_perks(["food"])
 	check(_has_id(on_food, "forage") and not _has_id(on_food, "crafty"),
 		"a food shortfall offers the forage perk, not the crafty one")
-	var on_defense := RunState.offer_perks(["defense"])
-	check(_has_id(on_defense, "crafty") and not _has_id(on_defense, "forage"),
-		"a defense shortfall offers the crafty perk, not the forage one")
+	var on_combat := RunState.offer_perks(["combat"])
+	check(_has_id(on_combat, "crafty") and not _has_id(on_combat, "forage"),
+		"a combat shortfall offers the crafty perk, not the forage one")
 	check(RunState.offer_perks(["health"]).is_empty(),
 		"a shortfall with no matching perk offers nothing")
-	check(RunState.offer_perks(["food", "defense"]).size() == 2,
+	check(RunState.offer_perks(["food", "combat"]).size() == 2,
 		"failing both surfaces both perks")
 
 	# Earning the forage perk: its food folds into the current packing, and it's no
@@ -161,10 +161,10 @@ func _test_perks() -> void:
 	RunState.add_perk(forage)
 	check(RunState.owned_perks.size() == 1, "a perk can't be earned twice")
 
-	# Earning crafty gives the defense wear skip its chance.
+	# Earning crafty gives the combat wear skip its chance.
 	RunState.add_perk(crafty)
-	check(abs(RunState.defense_wear_skip_chance() - 0.1) < 0.0001,
-		"the crafty perk gives a 10%% chance to skip defense wear")
+	check(abs(RunState.combat_wear_skip_chance() - 0.1) < 0.0001,
+		"the crafty perk gives a 10%% chance to skip combat wear")
 
 	# A fresh run drops every earned perk.
 	RunState.reset()
@@ -207,11 +207,11 @@ func _test_engine() -> void:
 		"food 8 / 4 / 0 give three different day-two beats")
 
 	# The homecoming line is keyed to targets met, and only to that.
-	check(NarrativeEngine.count_targets_met(_stats(8, 6, 6, 6), QUEST.get_targets()) == 4,
+	check(NarrativeEngine.count_targets_met(_stats(8, 6, 12, 0), QUEST.get_targets()) == 4,
 		"hitting every target counts as 4")
-	check(NarrativeEngine.count_targets_met(_stats(8, 0, 6, 0), QUEST.get_targets()) == 2,
+	check(NarrativeEngine.count_targets_met(_stats(8, 0, 0, 0), QUEST.get_targets()) == 2,
 		"hitting two targets counts as 2")
-	var best := NarrativeEngine.build_log(QUEST, empty, _stats(8, 6, 6, 6))
+	var best := NarrativeEngine.build_log(QUEST, empty, _stats(8, 6, 12, 0))
 	check(best[-1] != starving[-1], "a full pack and an empty one end differently")
 
 	check(NarrativeEngine.collect_tags([_item("sword"), _item("shield")]).has("metal"),
@@ -388,8 +388,8 @@ func _owned(id: String) -> ItemData:
 	return null
 
 
-func _stats(food: int, health: int, attack: int, defense: int) -> Dictionary:
-	return {"food": food, "health": health, "attack": attack, "defense": defense}
+func _stats(food: int, health: int, combat: int, utility: int) -> Dictionary:
+	return {"food": food, "health": health, "combat": combat, "utility": utility}
 
 
 func _has_id(quests: Array, id: String) -> bool:

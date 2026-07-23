@@ -33,7 +33,7 @@ The MVP is complete when a player can, in one uninterrupted loop:
 2. See a **tray of shaped items** and a **bag grid** with limited space.
 3. **Drag** items from tray into the bag, **rotate** them (R / right-click), with valid/invalid
    placement clearly shown (green/red), and **remove** items back to the tray.
-4. Watch **live stat bars** (Food, Health, Attack, Defense) update as items go in/out.
+4. Watch **live stat bars** (Food, Health, Combat, Utility) update as items go in/out.
 5. Press **"Send off"** and read a **narrated adventure log** whose beats change based on
    packed stats and specific items.
 6. Press **"Pack again"** to reset and replay.
@@ -64,7 +64,7 @@ Each item is a data asset so designers/artists can add items without touching co
 | `display_name` | String | "Loaf of Bread" |
 | `shape` | Array[Vector2i] | Occupied cell offsets from top-left, e.g. `[(0,0),(1,0)]` for a 2×1 |
 | `icon` | Texture2D | Art sprite (sized to shape bounding box — see Section 8) |
-| `food` / `health` / `attack` / `defense` | int | Stat contribution (can be negative for tradeoffs) |
+| `food` / `health` / `combat` / `utility` | int | Stat contribution (can be negative for tradeoffs) |
 | `tags` | Array[String] | Narrative hooks, e.g. `["light","food","fragile"]` |
 | `flavor` | String | One-line tooltip text |
 
@@ -75,7 +75,7 @@ Each item is a data asset so designers/artists can add items without touching co
 | `brief` | String | Shown before packing |
 | `bag_cols` / `bag_rows` | int | Grid size (start 6×5) |
 | `item_pool` | Array[ItemData] | Items available in the tray |
-| `target_food/health/attack/defense` | int | Soft thresholds used to color bars + weight the narrative |
+| `target_food/health/combat/utility` | int | Soft thresholds used to color bars + weight the narrative |
 | `narrative` | Array[NarrativeEvent] | Ordered story beats (see 5.4) |
 
 ### 5.3 Stats
@@ -176,7 +176,7 @@ Give the artist these constraints up front so code + art fit without rework.
   potion (1×1), map (2×1), blanket (2×2), lantern (1×1), apple (1×1), spellbook (2×2),
   boots (2×1), whistle (1×1). *(Final shapes/stats set during H56–72 tuning.)*
 - **Bag:** open-backpack background that the grid sits inside (grid area ≈ 576×480 px + framing).
-- **UI:** 4 stat-bar frames + fills (Food/Health/Attack/Defense) with icons; buttons
+- **UI:** 4 stat-bar frames + fills (Food/Health/Combat/Utility) with icons; buttons
   ("Start packing", "Send off", "Pack again"); brief/playout panel background; one display font.
 - **Backdrop:** a cozy table/room scene behind the bag (single static image is fine).
 
@@ -264,7 +264,7 @@ you playtest, then move to the next.
    > remove-back-to-tray. Use custom grid math, not Godot's drag API."
 
 4. **Stats**
-   > "Add the stats system: compute Food/Health/Attack/Defense from packed items in GameState,
+   > "Add the stats system: compute Food/Health/Combat/Utility from packed items in GameState,
    > and build StatsPanel.tscn with four live bars vs the quest targets that tween on change."
 
 5. **Full loop**

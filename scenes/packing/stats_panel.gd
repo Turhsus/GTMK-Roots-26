@@ -1,7 +1,7 @@
 class_name StatsPanel
 extends PanelContainer
 
-## Four live bars — Food, Health, Attack, Defense — filling toward the quest's
+## Four live bars — Food, Health, Combat, Utility — filling toward the quest's
 ## targets. It reads GameState and nothing else: the bag never talks to it, so a
 ## stat change from any source (drop, pick-up, "Pack again") lands here for free.
 ##

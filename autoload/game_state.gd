@@ -8,7 +8,7 @@ signal quest_changed(quest: QuestData)
 signal packed_items_changed(items: Array[ItemData])
 signal stats_changed(stats: Dictionary, targets: Dictionary)
 
-const STAT_KEYS: Array[String] = ["food", "health", "attack", "defense"]
+const STAT_KEYS: Array[String] = ["food", "health", "combat", "utility"]
 
 var current_quest: QuestData
 var packed_items: Array[ItemData] = []

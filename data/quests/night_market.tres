@@ -64,5 +64,5 @@ item_pool = Array[ExtResource("2_item")]([ExtResource("4_bread"), ExtResource("3
 narrative = Array[ExtResource("14_event")]([SubResource("event_arrival"), SubResource("event_supper")])
 target_food = 6
 target_health = 2
-target_attack = 0
-target_defense = 0
+target_combat = 0
+target_utility = 0

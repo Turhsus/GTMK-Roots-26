@@ -19,7 +19,7 @@
 script = ExtResource("13_line")
 text = "The ford runs fast and grey over black stones. They set their shoulder behind what they were carrying, leaned into the current, and crossed it a careful step at a time without ever going under."
 require_stat = {
-"defense": 5
+"combat": 5
 }
 
 [sub_resource type="Resource" id="line_cross_roped"]
@@ -67,5 +67,5 @@ item_pool = Array[ExtResource("2_item")]([ExtResource("3_shield"), ExtResource("
 narrative = Array[ExtResource("14_event")]([SubResource("event_crossing"), SubResource("event_far_bank")])
 target_food = 0
 target_health = 2
-target_attack = 3
-target_defense = 5
+target_combat = 8
+target_utility = 0
