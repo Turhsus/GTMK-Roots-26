@@ -31,6 +31,12 @@ extends Control
 ## what follows it (perk offer / gather). Flip back to false to restore the log.
 const DEBUG_SKIP_PLAYOUT: bool = true
 
+## The phases a save can drop the player back into — the three points where the
+## run is a clean snapshot. Written into the save's "loop" half (see SaveManager).
+const PHASE_PACKING := "packing"
+const PHASE_GATHER := "gather"
+const PHASE_SELECT := "select"
+
 @onready var quest_select: QuestSelect = %QuestSelect
 @onready var packing_scene: PackingScene = %PackingScene
 @onready var playout_scene: PlayoutScene = %PlayoutScene
@@ -60,19 +66,29 @@ func _ready() -> void:
 	packing_scene.sent_off.connect(_on_sent_off)
 	playout_scene.pack_again_requested.connect(_on_playout_done)
 	town_screen.gather_done.connect(_on_gather_done)
+	town_screen.day_started.connect(_on_town_day_started)
 	perk_select.perk_chosen.connect(_on_perk_chosen)
-	_start_tutorial()
+
+	# A run continued from the menu resumes at its saved phase; anything else is a
+	# fresh run and starts on the tutorial.
+	var resume := SaveManager.consume_loop()
+	if resume.is_empty():
+		_start_tutorial()
+	else:
+		_resume(resume)
 
 
 ## The forced opener: the tutorial quest, packed directly with no selection.
 func _start_tutorial() -> void:
 	packing_scene.load_quest(RunState.TUTORIAL)
 	_show(packing_scene)
+	_save_checkpoint(PHASE_PACKING)
 
 
 func _on_quest_chosen(quest: QuestData) -> void:
 	packing_scene.load_quest(quest)
 	_show(packing_scene)
+	_save_checkpoint(PHASE_PACKING)
 
 
 func _on_sent_off() -> void:
@@ -131,6 +147,14 @@ func _begin_gather() -> void:
 	_upcoming = RunState.draw_choices()
 	town_screen.begin(_gather_days, _upcoming)
 	_show(town_screen)
+	# Checkpoint after the draw, so a resume reuses these three rather than drawing
+	# a fresh set — draw_choices has side effects (it can reset a tier's clears).
+	_save_checkpoint(PHASE_GATHER, 1)
+
+
+## A new day opened in town: re-checkpoint so the day's shopping isn't replayed.
+func _on_town_day_started(day: int) -> void:
+	_save_checkpoint(PHASE_GATHER, day)
 
 
 ## The gather days are spent: choose the next quest from the previewed set. If the
@@ -141,6 +165,73 @@ func _on_gather_done() -> void:
 		_is_final_quest = true
 	quest_select.present(_upcoming)
 	_show(quest_select)
+	_save_checkpoint(PHASE_SELECT)
+
+
+# --- saving --------------------------------------------------------------------
+
+## Autosaves at a phase boundary. Everything about the *run* comes from RunState;
+## what this adds is where in the loop the player stands, so a load can rebuild the
+## screen they were on. `gather_day` only means anything for PHASE_GATHER.
+func _save_checkpoint(phase: String, gather_day: int = 1) -> void:
+	var quest_id := ""
+	if GameState.current_quest != null:
+		quest_id = GameState.current_quest.id
+	SaveManager.save_game({
+		"phase": phase,
+		"quest_id": quest_id,
+		"upcoming_ids": _upcoming_ids(),
+		"gather_days": _gather_days,
+		"gather_day": gather_day,
+		"is_final_quest": _is_final_quest,
+	})
+
+
+## Rebuilds the loop from a save's "loop" half and shows the phase it names.
+## RunState has already been restored by the time this runs (SaveManager does that
+## before the scene change), so the inventory, gold and clock are all in place.
+func _resume(loop: Dictionary) -> void:
+	_gather_days = int(loop.get("gather_days", 0))
+	_is_final_quest = bool(loop.get("is_final_quest", false))
+	_upcoming = _quests_from_ids(loop.get("upcoming_ids", []))
+
+	match String(loop.get("phase", "")):
+		PHASE_GATHER:
+			town_screen.begin(_gather_days, _upcoming, int(loop.get("gather_day", 1)))
+			_show(town_screen)
+		PHASE_SELECT:
+			# A save whose quests have since been removed from the pool would leave
+			# nothing to pick, which would dead-end the run — draw a fresh set.
+			if _upcoming.is_empty():
+				_upcoming = RunState.draw_choices()
+			quest_select.present(_upcoming)
+			_show(quest_select)
+		_:
+			# PHASE_PACKING, and the fallback for an unrecognised phase: pack the
+			# saved quest, or the tutorial if its id no longer resolves.
+			var quest := RunState.find_quest(String(loop.get("quest_id", "")))
+			if quest == null:
+				quest = RunState.TUTORIAL
+			packing_scene.load_quest(quest)
+			_show(packing_scene)
+
+
+func _upcoming_ids() -> Array:
+	var ids: Array = []
+	for quest in _upcoming:
+		ids.append(quest.id)
+	return ids
+
+
+## Saved ids back into quests, skipping any the pool no longer holds.
+func _quests_from_ids(ids: Variant) -> Array[QuestData]:
+	var quests: Array[QuestData] = []
+	if ids is Array:
+		for id in ids:
+			var quest := RunState.find_quest(String(id))
+			if quest != null:
+				quests.append(quest)
+	return quests
 
 
 ## The stat targets the sent-off pack fell short of — what the failure was made of,

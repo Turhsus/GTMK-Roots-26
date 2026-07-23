@@ -20,6 +20,10 @@ func _ready() -> void:
 ## Fills the run summary and is called right before the screen is shown, so the
 ## final quest's result is already banked in RunState.
 func show_end() -> void:
+	# The run is over, so the autosave goes with it: there is nothing left to
+	# continue into, and leaving it would offer a Continue that lands right back
+	# on this screen.
+	SaveManager.delete_save()
 	var cleared := RunState.completed_count
 	var quests_word := "quest" if cleared == 1 else "quests"
 	summary_label.text = "You cleared %d %s and made it home.\nSafe travels." % [cleared, quests_word]

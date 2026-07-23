@@ -95,7 +95,13 @@ var owned_perks: Array[PerkData] = []
 var days_remaining: int = TOTAL_DAYS
 
 
+## Every item and perk this run can involve, keyed by id, so a save file can name
+## things by id instead of storing resources (see to_dict). Built once at boot.
+var _items_by_id: Dictionary = {}
+
+
 func _ready() -> void:
+	_build_lookups()
 	_stock_starter_inventory()
 
 
@@ -292,6 +298,117 @@ func reset() -> void:
 	days_remaining = TOTAL_DAYS
 	days_changed.emit(days_remaining)
 	progress_changed.emit(completed_count, current_difficulty())
+
+
+# --- saving --------------------------------------------------------------------
+#
+# A save stores *ids and numbers*, never resources. Writing the ItemData itself
+# into the file would freeze a copy of the item's authored stats, so retuning a
+# .tres would leave old saves carrying stale numbers (or fail to load at all).
+# Naming things by id means the save always re-reads the current authored data.
+
+## The whole run as plain, JSON-safe data. SaveManager wraps this with the loop
+## position (which screen the player was on) and writes it out.
+func to_dict() -> Dictionary:
+	var items: Array = []
+	for item in inventory:
+		# Durability is per-copy, so it travels with the entry rather than the id.
+		items.append({"id": item.id, "durability": item.durability})
+	var perk_ids: Array = []
+	for perk in owned_perks:
+		perk_ids.append(perk.id)
+	return {
+		"completed_count": completed_count,
+		"cleared_ids": _cleared_ids.duplicate(),
+		"gold": gold,
+		"days_remaining": days_remaining,
+		"inventory": items,
+		"perks": perk_ids,
+	}
+
+
+## Restores a run from to_dict's output. Anything missing falls back to a fresh
+## run's value and an id that no longer exists is skipped, so a save written
+## before an item or perk was renamed still loads — just without that entry.
+## Emits every signal at the end so screens already in the tree catch up.
+func from_dict(data: Dictionary) -> void:
+	completed_count = maxi(int(data.get("completed_count", 0)), 0)
+	_cleared_ids.clear()
+	for id in data.get("cleared_ids", []):
+		_cleared_ids.append(String(id))
+	gold = maxi(int(data.get("gold", STARTING_GOLD)), 0)
+	days_remaining = int(data.get("days_remaining", TOTAL_DAYS))
+
+	inventory.clear()
+	for entry in data.get("inventory", []):
+		if typeof(entry) != TYPE_DICTIONARY:
+			continue
+		var item := find_item(String(entry.get("id", "")))
+		if item == null:
+			continue
+		var copy := item.make_owned_copy()
+		# Clamped to the item's *current* max: if a blanket was retuned from 3 uses
+		# down to 2, a save holding 3 must not come back over-durable.
+		copy.durability = clampi(int(entry.get("durability", copy.durability)), 1, copy.max_durability)
+		inventory.append(copy)
+
+	owned_perks.clear()
+	for perk_id in data.get("perks", []):
+		var perk := find_perk(String(perk_id))
+		if perk != null:
+			owned_perks.append(perk)
+
+	inventory_changed.emit(inventory)
+	gold_changed.emit(gold)
+	perks_changed.emit(owned_perks)
+	days_changed.emit(days_remaining)
+	progress_changed.emit(completed_count, current_difficulty())
+
+
+## The authored ItemData for an id, or null if nothing owns that id any more.
+func find_item(id: String) -> ItemData:
+	if id.is_empty():
+		return null
+	if _items_by_id.has(id):
+		return _items_by_id[id]
+	# Not a starter item — fall back to the data/items/<id>.tres naming convention
+	# so an item that only ever appears in a shop still round-trips through a save.
+	var path := "res://data/items/%s.tres" % id
+	if not ResourceLoader.exists(path):
+		return null
+	var item := load(path) as ItemData
+	if item != null:
+		_items_by_id[id] = item
+	return item
+
+
+## The authored PerkData for an id, or null. Perks are a short const list, so this
+## just walks it.
+func find_perk(id: String) -> PerkData:
+	for perk in ALL_PERKS:
+		if perk.id == id:
+			return perk
+	return null
+
+
+## The authored QuestData for an id, or null. Covers the pool plus the tutorial,
+## which is the whole set a save can ever point at.
+func find_quest(id: String) -> QuestData:
+	if id == TUTORIAL.id:
+		return TUTORIAL
+	# The search itself lives on QuestPool: iterating POOL.quests from here gives the
+	# parser the script-path element type, which won't unify with the QuestData
+	# return annotation, while inside quest_pool.gd the types resolve natively.
+	return POOL.find_by_id(id)
+
+
+## Indexes every item an id could refer to. The starter list is the master set
+## today (it holds all authored items), but a shop could stock something outside
+## it, so anything missing is loaded by the data/items/<id>.tres convention.
+func _build_lookups() -> void:
+	_items_by_id.clear()
+	for item in STARTER_INVENTORY:
+		_items_by_id[item.id] = item
 
 
 ## Fills the inventory from the authored starter list. Each entry is its own owned

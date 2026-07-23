@@ -11,6 +11,9 @@ var failures: int = 0
 
 
 func _ready() -> void:
+	# This harness runs the real Main scene, which autosaves at every phase
+	# boundary. Left on, a test run would overwrite the player's actual save.
+	SaveManager.autosave_enabled = false
 	_test_engine()
 	_test_progression()
 	_test_durability()

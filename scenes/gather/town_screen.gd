@@ -16,6 +16,10 @@ extends Control
 ## (header + a scrolling Body the views are rebuilt into).
 
 signal gather_done
+## Emitted each time a new town day opens *after* the first (the first is announced
+## by begin() returning). Main autosaves on it, so quitting partway through a long
+## gather comes back to the right day with the shopping already done.
+signal day_started(day: int)
 
 ## DEBUG: shows a "Skip gather" button on the town square that ends the whole
 ## phase at once, no matter how many days are left. Flip to false to remove it.
@@ -46,9 +50,13 @@ func _ready() -> void:
 
 ## Opens a gather phase of `days` days. `upcoming` is previewed as the quests the
 ## player will pick from the moment the last day is spent.
-func begin(days: int, upcoming: Array[QuestData]) -> void:
+##
+## `start_day` is for resuming a saved gather: a load reopens the phase partway
+## through, on the day the save was written. The days already spent are not
+## re-billed to the global clock — they were billed when they were first spent.
+func begin(days: int, upcoming: Array[QuestData], start_day: int = 1) -> void:
 	_total_days = maxi(days, 1)
-	_current_day = 1
+	_current_day = clampi(start_day, 1, _total_days)
 	_upcoming = upcoming
 	_refresh_header()
 	_show_square()
@@ -67,6 +75,7 @@ func _end_day() -> void:
 		return
 	_refresh_header()
 	_show_square()
+	day_started.emit(_current_day)
 
 
 func _refresh_header() -> void:
