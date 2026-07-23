@@ -17,6 +17,7 @@ const CARD_WIDTH := 300
 ## Lays out a card per quest. Called every time the picker is shown, so it clears
 ## the previous round first.
 func present(quests: Array[QuestData]) -> void:
+	_ensure_debug_picker()
 	header.text = "Quest %d  •  Difficulty %d" % [RunState.completed_count + 1, RunState.current_difficulty()]
 	for child in card_row.get_children():
 		# Detach as well as free: queue_free() only lands at frame end, and a
@@ -65,3 +66,58 @@ func _build_card(quest: QuestData) -> Control:
 	layout.add_child(choose)
 
 	return card
+
+
+# --- TEMPORARY DEBUG PICKER -------------------------------------------------
+# A dev-only button that lets you jump straight into ANY authored quest (every
+# .tres in data/quests/, pool or not — tutorial and frost_hollow included),
+# bypassing the difficulty draw. Emits quest_chosen just like a real card, so
+# Main loads it the same way. To remove: delete this whole block and the
+# _ensure_debug_picker() call in present().
+
+const _DEBUG_QUEST_DIR := "res://data/quests/"
+
+var _debug_menu: PopupMenu
+var _debug_quests: Array[QuestData] = []
+
+
+## Builds the debug button + popup once, then reuses them. Lives in the header's
+## VBox so present()'s card-row wipe never touches it.
+func _ensure_debug_picker() -> void:
+	if _debug_menu != null:
+		return
+
+	_debug_quests = _load_all_quests()
+
+	_debug_menu = PopupMenu.new()
+	add_child(_debug_menu)
+	for i in _debug_quests.size():
+		var quest := _debug_quests[i]
+		_debug_menu.add_item("%s   (diff %d)" % [quest.title, quest.difficulty], i)
+	_debug_menu.id_pressed.connect(func(id: int) -> void: quest_chosen.emit(_debug_quests[id]))
+
+	var button := Button.new()
+	button.text = "🔧 DEBUG: pick any quest"
+	button.add_theme_font_size_override("font_size", 14)
+	button.pressed.connect(func() -> void:
+		_debug_menu.position = Vector2i(get_global_mouse_position())
+		_debug_menu.reset_size()
+		_debug_menu.popup())
+	header.get_parent().add_child(button)
+
+
+## Loads every QuestData .tres under data/quests/, in directory order.
+func _load_all_quests() -> Array[QuestData]:
+	var out: Array[QuestData] = []
+	var dir := DirAccess.open(_DEBUG_QUEST_DIR)
+	if dir == null:
+		return out
+	for file in dir.get_files():
+		# Exports rename imported resources with a .remap suffix; strip it to load.
+		var fname := file.trim_suffix(".remap")
+		if not fname.ends_with(".tres"):
+			continue
+		var res := load(_DEBUG_QUEST_DIR + fname)
+		if res is QuestData:
+			out.append(res)
+	return out

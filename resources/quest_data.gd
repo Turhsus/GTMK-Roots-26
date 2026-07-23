@@ -30,6 +30,10 @@ extends Resource
 @export_group("Content")
 ## Items the tray offers for this quest.
 @export var item_pool: Array[ItemData] = []
+## Items this quest secretly needs packed. Never shown in the UI as a checklist —
+## the brief is meant to hint at them (e.g. "the nights get cold" for a blanket).
+## Later gameplay can read this to reward or narrate around them.
+@export var required_items: Array[ItemData] = []
 ## Ordered story beats, walked top to bottom during the playout.
 @export var narrative: Array[NarrativeEvent] = []
 
