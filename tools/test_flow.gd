@@ -14,6 +14,7 @@ func _ready() -> void:
 	_test_engine()
 	_test_progression()
 	_test_durability()
+	_test_perks()
 	# The tests above mutate the shared RunState singleton; hand the flow test a
 	# clean slate (difficulty 0, nothing cleared, a full pack) so its draws and
 	# inventory are predictable.
@@ -124,6 +125,53 @@ func _test_durability() -> void:
 	check((load("res://data/items/blanket.tres") as ItemData).durability == -1,
 		"the shared item template is never worn")
 	RunState.reset()
+
+
+# --- adventuring perks, at the RunState level ----------------------------------
+
+func _test_perks() -> void:
+	RunState.reset()
+	var forage: PerkData = load("res://data/perks/forage.tres")
+	var crafty: PerkData = load("res://data/perks/crafty.tres")
+	check(RunState.owned_perks.is_empty(), "a fresh run owns no perks")
+	check(RunState.food_bonus() == 0, "no perks means no food bonus")
+	check(RunState.defense_wear_skip_chance() == 0.0, "no perks means no wear skip")
+
+	# Offering is contextual: a missed target surfaces the perk that addresses it.
+	var on_food := RunState.offer_perks(["food"])
+	check(_has_id(on_food, "forage") and not _has_id(on_food, "crafty"),
+		"a food shortfall offers the forage perk, not the crafty one")
+	var on_defense := RunState.offer_perks(["defense"])
+	check(_has_id(on_defense, "crafty") and not _has_id(on_defense, "forage"),
+		"a defense shortfall offers the crafty perk, not the forage one")
+	check(RunState.offer_perks(["health"]).is_empty(),
+		"a shortfall with no matching perk offers nothing")
+	check(RunState.offer_perks(["food", "defense"]).size() == 2,
+		"failing both surfaces both perks")
+
+	# Earning the forage perk: its food folds into the current packing, and it's no
+	# longer offered (perks are unique).
+	RunState.add_perk(forage)
+	check(RunState.has_perk("forage") and RunState.food_bonus() == 1,
+		"the forage perk is owned and adds +1 food")
+	GameState.set_quest(QUEST)
+	check(GameState.stats["food"] == 1, "the food bonus shows on an empty bag, got %d" % GameState.stats["food"])
+	check(not _has_id(RunState.offer_perks(["food"]), "forage"),
+		"an owned perk is not offered again")
+	RunState.add_perk(forage)
+	check(RunState.owned_perks.size() == 1, "a perk can't be earned twice")
+
+	# Earning crafty gives the defense wear skip its chance.
+	RunState.add_perk(crafty)
+	check(abs(RunState.defense_wear_skip_chance() - 0.1) < 0.0001,
+		"the crafty perk gives a 10%% chance to skip defense wear")
+
+	# A fresh run drops every earned perk.
+	RunState.reset()
+	check(RunState.owned_perks.is_empty() and RunState.food_bonus() == 0,
+		"reset clears earned perks")
+	GameState.set_quest(QUEST)
+	check(GameState.stats["food"] == 0, "with perks cleared the food bonus is gone")
 
 
 # --- NarrativeEngine, with no scene tree involved at all -----------------------

@@ -1,0 +1,11 @@
+[gd_resource type="Resource" script_class="PerkData" format=3]
+
+[ext_resource type="Script" path="res://resources/perk_data.gd" id="1_script"]
+
+[resource]
+script = ExtResource("1_script")
+id = "forage"
+title = "Forager"
+description = "Your little one has learned from his past mistakes and learned to forage on his quests! +1 Food for each quest."
+trigger_stat = "food"
+food_bonus = 1

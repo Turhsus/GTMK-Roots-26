@@ -26,6 +26,7 @@ extends Control
 @onready var packing_scene: PackingScene = %PackingScene
 @onready var playout_scene: PlayoutScene = %PlayoutScene
 @onready var town_screen: TownScreen = %TownScreen
+@onready var perk_select: PerkSelect = %PerkSelect
 
 ## The three quests drawn for the next selection, previewed in town and then
 ## offered on QuestSelect — the same set for both, so the preview isn't a lie.
@@ -33,6 +34,11 @@ var _upcoming: Array[QuestData] = []
 ## The gather budget owed to the just-completed quest, captured at send-off (the
 ## current quest is replaced before the gather actually opens).
 var _gather_days: int = 0
+## Whether the just-sent quest was cleared, and which stat targets it fell short of.
+## Captured at send-off (GameState is still on that quest then) so that after the
+## playout a failure can offer a perk that addresses what went wrong.
+var _last_cleared: bool = false
+var _last_missed_stats: Array[String] = []
 
 
 func _ready() -> void:
@@ -40,6 +46,7 @@ func _ready() -> void:
 	packing_scene.sent_off.connect(_on_sent_off)
 	playout_scene.pack_again_requested.connect(_on_playout_done)
 	town_screen.gather_done.connect(_on_gather_done)
+	perk_select.perk_chosen.connect(_on_perk_chosen)
 	_start_tutorial()
 
 
@@ -60,6 +67,11 @@ func _on_sent_off() -> void:
 	# register_result pays the reward on a clear, so the gold is on hand for the
 	# gather phase that follows.
 	RunState.register_result(quest, cleared)
+	# Remember the outcome for the post-playout perk offer. GameState is still on this
+	# quest here, so read the shortfall now — by the time the playout ends the picker
+	# may have moved on.
+	_last_cleared = cleared
+	_last_missed_stats = _missed_stats()
 	var lines := NarrativeEngine.build_log(quest, GameState.packed_items, GameState.stats)
 	# Everything in the bag takes the trip and wears by one: single-use items are
 	# spent, sturdier ones (the blanket) come home with less durability left. (Read
@@ -71,10 +83,28 @@ func _on_sent_off() -> void:
 	playout_scene.play(lines)
 
 
-## Playout finished (the "continue" button): head into town to gather for the next
-## quest. Draw the next three now so they can be previewed there and offered on
-## select afterward.
+## Playout finished (the "continue" button). A failed quest is a lesson: offer a
+## perk that addresses what fell short before heading to town. A clear — or a failure
+## with every relevant perk already earned — skips straight to the gather phase.
 func _on_playout_done() -> void:
+	if not _last_cleared:
+		var offers := RunState.offer_perks(_last_missed_stats)
+		if not offers.is_empty():
+			perk_select.present(offers)
+			_show(perk_select)
+			return
+	_begin_gather()
+
+
+## The lesson is picked: bank the perk, then carry on into the gather phase.
+func _on_perk_chosen(perk: PerkData) -> void:
+	RunState.add_perk(perk)
+	_begin_gather()
+
+
+## Head into town to gather for the next quest. Draw the next three now so they can
+## be previewed there and offered on select afterward.
+func _begin_gather() -> void:
 	_upcoming = RunState.draw_choices()
 	town_screen.begin(_gather_days, _upcoming)
 	_show(town_screen)
@@ -86,6 +116,17 @@ func _on_gather_done() -> void:
 	_show(quest_select)
 
 
+## The stat targets the sent-off pack fell short of — what the failure was made of,
+## used to offer perks that address it (see RunState.offer_perks).
+func _missed_stats() -> Array[String]:
+	var missed: Array[String] = []
+	var targets := GameState.get_targets()
+	for key in GameState.STAT_KEYS:
+		if int(GameState.stats.get(key, 0)) < int(targets.get(key, 0)):
+			missed.append(key)
+	return missed
+
+
 func _show(screen: Control) -> void:
-	for candidate in [quest_select, packing_scene, playout_scene, town_screen]:
+	for candidate in [quest_select, packing_scene, playout_scene, town_screen, perk_select]:
 		(candidate as Control).visible = candidate == screen

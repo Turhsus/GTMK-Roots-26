@@ -1,0 +1,11 @@
+[gd_resource type="Resource" script_class="PerkData" format=3]
+
+[ext_resource type="Script" path="res://resources/perk_data.gd" id="1_script"]
+
+[resource]
+script = ExtResource("1_script")
+id = "crafty"
+title = "Crafty"
+description = "Your little one has learned to be crafty. There is a 10% chance a defence item is not used on quests."
+trigger_stat = "defense"
+defense_wear_skip_chance = 0.1

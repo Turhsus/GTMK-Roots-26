@@ -17,12 +17,23 @@ signal inventory_changed(inventory: Array[ItemData])
 ## Emitted whenever the player's gold changes: the starting purse, a quest reward,
 ## and every buy or sell in town.
 signal gold_changed(gold: int)
+## Emitted whenever the earned perks change — i.e. when a perk is picked after a
+## failed quest (see add_perk), and cleared on reset.
+signal perks_changed(perks: Array[PerkData])
 
 const POOL: QuestPool = preload("res://data/quest_pool.tres")
 ## The forced first quest. It is not in the pool — the loop hands it to the player
 ## directly before the normal draw-of-three ever runs (see main.gd). A gentle,
 ## short intro; clearing it kicks off the first gather phase.
 const TUTORIAL: QuestData = preload("res://data/quests/tutorial.tres")
+## Every perk that can be earned this game — permanent upgrades unlocked by failing
+## a quest and picking the lesson that fits (see offer_perks). Authored as .tres;
+## list one here to make it earnable. Held in a const like the starter pack; a pool
+## resource can replace this if the list grows.
+const ALL_PERKS: Array[PerkData] = [
+	preload("res://data/perks/forage.tres"),
+	preload("res://data/perks/crafty.tres"),
+]
 ## Difficulty is capped here; past this every quest is drawn from the top tier.
 const MAX_DIFFICULTY := 4
 ## How many quests to lay out for the player to choose between.
@@ -66,6 +77,10 @@ var inventory: Array[ItemData] = []
 ## Coins on hand. Starts at STARTING_GOLD, earned by clearing quests, spent (and
 ## partly recouped by selling) in the gather phase.
 var gold: int = STARTING_GOLD
+## Adventuring perks earned so far this run — permanent upgrades. Each is unique: a
+## perk once owned is never offered again (see offer_perks). Their effects are read
+## through food_bonus (folded into the food stat) and apply_wear (the wear skip).
+var owned_perks: Array[PerkData] = []
 
 
 func _ready() -> void:
@@ -88,7 +103,12 @@ func current_difficulty() -> int:
 func apply_wear(items: Array[ItemData]) -> void:
 	if items.is_empty():
 		return
+	var skip_chance := defense_wear_skip_chance()
 	for item in items:
+		# Crafty perk: a defense item sometimes comes home untouched — it isn't spent
+		# this trip, so it skips the wear entirely. Rolled per defense item packed.
+		if skip_chance > 0.0 and item.defense > 0 and randf() < skip_chance:
+			continue
 		item.durability -= 1
 		if item.durability <= 0:
 			inventory.erase(item)
@@ -154,6 +174,58 @@ func release(item: ItemData) -> bool:
 	return false
 
 
+## Grants a perk, ignoring one already owned (perks are unique). The permanent
+## upgrade takes effect immediately: the food bonus shows the next time the stats
+## recompute, the wear skip on the next send-off.
+func add_perk(perk: PerkData) -> void:
+	if perk == null or has_perk(perk.id):
+		return
+	owned_perks.append(perk)
+	perks_changed.emit(owned_perks)
+
+
+func has_perk(perk_id: String) -> bool:
+	for perk in owned_perks:
+		if perk.id == perk_id:
+			return true
+	return false
+
+
+## Flat food granted by owned perks, folded into the food stat from the start of
+## packing so the player sees it and packs around it (GameState._recompute reads it).
+func food_bonus() -> int:
+	var bonus := 0
+	for perk in owned_perks:
+		bonus += perk.food_bonus
+	return bonus
+
+
+## The chance a single defense item escapes wear on send-off, combined across owned
+## perks. Perks are unique, so today this is just the crafty perk's 0.1 when owned;
+## combining as independent rolls (1 − product of misses) keeps it sane if more
+## wear-skip perks are ever added — it approaches 1 rather than overflowing it.
+func defense_wear_skip_chance() -> float:
+	var keep_worn := 1.0
+	for perk in owned_perks:
+		keep_worn *= 1.0 - perk.defense_wear_skip_chance
+	return 1.0 - keep_worn
+
+
+## The perks to offer after a failed quest: those not yet owned whose trigger_stat is
+## among the missed targets. Contextual — a food shortfall surfaces the forage perk,
+## a defense shortfall the crafty one; a perk with no trigger_stat is always eligible.
+## Empty means nothing new to offer (a clear, or every relevant perk already earned),
+## in which case the loop skips the lesson screen (see main.gd).
+func offer_perks(missed_stats: Array[String]) -> Array[PerkData]:
+	var offers: Array[PerkData] = []
+	for perk in ALL_PERKS:
+		if has_perk(perk.id):
+			continue
+		if perk.trigger_stat == "" or missed_stats.has(perk.trigger_stat):
+			offers.append(perk)
+	return offers
+
+
 ## Up to CHOICE_COUNT quests from the current tier, cleared ones held back until
 ## the tier runs dry, then the tier resets and is offered fresh. Fewer than three
 ## may come back if that is all the tier has; an empty tier falls back to the
@@ -189,6 +261,8 @@ func reset() -> void:
 	_stock_starter_inventory()
 	gold = STARTING_GOLD
 	gold_changed.emit(gold)
+	owned_perks.clear()
+	perks_changed.emit(owned_perks)
 	progress_changed.emit(completed_count, current_difficulty())
 
 

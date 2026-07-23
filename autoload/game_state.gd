@@ -76,6 +76,10 @@ func _recompute() -> void:
 		var contribution := item.get_stats()
 		for key in STAT_KEYS:
 			stats[key] += int(contribution.get(key, 0))
+	# Adventuring perks add flat stats on top of what's packed. The forage perk's food
+	# shows from an empty bag on, so the player packs around it. RunState owns the
+	# run's earned perks; this current-packing singleton reads that meta level.
+	stats["food"] += RunState.food_bonus()
 	packed_items_changed.emit(packed_items)
 	stats_changed.emit(stats, get_targets())
 
