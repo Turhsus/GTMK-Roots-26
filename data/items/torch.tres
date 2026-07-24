@@ -1,0 +1,17 @@
+[gd_resource type="Resource" script_class="ItemData" format=3 uid="uid://rbobnqy5ghxl"]
+
+[ext_resource type="Script" uid="uid://du5drbi85ateb" path="res://resources/item_data.gd" id="1_3g8d5"]
+[ext_resource type="Texture2D" uid="uid://brs4ke4ussl0" path="res://assets/items/torch.png" id="1_3mouu"]
+
+[resource]
+script = ExtResource("1_3g8d5")
+id = "torch"
+display_name = "Torch"
+shape = Array[Vector2i]([Vector2i(0, 0), Vector2i(0, 1)])
+icon = ExtResource("1_3mouu")
+combat = 1
+utility = 3
+traits = Array[String](["fire", "warmth", "versatile"])
+flavor = "Need a light?"
+buy_price = 3
+metadata/_custom_type_script = "uid://du5drbi85ateb"

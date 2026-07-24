@@ -1,8 +1,8 @@
-[gd_scene load_steps=2 format=3]
+[gd_scene format=3 uid="uid://djm278duqnpci"]
 
-[ext_resource type="Script" path="res://scenes/gather/town_screen.gd" id="1_town"]
+[ext_resource type="Script" uid="uid://c8sd2ok3jllus" path="res://scenes/gather/town_screen.gd" id="1_town"]
 
-[node name="TownScreen" type="Control"]
+[node name="TownScreen" type="Control" unique_id=2077105480]
 layout_mode = 3
 anchors_preset = 15
 anchor_right = 1.0
@@ -11,7 +11,7 @@ grow_horizontal = 2
 grow_vertical = 2
 script = ExtResource("1_town")
 
-[node name="Background" type="ColorRect" parent="."]
+[node name="Background" type="ColorRect" parent="." unique_id=1409155077]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -21,7 +21,7 @@ grow_vertical = 2
 mouse_filter = 2
 color = Color(0.14, 0.15, 0.2, 1)
 
-[node name="Margin" type="MarginContainer" parent="."]
+[node name="Margin" type="MarginContainer" parent="." unique_id=129260867]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -33,26 +33,25 @@ theme_override_constants/margin_top = 32
 theme_override_constants/margin_right = 48
 theme_override_constants/margin_bottom = 32
 
-[node name="Root" type="VBoxContainer" parent="Margin"]
+[node name="Root" type="VBoxContainer" parent="Margin" unique_id=2142400499]
 layout_mode = 2
 theme_override_constants/separation = 20
 
-[node name="HeaderRow" type="HBoxContainer" parent="Margin/Root"]
+[node name="HeaderRow" type="HBoxContainer" parent="Margin/Root" unique_id=1176524]
 layout_mode = 2
 
-[node name="DayLabel" type="Label" parent="Margin/Root/HeaderRow"]
+[node name="DayLabel" type="Label" parent="Margin/Root/HeaderRow" unique_id=1158602585]
 unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 3
 theme_override_font_sizes/font_size = 28
 text = "Day 1 of 3 in town"
 
-[node name="RightStack" type="VBoxContainer" parent="Margin/Root/HeaderRow"]
+[node name="RightStack" type="VBoxContainer" parent="Margin/Root/HeaderRow" unique_id=83208971]
 layout_mode = 2
 theme_override_constants/separation = 2
-alignment = 0
 
-[node name="DaysLeftLabel" type="Label" parent="Margin/Root/HeaderRow/RightStack"]
+[node name="DaysLeftLabel" type="Label" parent="Margin/Root/HeaderRow/RightStack" unique_id=1681587663]
 unique_name_in_owner = true
 layout_mode = 2
 theme_override_colors/font_color = Color(0.95, 0.86, 0.55, 1)
@@ -60,25 +59,25 @@ theme_override_font_sizes/font_size = 26
 text = "10 days left"
 horizontal_alignment = 2
 
-[node name="GoldLabel" type="Label" parent="Margin/Root/HeaderRow/RightStack"]
+[node name="GoldLabel" type="Label" parent="Margin/Root/HeaderRow/RightStack" unique_id=1666920690]
 unique_name_in_owner = true
 layout_mode = 2
 theme_override_font_sizes/font_size = 22
 text = "50 gold"
 horizontal_alignment = 2
 
-[node name="Scroll" type="ScrollContainer" parent="Margin/Root"]
+[node name="Scroll" type="ScrollContainer" parent="Margin/Root" unique_id=1508979372]
 layout_mode = 2
 size_flags_vertical = 3
 horizontal_scroll_mode = 0
 
-[node name="Body" type="VBoxContainer" parent="Margin/Root/Scroll"]
+[node name="Body" type="VBoxContainer" parent="Margin/Root/Scroll" unique_id=448140670]
 unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 3
 theme_override_constants/separation = 12
 
-[node name="TravelFade" type="ColorRect" parent="."]
+[node name="TravelFade" type="ColorRect" parent="." unique_id=1531471939]
 unique_name_in_owner = true
 visible = false
 modulate = Color(1, 1, 1, 0)
@@ -88,10 +87,9 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
-mouse_filter = 0
 color = Color(0.08, 0.07, 0.1, 1)
 
-[node name="Center" type="CenterContainer" parent="TravelFade"]
+[node name="Center" type="CenterContainer" parent="TravelFade" unique_id=844533109]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -100,7 +98,7 @@ grow_horizontal = 2
 grow_vertical = 2
 mouse_filter = 2
 
-[node name="FadeLabel" type="Label" parent="TravelFade/Center"]
+[node name="FadeLabel" type="Label" parent="TravelFade/Center" unique_id=2111367002]
 layout_mode = 2
 theme_override_font_sizes/font_size = 36
 text = "On your way to the shops..."

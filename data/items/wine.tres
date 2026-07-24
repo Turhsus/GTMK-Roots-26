@@ -1,12 +1,14 @@
 [gd_resource type="Resource" script_class="ItemData" format=3 uid="uid://de2u8bqn3wgoi"]
 
 [ext_resource type="Script" uid="uid://du5drbi85ateb" path="res://resources/item_data.gd" id="1_fputx"]
+[ext_resource type="Texture2D" uid="uid://cglc7766lh8oa" path="res://assets/items/wine.png" id="1_qehmw"]
 
 [resource]
 script = ExtResource("1_fputx")
 id = "wine"
 display_name = "Wine"
 shape = Array[Vector2i]([Vector2i(0, 0), Vector2i(0, 1)])
+icon = ExtResource("1_qehmw")
 food = 2
 combat = -1
 utility = 1

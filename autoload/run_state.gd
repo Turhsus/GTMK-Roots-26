@@ -57,6 +57,9 @@ const STARTER_INVENTORY: Array[ItemData] = [
 	preload("res://data/items/sword.tres"),
 	preload("res://data/items/cheese_wedge.tres"),
 	preload("res://data/items/bread.tres"),
+	preload("res://data/items/knife.tres"),
+	preload("res://data/items/wine.tres"),
+	preload("res://data/items/torch.tres"),
 ]
 
 ## Quests cleared so far. Difficulty is derived from this: one clear per tier.
