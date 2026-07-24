@@ -332,7 +332,18 @@ func _test_flow() -> void:
 	var apple_item: ItemData = load("res://data/items/apple.tres")
 	var pre_buy_gold: int = RunState.gold
 	var pre_buy_stock: int = RunState.inventory.size()
+
+	# Travel event on the way to the grocer: forced show grants gold, then Continue
+	# opens the shop. Direct `_enter_shop` (used below) must not re-roll.
+	var found_coin: TravelEvent = load("res://data/travel_events/found_coin.tres")
+	var pre_event_gold: int = RunState.gold
+	town._show_travel_event(found_coin, grocer)
+	check(RunState.gold == pre_event_gold + found_coin.gold_reward,
+		"Found coin! grants its gold_reward")
+	check(town._open_shop == null, "the travel event shows before the shop opens")
 	town._enter_shop(grocer)
+	check(town._open_shop == grocer, "Continue / direct enter opens the grocer")
+
 	town._on_buy(apple_item)
 	check(RunState.gold == pre_buy_gold - apple_item.buy_price, "buying spends the item's price")
 	check(RunState.inventory.size() == pre_buy_stock + 1, "buying adds a copy to the inventory")

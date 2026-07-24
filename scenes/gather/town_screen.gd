@@ -33,10 +33,22 @@ const SHOPS: Array[ShopData] = [
 	preload("res://data/shops/blacksmith.tres"),
 ]
 
+## Travel vignettes that can fire on the way to a shop. Each event rolls its own
+## `chance` when its shop filter matches; buy/sell rebuilds call `_enter_shop`
+## directly and never re-roll.
+const TRAVEL_EVENTS: Array[TravelEvent] = [
+	preload("res://data/travel_events/found_coin.tres"),
+]
+
+const TRAVEL_FADE_IN := 0.45
+const TRAVEL_FADE_HOLD := 0.9
+const TRAVEL_FADE_OUT := 0.45
+
 @onready var day_label: Label = %DayLabel
 @onready var gold_label: Label = %GoldLabel
 @onready var days_left_label: Label = %DaysLeftLabel
 @onready var body: VBoxContainer = %Body
+@onready var travel_fade: ColorRect = %TravelFade
 
 var _total_days: int = 0
 var _current_day: int = 0
@@ -48,6 +60,9 @@ var _open_shop: ShopData = null
 ## at most its `stock_limit` purchases per gather; the counts reset in begin() —
 ## the shops restock between quests.
 var _purchases: Dictionary = {}
+## True while the "On your way to the shops..." fade is playing, so a second
+## shop click can't stack another roll / fade.
+var _travel_transitioning: bool = false
 
 
 func _ready() -> void:
@@ -157,8 +172,71 @@ func _build_shop_button(shop: ShopData) -> Button:
 	button.text = shop.display_name
 	button.custom_minimum_size = Vector2(200, 56)
 	button.add_theme_font_size_override("font_size", 20)
-	button.pressed.connect(_enter_shop.bind(shop))
+	button.pressed.connect(_on_shop_chosen.bind(shop))
 	return button
+
+
+# --- travel events (on the way to a shop) -------------------------------------
+
+## Shop pick from the square: maybe a road vignette, then the shop. Refreshing an
+## already-open shop (buy/sell) goes straight to `_enter_shop` and skips this.
+func _on_shop_chosen(shop: ShopData) -> void:
+	if _travel_transitioning:
+		return
+	var event := _roll_travel_event(shop)
+	if event != null:
+		await _play_travel_fade()
+		_show_travel_event(event, shop)
+	else:
+		_enter_shop(shop)
+
+
+## First matching event whose `chance` roll succeeds, or null.
+func _roll_travel_event(shop: ShopData) -> TravelEvent:
+	for event in TRAVEL_EVENTS:
+		if event != null and event.matches_shop(shop) and randf() < event.chance:
+			return event
+	return null
+
+
+## Full-screen fade with "On your way to the shops..." before the event card.
+func _play_travel_fade() -> void:
+	_travel_transitioning = true
+	travel_fade.visible = true
+	travel_fade.modulate.a = 0.0
+	var tween := create_tween()
+	tween.tween_property(travel_fade, "modulate:a", 1.0, TRAVEL_FADE_IN) \
+		.set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
+	tween.tween_interval(TRAVEL_FADE_HOLD)
+	tween.tween_property(travel_fade, "modulate:a", 0.0, TRAVEL_FADE_OUT) \
+		.set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_IN)
+	await tween.finished
+	travel_fade.visible = false
+	_travel_transitioning = false
+
+
+## Shows the vignette, applies rewards, then Continue opens the chosen shop.
+func _show_travel_event(event: TravelEvent, shop: ShopData) -> void:
+	_open_shop = null
+	_clear_body()
+
+	body.add_child(_heading(event.title))
+	var blurb := Label.new()
+	blurb.text = event.text
+	blurb.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	body.add_child(blurb)
+
+	if event.gold_reward > 0:
+		RunState.add_gold(event.gold_reward)
+		body.add_child(_subheading("+%d gold" % event.gold_reward))
+
+	body.add_child(_spacer(16))
+	var cont := Button.new()
+	cont.text = "Continue to %s" % shop.display_name
+	cont.custom_minimum_size = Vector2(0, 48)
+	cont.add_theme_font_size_override("font_size", 18)
+	cont.pressed.connect(_enter_shop.bind(shop))
+	body.add_child(cont)
 
 
 func _build_quest_preview() -> Control:

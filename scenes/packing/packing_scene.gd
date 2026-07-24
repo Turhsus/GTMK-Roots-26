@@ -105,6 +105,8 @@ func _input(event: InputEvent) -> void:
 			_close_info_menu()
 		elif event is InputEventKey and event.pressed and event.keycode == KEY_ESCAPE:
 			_close_info_menu()
+			get_viewport().set_input_as_handled()
+			return
 	if _dragging == null:
 		return
 	if event is InputEventKey and event.pressed and not event.echo and event.keycode == KEY_R:

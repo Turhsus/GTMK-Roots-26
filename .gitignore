@@ -4,3 +4,6 @@
 
 # Export output
 /build/
+
+# VSCode
+.vscode/
