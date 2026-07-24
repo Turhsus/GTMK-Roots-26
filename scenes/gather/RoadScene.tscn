@@ -1,4 +1,4 @@
-[gd_scene load_steps=3 format=3 uid="uid://crpiqvldmuyrw"]
+[gd_scene format=3 uid="uid://crpiqvldmuyrw"]
 
 [ext_resource type="Script" uid="uid://c8sd2ok3jllus" path="res://scenes/gather/road_scene.gd" id="1_road"]
 [ext_resource type="PackedScene" uid="uid://dk5r8ny02shqe" path="res://scenes/gather/ShopScene.tscn" id="2_shop"]
