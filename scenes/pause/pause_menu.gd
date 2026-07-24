@@ -20,6 +20,7 @@ const DEBUG_MENU: bool = true
 @onready var quit_button: Button = %QuitButton
 @onready var debug_button: Button = %DebugButton
 @onready var debug_back_button: Button = %DebugBackButton
+@onready var add_gold_button: Button = %AddGoldButton
 
 
 func _ready() -> void:
@@ -31,6 +32,7 @@ func _ready() -> void:
 	quit_button.pressed.connect(func() -> void: quit_requested.emit())
 	debug_button.pressed.connect(_show_debug)
 	debug_back_button.pressed.connect(_show_main)
+	add_gold_button.pressed.connect(_on_add_gold)
 
 	quit_button.visible = not OS.has_feature("web")
 	debug_button.visible = DEBUG_MENU
@@ -79,3 +81,7 @@ func _show_debug() -> void:
 
 func _on_debug_phase(phase: String) -> void:
 	debug_phase_requested.emit(phase)
+
+
+func _on_add_gold() -> void:
+	RunState.add_gold(100)

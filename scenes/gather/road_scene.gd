@@ -1,4 +1,4 @@
-class_name TownScreen
+class_name RoadScene
 extends Control
 
 ## The gather phase. Between one quest's playout and the next quest's selection,
@@ -7,6 +7,13 @@ extends Control
 ## budget is set by the quest just completed (main.gd passes it in); the three
 ## quests the player will choose from next are drawn up front and previewed here,
 ## so the shopping has a plan behind it.
+##
+## This scene is the *road*: its own background art, the day/quest preview, and
+## the "where to today?" shop prompt. A shop itself is a separate full-screen
+## child scene (ShopScene) with its own art — this scene opens it for the day's
+## visit, applies the trades it signals back, and closes it when the day ends.
+## When a fresh gather begins (day one, not a resume) one travel event may fire
+## before anything else — a short road vignette — then the shop prompt shows.
 ##
 ## Rules (all chosen by the user): one shop visit per day; every day must be spent
 ## before the loop moves on (no early exit); buying is limited to a shop's own
@@ -23,8 +30,8 @@ signal gather_done
 ## gather comes back to the right day with the shopping already done.
 signal day_started(day: int)
 
-## DEBUG: shows a "Skip gather" button on the town square that ends the whole
-## phase at once, no matter how many days are left. Flip to false to remove it.
+## DEBUG: shows a "Skip gather" button on the road that ends the whole phase at
+## once, no matter how many days are left. Flip to false to remove it.
 const DEBUG_SKIP_GATHER: bool = true
 
 const SHOPS: Array[ShopData] = [
@@ -33,10 +40,11 @@ const SHOPS: Array[ShopData] = [
 	preload("res://data/shops/blacksmith.tres"),
 ]
 
-## Travel vignettes that can fire on the way to a shop. Each event rolls its own
-## `chance` when its shop filter matches; buy/sell rebuilds call `_enter_shop`
-## directly and never re-roll.
+## Travel vignettes that can fire when the road loads at the start of a gather —
+## at most one per gather, rolled in begin(). A resumed save (start_day > 1) is
+## re-opening an old gather, not starting one, so it never re-rolls.
 const TRAVEL_EVENTS: Array[TravelEvent] = [
+	preload("res://data/travel_events/found_coin_pouch.tres"),
 	preload("res://data/travel_events/found_coin.tres"),
 ]
 
@@ -44,29 +52,39 @@ const TRAVEL_FADE_IN := 0.45
 const TRAVEL_FADE_HOLD := 0.9
 const TRAVEL_FADE_OUT := 0.45
 
+## The road's background art. Drop the real painting at this path (1280x720) and
+## it appears — until then the flat backdrop color stands in.
+const BACKGROUND_PATH := "res://assets/backgrounds/road.png"
+
+@onready var background_art: TextureRect = %BackgroundArt
 @onready var day_label: Label = %DayLabel
 @onready var gold_label: Label = %GoldLabel
 @onready var days_left_label: Label = %DaysLeftLabel
 @onready var body: VBoxContainer = %Body
 @onready var travel_fade: ColorRect = %TravelFade
+@onready var shop_scene: ShopScene = %ShopScene
 
 var _total_days: int = 0
 var _current_day: int = 0
 var _upcoming: Array[QuestData] = []
-## The shop currently open, or null while the town square is showing. Held so a
-## buy or sell can rebuild the open shop in place with refreshed prices.
+## The shop currently open (ShopScene showing), or null while the road is showing.
+## Held so a buy or sell can rebuild the open shop in place with refreshed prices.
 var _open_shop: ShopData = null
 ## Items bought from each shop this gather, keyed by shop id. Each shop supplies
 ## at most its `stock_limit` purchases per gather; the counts reset in begin() —
 ## the shops restock between quests.
 var _purchases: Dictionary = {}
-## True while the "On your way to the shops..." fade is playing, so a second
-## shop click can't stack another roll / fade.
+## True while the road fade is playing, so nothing can stack another roll / fade.
 var _travel_transitioning: bool = false
 
 
 func _ready() -> void:
 	RunState.gold_changed.connect(_on_gold_changed)
+	shop_scene.buy_pressed.connect(_on_buy)
+	shop_scene.sell_pressed.connect(_on_sell)
+	shop_scene.leave_pressed.connect(_end_day)
+	if ResourceLoader.exists(BACKGROUND_PATH):
+		background_art.texture = load(BACKGROUND_PATH)
 
 
 ## Opens a gather phase of `days` days. `upcoming` is previewed as the quests the
@@ -87,7 +105,15 @@ func begin(days: int, upcoming: Array[QuestData], start_day: int = 1,
 		# int-cast: a JSON round trip turns the counts into floats.
 		_purchases[shop_id] = int(purchases[shop_id])
 	_refresh_header()
-	_show_square()
+	# The once-per-gather travel event, rolled the moment the road loads. Only on
+	# day one: a mid-gather resume already had its chance. (A save written *on*
+	# day one re-rolls when reloaded — accepted, the stakes are a coin.)
+	if start_day <= 1:
+		var event := _roll_travel_event()
+		if event != null:
+			_run_travel_event(event)
+			return
+	_show_road()
 
 
 ## The per-shop buy counts, for the mid-gather autosave. Main stores this in the
@@ -100,15 +126,17 @@ func get_purchases() -> Dictionary:
 
 ## Ends the current day. Every day passed here also ticks the run's global clock
 ## down (see RunState.spend_day). When this gather's budget runs out the phase is
-## over and the loop moves on; otherwise it's back to the square for the next day.
+## over and the loop moves on; otherwise it's back to the road for the next day.
 func _end_day() -> void:
+	shop_scene.visible = false
+	_open_shop = null
 	RunState.spend_day()
 	_current_day += 1
 	if _current_day > _total_days:
 		gather_done.emit()
 		return
 	_refresh_header()
-	_show_square()
+	_show_road()
 	day_started.emit(_current_day)
 
 
@@ -132,10 +160,11 @@ func _on_gold_changed(_gold: int) -> void:
 	gold_label.text = "%d gold" % RunState.gold
 
 
-# --- the town square (shop pick) ----------------------------------------------
+# --- the road (shop pick) -------------------------------------------------------
 
-func _show_square() -> void:
+func _show_road() -> void:
 	_open_shop = null
+	shop_scene.visible = false
 	_clear_body()
 
 	body.add_child(_heading("The road out takes them %d days. Stock up." % _total_days))
@@ -145,6 +174,10 @@ func _show_square() -> void:
 	for shop in SHOPS:
 		shops_row.add_child(_build_shop_button(shop))
 	body.add_child(shops_row)
+
+	if RunState.can_upgrade_bag():
+		body.add_child(_spacer(12))
+		body.add_child(_build_bag_upgrade_button())
 
 	body.add_child(_spacer(16))
 	body.add_child(_subheading("Coming up — you'll choose one when you set out:"))
@@ -157,6 +190,27 @@ func _show_square() -> void:
 		skip.custom_minimum_size = Vector2(0, 40)
 		skip.pressed.connect(_skip_gather)
 		body.add_child(skip)
+
+
+## Side purchase on the square: bigger backpack for gold. Does not spend the day.
+func _build_bag_upgrade_button() -> Button:
+	var current := RunState.bag_cols()
+	var next := RunState.next_bag_size()
+	var cost := RunState.bag_upgrade_cost()
+	var button := Button.new()
+	button.text = "Buy a larger bag  %d×%d → %d×%d   %dg" % [current, current, next, next, cost]
+	button.custom_minimum_size = Vector2(0, 48)
+	button.add_theme_font_size_override("font_size", 18)
+	button.disabled = RunState.gold < cost
+	button.pressed.connect(_on_upgrade_bag)
+	return button
+
+
+func _on_upgrade_bag() -> void:
+	if RunState.upgrade_bag():
+		AudioManager.play("place")
+		_refresh_header()
+		_show_square()
 
 
 ## DEBUG: ends the gather phase immediately, whatever day it is. Still bills the
@@ -172,34 +226,29 @@ func _build_shop_button(shop: ShopData) -> Button:
 	button.text = shop.display_name
 	button.custom_minimum_size = Vector2(200, 56)
 	button.add_theme_font_size_override("font_size", 20)
-	button.pressed.connect(_on_shop_chosen.bind(shop))
+	button.pressed.connect(_enter_shop.bind(shop))
 	return button
 
 
-# --- travel events (on the way to a shop) -------------------------------------
+# --- travel events (when the road loads) ----------------------------------------
 
-## Shop pick from the square: maybe a road vignette, then the shop. Refreshing an
-## already-open shop (buy/sell) goes straight to `_enter_shop` and skips this.
-func _on_shop_chosen(shop: ShopData) -> void:
-	if _travel_transitioning:
-		return
-	var event := _roll_travel_event(shop)
-	if event != null:
-		await _play_travel_fade()
-		_show_travel_event(event, shop)
-	else:
-		_enter_shop(shop)
-
-
-## First matching event whose `chance` roll succeeds, or null.
-func _roll_travel_event(shop: ShopData) -> TravelEvent:
+## First event whose `chance` roll succeeds, or null. Rolled once per gather, in
+## begin() — before any shop is chosen, so events are no longer tied to a shop.
+func _roll_travel_event() -> TravelEvent:
 	for event in TRAVEL_EVENTS:
-		if event != null and event.matches_shop(shop) and randf() < event.chance:
+		if event != null and randf() < event.chance:
 			return event
 	return null
 
 
-## Full-screen fade with "On your way to the shops..." before the event card.
+## The fade, then the vignette. Split off from begin() so begin stays synchronous
+## for its callers; this runs on as a coroutine.
+func _run_travel_event(event: TravelEvent) -> void:
+	await _play_travel_fade()
+	_show_travel_event(event)
+
+
+## Full-screen fade with the road line before the event card.
 func _play_travel_fade() -> void:
 	_travel_transitioning = true
 	travel_fade.visible = true
@@ -215,9 +264,10 @@ func _play_travel_fade() -> void:
 	_travel_transitioning = false
 
 
-## Shows the vignette, applies rewards, then Continue opens the chosen shop.
-func _show_travel_event(event: TravelEvent, shop: ShopData) -> void:
+## Shows the vignette, applies rewards, then Continue opens the day's shop prompt.
+func _show_travel_event(event: TravelEvent) -> void:
 	_open_shop = null
+	shop_scene.visible = false
 	_clear_body()
 
 	body.add_child(_heading(event.title))
@@ -232,10 +282,10 @@ func _show_travel_event(event: TravelEvent, shop: ShopData) -> void:
 
 	body.add_child(_spacer(16))
 	var cont := Button.new()
-	cont.text = "Continue to %s" % shop.display_name
+	cont.text = "Head to the shops"
 	cont.custom_minimum_size = Vector2(0, 48)
 	cont.add_theme_font_size_override("font_size", 18)
-	cont.pressed.connect(_enter_shop.bind(shop))
+	cont.pressed.connect(_show_road)
 	body.add_child(cont)
 
 
@@ -283,69 +333,20 @@ func _build_preview_card(quest: QuestData) -> Control:
 	return card
 
 
-# --- a shop (buy / sell) ------------------------------------------------------
+# --- the shop visit (ShopScene child) -------------------------------------------
 
+## Opens (or refreshes) the day's shop. The ShopScene is presentation only — it
+## covers the road full-screen with its own art and signals trades back here,
+## where the gold, inventory, and purchase counts actually move.
 func _enter_shop(shop: ShopData) -> void:
 	_open_shop = shop
-	_clear_body()
-
-	body.add_child(_heading(shop.display_name))
-	var blurb := Label.new()
-	blurb.text = shop.blurb
-	blurb.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	body.add_child(blurb)
-
-	var remaining := _remaining_stock(shop)
-	if remaining > 0:
-		body.add_child(_subheading("On the shelves — %d in stock" % remaining))
-	else:
-		body.add_child(_subheading("On the shelves — sold out"))
-	for item in shop.stock:
-		body.add_child(_build_buy_row(item))
-
-	body.add_child(_spacer(8))
-	body.add_child(_subheading("Sell from your pack"))
-	var owned := _dedup_inventory()
-	if owned.is_empty():
-		body.add_child(_muted("Nothing left to sell."))
-	else:
-		for entry in owned:
-			body.add_child(_build_sell_row(entry["item"], entry["count"]))
-
-	body.add_child(_spacer(12))
-	var leave := Button.new()
-	leave.text = "Leave — that's the day"
-	leave.custom_minimum_size = Vector2(0, 48)
-	leave.add_theme_font_size_override("font_size", 18)
-	leave.pressed.connect(_end_day)
-	body.add_child(leave)
+	shop_scene.open(shop, _remaining_stock(shop), day_label.text)
+	shop_scene.visible = true
 
 
 ## How many more items the shop can sell this gather.
 func _remaining_stock(shop: ShopData) -> int:
 	return maxi(shop.stock_limit - int(_purchases.get(shop.id, 0)), 0)
-
-
-func _build_buy_row(item: ItemData) -> Control:
-	var row := _trade_row(item.display_name, _stat_summary(item))
-	var buy := Button.new()
-	buy.text = "Buy   %dg" % item.buy_price
-	buy.disabled = RunState.gold < item.buy_price or _remaining_stock(_open_shop) <= 0
-	buy.pressed.connect(_on_buy.bind(item))
-	row.add_child(buy)
-	return row
-
-
-func _build_sell_row(item: ItemData, count: int) -> Control:
-	var name_text := item.display_name
-	if count > 1:
-		name_text += "  x%d" % count
-	var row := _trade_row(name_text, _stat_summary(item))
-	var sell := Button.new()
-	sell.text = "Sell   %dg" % item.sell_price()
-	sell.pressed.connect(_on_sell.bind(item))
-	row.add_child(sell)
-	return row
 
 
 func _on_buy(item: ItemData) -> void:
@@ -365,26 +366,6 @@ func _on_sell(item: ItemData) -> void:
 
 
 # --- small builders -----------------------------------------------------------
-
-## A name + description row with room for a trade button on the right. The caller
-## adds the button.
-func _trade_row(name_text: String, desc_text: String) -> HBoxContainer:
-	var row := HBoxContainer.new()
-	row.add_theme_constant_override("separation", 12)
-
-	var name_label := Label.new()
-	name_label.text = name_text
-	name_label.custom_minimum_size = Vector2(180, 0)
-	row.add_child(name_label)
-
-	var desc := Label.new()
-	desc.text = desc_text
-	desc.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	desc.add_theme_font_size_override("font_size", 14)
-	row.add_child(desc)
-
-	return row
-
 
 func _heading(text: String) -> Label:
 	var label := Label.new()
@@ -418,23 +399,12 @@ func _spacer(height: int) -> Control:
 func _clear_body() -> void:
 	for child in body.get_children():
 		# Detach and free (queue_free lands at frame end); a rebuild in the same
-		# frame — as buying does — would otherwise stack the old rows.
+		# frame would otherwise stack the old rows.
 		body.remove_child(child)
 		child.queue_free()
 
 
 # --- summaries ----------------------------------------------------------------
-
-## "Food +2, Health +1" for the non-zero stats an item adds; "" when it adds none.
-func _stat_summary(item: ItemData) -> String:
-	var parts: Array[String] = []
-	var stats := item.get_stats()
-	for key in GameState.STAT_KEYS:
-		var value := int(stats.get(key, 0))
-		if value != 0:
-			parts.append("%s +%d" % [key.capitalize(), value])
-	return ", ".join(parts)
-
 
 ## "Food 4, Health 2" for a quest's non-zero targets.
 func _target_summary(quest: QuestData) -> String:
@@ -447,21 +417,3 @@ func _target_summary(quest: QuestData) -> String:
 	if parts.is_empty():
 		return "just a safe trip"
 	return ", ".join(parts)
-
-
-## The owned inventory folded into {item, count} entries, in first-seen order, so
-## the sell list shows one row per distinct item. Owned copies are now distinct
-## instances (each with its own durability), so entries group by `id` rather than
-## by resource identity.
-func _dedup_inventory() -> Array:
-	var result: Array = []
-	for item in RunState.inventory:
-		var found := false
-		for entry in result:
-			if entry["item"].id == item.id:
-				entry["count"] += 1
-				found = true
-				break
-		if not found:
-			result.append({"item": item, "count": 1})
-	return result

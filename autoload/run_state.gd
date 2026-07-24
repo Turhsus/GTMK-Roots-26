@@ -24,6 +24,9 @@ signal perks_changed(perks: Array[PerkData])
 ## or is reset. When it reaches zero the run is winding up: the current gather is
 ## allowed to finish, then one final quest plays and the game ends (see main.gd).
 signal days_changed(days_remaining: int)
+## Emitted when the player's backpack size changes (upgrade or reset). Packing
+## applies the new size on the next load_quest; town refreshes its upgrade button.
+signal bag_changed(cols: int, rows: int)
 
 const POOL: QuestPool = preload("res://data/quest_pool.tres")
 ## The forced first quest. It is not in the pool — the loop hands it to the player
@@ -47,6 +50,11 @@ const STARTING_GOLD := 50
 ## The whole run's length: a global day clock that counts down across town visits.
 ## When it runs out the game is wrapping up — one last quest, then the end screen.
 const TOTAL_DAYS := 10
+## Backpack size ladder: tier index -> side length (square bags). Starts at 4×4
+## and upgrades in town up to 6×6 (see upgrade_bag).
+const BAG_SIZES: Array[int] = [3, 4, 5, 6]
+## Gold cost to upgrade the back.
+const BAG_UPGRADE_COSTS: Array[int] = [10, 15, 25, 50]
 
 ## The items the player owns at the start of a run. This is the whole tray now —
 ## quests no longer decide what is available, only the targets and story. Authored here (one obvious place) rather than in a .tres; list an item
@@ -83,6 +91,9 @@ var owned_perks: Array[PerkData] = []
 ## and ends (see main.gd); it is not what limits an individual gather phase — that
 ## budget is still the finished quest's `days`.
 var days_remaining: int = TOTAL_DAYS
+## How big the player's backpack is this run. Index into BAG_SIZES; upgraded in
+## town with gold (see upgrade_bag). Packing reads bag_cols/bag_rows from this.
+var bag_tier: int = 0
 ## The inventory copies on loan from the current quest (its `quest_items`), added
 ## when the quest is selected and taken back when it completes — see
 ## lend_quest_items / reclaim_quest_items. Tracked by identity so reclaiming
@@ -153,6 +164,47 @@ func spend_day() -> void:
 ## wrap the run up (checked once a gather phase finishes; see main.gd).
 func days_are_up() -> bool:
 	return days_remaining <= 0
+
+
+## Current backpack width in cells (from bag_tier).
+func bag_cols() -> int:
+	return BAG_SIZES[clampi(bag_tier, 0, BAG_SIZES.size() - 1)]
+
+
+## Current backpack height in cells (square bags — same as bag_cols).
+func bag_rows() -> int:
+	return bag_cols()
+
+
+## True when another backpack upgrade is available (not yet at max tier).
+func can_upgrade_bag() -> bool:
+	return bag_tier < BAG_SIZES.size() - 1
+
+
+## Gold cost of the next upgrade, or 0 if already maxed.
+func bag_upgrade_cost() -> int:
+	if not can_upgrade_bag():
+		return 0
+	return BAG_UPGRADE_COSTS[bag_tier]
+
+
+## Side length after the next upgrade, or the current size if maxed.
+func next_bag_size() -> int:
+	if not can_upgrade_bag():
+		return bag_cols()
+	return BAG_SIZES[bag_tier + 1]
+
+
+## Spends the upgrade cost and bumps bag_tier. Returns false if maxed or broke.
+func upgrade_bag() -> bool:
+	if not can_upgrade_bag():
+		return false
+	var cost := bag_upgrade_cost()
+	if not spend_gold(cost):
+		return false
+	bag_tier += 1
+	bag_changed.emit(bag_cols(), bag_rows())
+	return true
 
 
 ## Adds coins to the purse (a quest reward, or a sale). Ignores non-positive
@@ -319,6 +371,8 @@ func reset() -> void:
 	perks_changed.emit(owned_perks)
 	days_remaining = TOTAL_DAYS
 	days_changed.emit(days_remaining)
+	bag_tier = 0
+	bag_changed.emit(bag_cols(), bag_rows())
 	progress_changed.emit(completed_count, current_difficulty())
 
 
@@ -349,6 +403,7 @@ func to_dict() -> Dictionary:
 		"cleared_ids": _cleared_ids.duplicate(),
 		"gold": gold,
 		"days_remaining": days_remaining,
+		"bag_tier": bag_tier,
 		"inventory": items,
 		"perks": perk_ids,
 	}
@@ -365,6 +420,7 @@ func from_dict(data: Dictionary) -> void:
 		_cleared_ids.append(String(id))
 	gold = maxi(int(data.get("gold", STARTING_GOLD)), 0)
 	days_remaining = int(data.get("days_remaining", TOTAL_DAYS))
+	bag_tier = clampi(int(data.get("bag_tier", 0)), 0, BAG_SIZES.size() - 1)
 
 	inventory.clear()
 	_quest_item_loans.clear()
@@ -392,6 +448,7 @@ func from_dict(data: Dictionary) -> void:
 	gold_changed.emit(gold)
 	perks_changed.emit(owned_perks)
 	days_changed.emit(days_remaining)
+	bag_changed.emit(bag_cols(), bag_rows())
 	progress_changed.emit(completed_count, current_difficulty())
 
 

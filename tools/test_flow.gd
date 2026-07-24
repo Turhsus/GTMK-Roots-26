@@ -70,6 +70,27 @@ func _test_progression() -> void:
 	RunState.register_result(reward_quest, true)
 	check(RunState.gold == gold0 + reward_quest.gold_reward, "a cleared quest pays its reward")
 
+	# Backpack upgrades: start 4x4, spend gold to grow, refuse when broke or maxed.
+	RunState.reset()
+	check(RunState.bag_tier == 0 and RunState.bag_cols() == 4,
+		"a fresh run starts at bag tier 0 (4x4)")
+	check(RunState.can_upgrade_bag(), "a fresh run can upgrade the backpack")
+	var cost1 := RunState.bag_upgrade_cost()
+	check(cost1 == RunState.BAG_UPGRADE_COSTS[0], "first upgrade costs the authored amount")
+	var gold_before := RunState.gold
+	check(RunState.upgrade_bag(), "first upgrade succeeds when the purse can cover it")
+	check(RunState.bag_tier == 1 and RunState.bag_cols() == 5, "first upgrade reaches 5x5")
+	check(RunState.gold == gold_before - cost1, "upgrade spends its cost")
+	check(RunState.upgrade_bag(), "second upgrade succeeds")
+	check(RunState.bag_tier == 2 and RunState.bag_cols() == 6, "second upgrade reaches 6x6")
+	check(not RunState.can_upgrade_bag() and not RunState.upgrade_bag(),
+		"a maxed bag refuses further upgrades")
+	RunState.reset()
+	RunState.gold = 0
+	RunState.gold_changed.emit(0)
+	check(not RunState.upgrade_bag() and RunState.bag_tier == 0,
+		"an upgrade is refused when the purse is empty")
+
 	# No-repeat within a tier: a cleared quest is held back until the tier is
 	# exhausted, then the tier resets and offers everything again.
 	RunState.reset()
@@ -265,7 +286,7 @@ func _test_flow() -> void:
 	var select: QuestSelect = main.get_node("%QuestSelect")
 	var packing: PackingScene = main.get_node("%PackingScene")
 	var playout: PlayoutScene = main.get_node("%PlayoutScene")
-	var town: TownScreen = main.get_node("%TownScreen")
+	var town: RoadScene = main.get_node("%RoadScene")
 	var tutorial := RunState.TUTORIAL
 
 	# The forced tutorial is packed first — no picker, no gather before it.
@@ -333,16 +354,17 @@ func _test_flow() -> void:
 	var pre_buy_gold: int = RunState.gold
 	var pre_buy_stock: int = RunState.inventory.size()
 
-	# Travel event on the way to the grocer: forced show grants gold, then Continue
-	# opens the shop. Direct `_enter_shop` (used below) must not re-roll.
+	# Travel event on the road: forced show grants gold, then "Head to the shops"
+	# leads on. Events fire when the road loads now, before any shop is chosen.
 	var found_coin: TravelEvent = load("res://data/travel_events/found_coin.tres")
 	var pre_event_gold: int = RunState.gold
-	town._show_travel_event(found_coin, grocer)
+	town._show_travel_event(found_coin)
 	check(RunState.gold == pre_event_gold + found_coin.gold_reward,
 		"Found coin! grants its gold_reward")
-	check(town._open_shop == null, "the travel event shows before the shop opens")
+	check(town._open_shop == null, "the travel event shows before any shop opens")
 	town._enter_shop(grocer)
-	check(town._open_shop == grocer, "Continue / direct enter opens the grocer")
+	check(town._open_shop == grocer, "entering the grocer opens its shop scene")
+	check(town.shop_scene.visible, "the shop scene covers the road while shopping")
 
 	town._on_buy(apple_item)
 	check(RunState.gold == pre_buy_gold - apple_item.buy_price, "buying spends the item's price")

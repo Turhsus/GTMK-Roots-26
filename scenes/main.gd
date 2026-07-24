@@ -42,7 +42,7 @@ const MAIN_MENU := "res://scenes/menu/MainMenu.tscn"
 @onready var quest_select: QuestSelect = %QuestSelect
 @onready var packing_scene: PackingScene = %PackingScene
 @onready var playout_scene: PlayoutScene = %PlayoutScene
-@onready var town_screen: TownScreen = %TownScreen
+@onready var road_scene: RoadScene = %RoadScene
 @onready var perk_select: PerkSelect = %PerkSelect
 @onready var thank_you_screen: ThankYouScreen = %ThankYouScreen
 @onready var pause_menu: PauseMenu = %PauseMenu
@@ -68,8 +68,8 @@ func _ready() -> void:
 	quest_select.quest_chosen.connect(_on_quest_chosen)
 	packing_scene.sent_off.connect(_on_sent_off)
 	playout_scene.pack_again_requested.connect(_on_playout_done)
-	town_screen.gather_done.connect(_on_gather_done)
-	town_screen.day_started.connect(_on_town_day_started)
+	road_scene.gather_done.connect(_on_gather_done)
+	road_scene.day_started.connect(_on_town_day_started)
 	perk_select.perk_chosen.connect(_on_perk_chosen)
 	pause_menu.resume_requested.connect(_close_pause)
 	pause_menu.home_requested.connect(_on_pause_home)
@@ -142,8 +142,8 @@ func _on_debug_phase(phase: String) -> void:
 				_gather_days = 2
 			if _upcoming.is_empty():
 				_upcoming = RunState.draw_choices()
-			town_screen.begin(_gather_days, _upcoming)
-			_show(town_screen)
+			road_scene.begin(_gather_days, _upcoming)
+			_show(road_scene)
 		"select":
 			if _upcoming.is_empty():
 				_upcoming = RunState.draw_choices()
@@ -232,8 +232,8 @@ func _on_perk_chosen(perk: PerkData) -> void:
 ## be previewed there and offered on select afterward.
 func _begin_gather() -> void:
 	_upcoming = RunState.draw_choices()
-	town_screen.begin(_gather_days, _upcoming)
-	_show(town_screen)
+	road_scene.begin(_gather_days, _upcoming)
+	_show(road_scene)
 	# Checkpoint after the draw, so a resume reuses these three rather than drawing
 	# a fresh set — draw_choices has side effects (it can reset a tier's clears).
 	_save_checkpoint(PHASE_GATHER, 1)
@@ -271,7 +271,7 @@ func _save_checkpoint(phase: String, gather_day: int = 1) -> void:
 		"upcoming_ids": _upcoming_ids(),
 		"gather_days": _gather_days,
 		"gather_day": gather_day,
-		"shop_purchases": town_screen.get_purchases(),
+		"shop_purchases": road_scene.get_purchases(),
 		"is_final_quest": _is_final_quest,
 	})
 
@@ -287,9 +287,9 @@ func _resume(loop: Dictionary) -> void:
 	match String(loop.get("phase", "")):
 		PHASE_GATHER:
 			var purchases: Variant = loop.get("shop_purchases", {})
-			town_screen.begin(_gather_days, _upcoming, int(loop.get("gather_day", 1)),
+			road_scene.begin(_gather_days, _upcoming, int(loop.get("gather_day", 1)),
 					purchases if purchases is Dictionary else {})
-			_show(town_screen)
+			_show(road_scene)
 		PHASE_SELECT:
 			# A save whose quests have since been removed from the pool would leave
 			# nothing to pick, which would dead-end the run — draw a fresh set.
@@ -337,5 +337,5 @@ func _missed_stats() -> Array[String]:
 
 
 func _show(screen: Control) -> void:
-	for candidate in [quest_select, packing_scene, playout_scene, town_screen, perk_select, thank_you_screen]:
+	for candidate in [quest_select, packing_scene, playout_scene, road_scene, perk_select, thank_you_screen]:
 		(candidate as Control).visible = candidate == screen

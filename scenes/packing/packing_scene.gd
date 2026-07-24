@@ -45,6 +45,10 @@ func _ready() -> void:
 		_on_item_ready(view)
 	GameState.quest_changed.connect(_on_quest_changed)
 	send_button.pressed.connect(_on_send_pressed)
+	# Apply the run's backpack size even when Main hasn't called load_quest yet
+	# (standalone PackingScene / tests). Refresh tray views — they spawned under
+	# the default cell size before this resize.
+	_apply_bag_size()
 	if GameState.current_quest == null:
 		GameState.set_quest(QUEST)
 	else:
@@ -61,7 +65,17 @@ func load_quest(quest: QuestData) -> void:
 		view.queue_free()
 	bag_grid.clear_board()
 	bag_grid.clear_preview()
+	_apply_bag_size()
 	GameState.set_quest(quest)
+
+
+## Matches the board to RunState's backpack and re-sizes any tray items already
+## on screen so their cell boxes match the new shared cell size.
+func _apply_bag_size() -> void:
+	bag_grid.resize_board(RunState.bag_cols(), RunState.bag_rows())
+	for child in item_tray.item_container.get_children():
+		if child is DraggableItem:
+			(child as DraggableItem).setup((child as DraggableItem).item)
 
 
 ## Empties the bag and puts every item back in the tray — this is "Pack again".
@@ -131,6 +145,8 @@ func _on_item_ready(view: DraggableItem) -> void:
 		view.grabbed.connect(_on_item_grabbed)
 	if not view.clicked.is_connected(_on_item_clicked):
 		view.clicked.connect(_on_item_clicked)
+	if not view.rotate_requested.is_connected(_on_item_rotate_requested):
+		view.rotate_requested.connect(_on_item_rotate_requested)
 
 
 ## A plain click on an item raises its stats menu — the same panel the hover
@@ -146,6 +162,29 @@ func _on_item_clicked(view: DraggableItem) -> void:
 	var target := get_global_mouse_position() + Vector2(12, 12)
 	var max_pos := viewport_size - menu_size - Vector2(8, 8)
 	menu.global_position = target.min(max_pos).max(Vector2(8, 8))
+
+
+## Right-click rotate while the item sits in the tray or bag (no drag). In the
+## bag, the new footprint must still fit at the same origin or the turn is refused.
+func _on_item_rotate_requested(view: DraggableItem) -> void:
+	if _dragging != null:
+		return
+	_close_info_menu()
+	var origin := bag_grid.get_origin(view)
+	if origin.x < 0:
+		view.rotate_once()
+		AudioManager.play("rotate")
+		return
+	bag_grid.remove(view)
+	var next_shape := ItemData.rotate_shape(view.item.shape, posmod(view.rotation_steps + 1, 4))
+	if bag_grid.can_place(next_shape, origin):
+		view.rotate_once()
+		bag_grid.place(view, origin)
+		AudioManager.play("rotate")
+	else:
+		bag_grid.place(view, origin)
+		AudioManager.play("invalid")
+		view.play_shake()
 
 
 func _close_info_menu() -> void:

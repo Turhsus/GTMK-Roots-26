@@ -5,9 +5,11 @@
 [resource]
 script = ExtResource("1_reg")
 item_traits = Dictionary[String, int]({
+"armor": 1,
 "climbing": 1,
 "cooking": 1,
 "cutting": 1,
+"defence": 1,
 "fire": 1,
 "food": 1,
 "healing": 1,

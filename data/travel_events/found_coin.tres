@@ -1,6 +1,6 @@
-[gd_resource type="Resource" script_class="TravelEvent" format=3]
+[gd_resource type="Resource" script_class="TravelEvent" format=3 uid="uid://po2r7xeqtavn"]
 
-[ext_resource type="Script" path="res://resources/travel_event.gd" id="1_script"]
+[ext_resource type="Script" uid="uid://mxckjmboisca" path="res://resources/travel_event.gd" id="1_script"]
 
 [resource]
 script = ExtResource("1_script")
@@ -8,5 +8,4 @@ id = "found_coin"
 title = "You found a coin!"
 text = "A glint in the dirt on the way to market, you found a coin. How lucky!"
 chance = 0.1
-shop_ids = Array[String](["grocer"])
 gold_reward = 1

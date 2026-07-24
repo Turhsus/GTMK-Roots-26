@@ -1,4 +1,4 @@
-[gd_resource type="Resource" script_class="QuestData" format=3 uid="uid://dr6j3a61rh8pg"]
+[gd_resource type="Resource" script_class="QuestData" format=3 uid="uid://c7a1rj2pj0652"]
 
 [ext_resource type="Script" uid="uid://b8mpss75xj6nx" path="res://resources/quest_data.gd" id="1_script"]
 [ext_resource type="Script" uid="uid://du5drbi85ateb" path="res://resources/item_data.gd" id="2_item"]
@@ -156,7 +156,6 @@ brief = "Mrs. Ward's kitten wandered into Whisper Woods three nights ago.
 You'll be gone about four days. Pack what they'll need — the bag only holds so much."
 days = 4
 gold_reward = 30
-quest_items = null
 narrative = Array[ExtResource("18_event")]([SubResource("event_day_1_path"), SubResource("event_day_2_hunger"), SubResource("event_day_2_night"), SubResource("event_day_3_encounter"), SubResource("event_day_3_scrape"), SubResource("event_day_4_kitten")])
 target_food = 8
 target_health = 6
