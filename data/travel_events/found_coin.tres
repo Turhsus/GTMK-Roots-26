@@ -7,6 +7,6 @@ script = ExtResource("1_script")
 id = "found_coin"
 title = "You found a coin!"
 text = "A glint in the dirt on the way to market, you found a coin. How lucky!"
-chance = 1.0
+chance = 0.1
 shop_ids = Array[String](["grocer"])
 gold_reward = 1
