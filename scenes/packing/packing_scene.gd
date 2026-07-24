@@ -33,6 +33,10 @@ var _preview_valid: bool = false
 ## The open stats menu raised by a click, or null. Lives on DragLayer so the
 ## tray's scroll box never clips it.
 var _info_menu: Control = null
+## Hover description tip (same panel as click inspect). Separate so a sticky
+## click-menu and a fleeting hover tip don't fight each other.
+var _hover_tip: Control = null
+var _hover_view: DraggableItem = null
 
 
 func _ready() -> void:
@@ -60,6 +64,7 @@ func _ready() -> void:
 ## Views placed in the bag live under BagGrid, not the tray, so populate() won't
 ## sweep them — they're freed here. Tray views are freed by populate() itself.
 func load_quest(quest: QuestData) -> void:
+	_close_hover_tip()
 	_close_info_menu()
 	for view in bag_grid.get_placed_views():
 		view.queue_free()
@@ -81,6 +86,7 @@ func _apply_bag_size() -> void:
 ## Empties the bag and puts every item back in the tray — this is "Pack again".
 ## The views are the same nodes throughout, so returning them is a reparent.
 func reset_packing() -> void:
+	_close_hover_tip()
 	_close_info_menu()
 	for view in bag_grid.get_placed_views():
 		item_tray.adopt(view)
@@ -96,6 +102,7 @@ func _on_quest_changed(quest: QuestData) -> void:
 
 
 func _on_send_pressed() -> void:
+	_close_hover_tip()
 	_close_info_menu()
 	AudioManager.play("send")
 	sent_off.emit()
@@ -147,21 +154,69 @@ func _on_item_ready(view: DraggableItem) -> void:
 		view.clicked.connect(_on_item_clicked)
 	if not view.rotate_requested.is_connected(_on_item_rotate_requested):
 		view.rotate_requested.connect(_on_item_rotate_requested)
+	if not view.hover_started.is_connected(_on_item_hover_started):
+		view.hover_started.connect(_on_item_hover_started)
+	if not view.hover_ended.is_connected(_on_item_hover_ended):
+		view.hover_ended.connect(_on_item_hover_ended)
 
 
-## A plain click on an item raises its stats menu — the same panel the hover
-## tooltip shows — on the drag layer, which sits above everything and is never
-## clipped by the tray's scroll box.
+## Immediate hover description — name, stats, durability, flavor. Hidden again
+## when the cursor leaves (or a drag / click-menu takes over).
+func _on_item_hover_started(view: DraggableItem) -> void:
+	if _dragging != null or _info_menu != null:
+		return
+	_show_hover_tip(view)
+
+
+func _on_item_hover_ended(view: DraggableItem) -> void:
+	if _hover_view == view:
+		_close_hover_tip()
+
+
+func _show_hover_tip(view: DraggableItem) -> void:
+	_close_hover_tip()
+	if view == null or view.item == null:
+		return
+	var tip := DraggableItem.build_info_panel(view.item)
+	# Ignore mouse so the tip never steals hover from the item underneath.
+	_set_mouse_ignored(tip)
+	drag_layer.add_child(tip)
+	_hover_tip = tip
+	_hover_view = view
+	_place_info_panel(tip, view.global_position + Vector2(view.size.x + 8, 0))
+
+
+func _close_hover_tip() -> void:
+	if _hover_tip != null and is_instance_valid(_hover_tip):
+		_hover_tip.queue_free()
+	_hover_tip = null
+	_hover_view = null
+
+
+func _set_mouse_ignored(node: Control) -> void:
+	node.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	for child in node.get_children():
+		if child is Control:
+			_set_mouse_ignored(child)
+
+
+## A plain click on an item raises its stats menu — the same panel as the hover
+## tip — on the drag layer, which sits above everything and is never clipped by
+## the tray's scroll box.
 func _on_item_clicked(view: DraggableItem) -> void:
+	_close_hover_tip()
 	_close_info_menu()
 	var menu := DraggableItem.build_info_panel(view.item)
 	drag_layer.add_child(menu)
 	_info_menu = menu
-	var menu_size := menu.get_combined_minimum_size()
+	_place_info_panel(menu, get_global_mouse_position() + Vector2(12, 12))
+
+
+func _place_info_panel(panel: Control, preferred: Vector2) -> void:
+	var menu_size := panel.get_combined_minimum_size()
 	var viewport_size := get_viewport_rect().size
-	var target := get_global_mouse_position() + Vector2(12, 12)
 	var max_pos := viewport_size - menu_size - Vector2(8, 8)
-	menu.global_position = target.min(max_pos).max(Vector2(8, 8))
+	panel.global_position = preferred.min(max_pos).max(Vector2(8, 8))
 
 
 ## Right-click rotate while the item sits in the tray or bag (no drag). In the
@@ -169,6 +224,7 @@ func _on_item_clicked(view: DraggableItem) -> void:
 func _on_item_rotate_requested(view: DraggableItem) -> void:
 	if _dragging != null:
 		return
+	_close_hover_tip()
 	_close_info_menu()
 	var origin := bag_grid.get_origin(view)
 	if origin.x < 0:
@@ -198,6 +254,7 @@ func _on_item_grabbed(view: DraggableItem, grab_offset: Vector2) -> void:
 		return
 	# Picking an item up dismisses any open menu — inspecting is over, we're
 	# moving it now.
+	_close_hover_tip()
 	_close_info_menu()
 	# Picking an item back up frees its cells and un-packs it; dropping it
 	# re-adds it. A move across the bag is just those two halves.

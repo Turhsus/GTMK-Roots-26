@@ -8,12 +8,15 @@ extends Control
 
 signal grabbed(view: DraggableItem, grab_offset: Vector2)
 ## Emitted on a plain click — a press and release that never turns into a drag.
-## PackingScene answers it with the stats menu, the same panel the hover tooltip
-## shows, so the player can inspect an item without picking it up.
+## PackingScene answers it with the stats menu so the player can pin an inspect
+## panel without picking the item up.
 signal clicked(view: DraggableItem)
 ## Right-click while the item is at rest (tray or bag). PackingScene rotates it
 ## in place — no drag required.
 signal rotate_requested(view: DraggableItem)
+## Hover enter/exit while at rest. PackingScene shows the item description tip.
+signal hover_started(view: DraggableItem)
+signal hover_ended(view: DraggableItem)
 
 const HOVER_LIFT := Vector2(0, -6)
 ## How far the mouse may travel while the button is held before the press stops
@@ -166,21 +169,11 @@ func _refresh() -> void:
 		icon.rotation_degrees = _rot_target
 	_icon_base = (size - art_size) * 0.5
 	icon.position = _icon_base + juice_offset
-	# Non-empty so Godot's hover timer arms; the shown content is built by
-	# _make_custom_tooltip() below, not from this string.
-	tooltip_text = item.display_name
-
-
-## Godot calls this when the hover tooltip is due (after the project's tooltip
-## delay). Returning the shared panel makes the hover tooltip and the click menu
-## literally the same view of the item.
-func _make_custom_tooltip(_for_text: String) -> Object:
-	return build_info_panel(item)
 
 
 ## The "what would this add" panel: the item's name, every stat it contributes,
-## and its flavor line. Static so PackingScene can raise the very same panel on a
-## click without redoing the layout.
+## and its flavor line. Static so PackingScene can raise the very same panel on
+## hover or click without redoing the layout.
 static func build_info_panel(source: ItemData) -> Control:
 	var panel := PanelContainer.new()
 	var style := StyleBoxFlat.new()
@@ -244,6 +237,10 @@ static func build_info_panel(source: ItemData) -> Control:
 func _on_hover_changed(hovered: bool) -> void:
 	if is_dragging or icon == null:
 		return
+	if hovered:
+		hover_started.emit(self)
+	else:
+		hover_ended.emit(self)
 	_kill(_offset_tween)
 	_offset_tween = create_tween()
 	_offset_tween.tween_property(self, "juice_offset", HOVER_LIFT if hovered else Vector2.ZERO, 0.1) \
