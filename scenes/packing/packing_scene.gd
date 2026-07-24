@@ -45,6 +45,10 @@ func _ready() -> void:
 		_on_item_ready(view)
 	GameState.quest_changed.connect(_on_quest_changed)
 	send_button.pressed.connect(_on_send_pressed)
+	# Apply the run's backpack size even when Main hasn't called load_quest yet
+	# (standalone PackingScene / tests). Refresh tray views — they spawned under
+	# the default cell size before this resize.
+	_apply_bag_size()
 	if GameState.current_quest == null:
 		GameState.set_quest(QUEST)
 	else:
@@ -61,7 +65,17 @@ func load_quest(quest: QuestData) -> void:
 		view.queue_free()
 	bag_grid.clear_board()
 	bag_grid.clear_preview()
+	_apply_bag_size()
 	GameState.set_quest(quest)
+
+
+## Matches the board to RunState's backpack and re-sizes any tray items already
+## on screen so their cell boxes match the new shared cell size.
+func _apply_bag_size() -> void:
+	bag_grid.resize_board(RunState.bag_cols(), RunState.bag_rows())
+	for child in item_tray.item_container.get_children():
+		if child is DraggableItem:
+			(child as DraggableItem).setup((child as DraggableItem).item)
 
 
 ## Empties the bag and puts every item back in the tray — this is "Pack again".

@@ -70,6 +70,27 @@ func _test_progression() -> void:
 	RunState.register_result(reward_quest, true)
 	check(RunState.gold == gold0 + reward_quest.gold_reward, "a cleared quest pays its reward")
 
+	# Backpack upgrades: start 4x4, spend gold to grow, refuse when broke or maxed.
+	RunState.reset()
+	check(RunState.bag_tier == 0 and RunState.bag_cols() == 4,
+		"a fresh run starts at bag tier 0 (4x4)")
+	check(RunState.can_upgrade_bag(), "a fresh run can upgrade the backpack")
+	var cost1 := RunState.bag_upgrade_cost()
+	check(cost1 == RunState.BAG_UPGRADE_COSTS[0], "first upgrade costs the authored amount")
+	var gold_before := RunState.gold
+	check(RunState.upgrade_bag(), "first upgrade succeeds when the purse can cover it")
+	check(RunState.bag_tier == 1 and RunState.bag_cols() == 5, "first upgrade reaches 5x5")
+	check(RunState.gold == gold_before - cost1, "upgrade spends its cost")
+	check(RunState.upgrade_bag(), "second upgrade succeeds")
+	check(RunState.bag_tier == 2 and RunState.bag_cols() == 6, "second upgrade reaches 6x6")
+	check(not RunState.can_upgrade_bag() and not RunState.upgrade_bag(),
+		"a maxed bag refuses further upgrades")
+	RunState.reset()
+	RunState.gold = 0
+	RunState.gold_changed.emit(0)
+	check(not RunState.upgrade_bag() and RunState.bag_tier == 0,
+		"an upgrade is refused when the purse is empty")
+
 	# No-repeat within a tier: a cleared quest is held back until the tier is
 	# exhausted, then the tier resets and offers everything again.
 	RunState.reset()
