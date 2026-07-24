@@ -54,19 +54,23 @@ layout_mode = 2
 theme_override_font_sizes/font_size = 20
 text = "Home screen"
 
-[node name="QuitButton" type="Button" parent="Center/MainPanel"]
-unique_name_in_owner = true
-custom_minimum_size = Vector2(260, 48)
-layout_mode = 2
-theme_override_font_sizes/font_size = 20
-text = "Quit"
-
 [node name="DebugButton" type="Button" parent="Center/MainPanel"]
 unique_name_in_owner = true
 custom_minimum_size = Vector2(260, 48)
 layout_mode = 2
 theme_override_font_sizes/font_size = 20
 text = "Debug…"
+
+[node name="QuitSpacer" type="Control" parent="Center/MainPanel"]
+custom_minimum_size = Vector2(0, 24)
+layout_mode = 2
+
+[node name="QuitButton" type="Button" parent="Center/MainPanel"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(260, 48)
+layout_mode = 2
+theme_override_font_sizes/font_size = 20
+text = "Quit"
 
 [node name="DebugPanel" type="VBoxContainer" parent="Center"]
 unique_name_in_owner = true
