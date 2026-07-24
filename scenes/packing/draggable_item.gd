@@ -223,6 +223,16 @@ static func build_info_panel(source: ItemData) -> Control:
 	dura.add_theme_color_override("font_color", Color("9a8f80"))
 	box.add_child(dura)
 
+	# Placement rules the item carries (see ItemEffect) — warned here so the durability
+	# hit at send-off isn't a surprise. Skipped entirely for a plain item.
+	for rule_text in source.effect_descriptions():
+		var rule := Label.new()
+		rule.text = "⚠ " + rule_text
+		rule.add_theme_color_override("font_color", Color("d08b52"))
+		rule.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		rule.custom_minimum_size.x = 220
+		box.add_child(rule)
+
 	if source.flavor != "":
 		var flavor := Label.new()
 		flavor.text = source.flavor

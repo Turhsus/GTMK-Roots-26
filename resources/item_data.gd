@@ -50,6 +50,13 @@ const _REGISTRY = preload("res://data/trait_registry.tres")
 ## shared preloaded template. Stays -1 on the template — only an owned copy sets it.
 var durability: int = -1
 
+@export_group("Effects")
+## Placement rules this item carries, resolved at send-off (see ItemEffect). Each is
+## a small rule resource composed inline here in the .tres — pick a subclass
+## (NoAdjacentTraitEffect, ClearAboveEffect, …) and set its params, rather than
+## subclassing ItemData. Empty for a plain item that only wears by the trip.
+@export var effects: Array[ItemEffect] = []
+
 @export_group("Economy")
 ## What this item costs to buy in a shop during the gather phase. The sell price
 ## is derived from it (half, see sell_price) so a bought item never fully refunds.
@@ -82,6 +89,20 @@ func _validate_property(property: Dictionary) -> void:
 		property.hint = PROPERTY_HINT_TYPE_STRING
 		property.hint_string = "%d/%d:%s" % [TYPE_STRING, PROPERTY_HINT_ENUM,
 			",".join(_REGISTRY.item_traits.keys())]
+
+
+## One line per effect for the info panel (see DraggableItem.build_info_panel),
+## skipping any effect with nothing to say. Lets the UI surface an item's placement
+## rules without knowing what each rule is.
+func effect_descriptions() -> Array[String]:
+	var lines: Array[String] = []
+	for effect in effects:
+		if effect == null:
+			continue
+		var text: String = effect.describe()
+		if text != "":
+			lines.append(text)
+	return lines
 
 
 ## Stat contributions keyed the same way as GameState.STAT_KEYS.

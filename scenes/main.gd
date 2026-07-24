@@ -187,11 +187,16 @@ func _on_sent_off() -> void:
 	_last_cleared = cleared
 	_last_missed_stats = _missed_stats()
 	var lines := NarrativeEngine.build_log(quest, GameState.packed_items, GameState.stats)
+	# Snapshot the packed board before wearing anything — apply_wear leaves the board
+	# alone, but grab it here where packing is unambiguously final so each item's
+	# effects can read how it was packed (neighbours, space above, rotation).
+	var layout := packing_scene.snapshot_board()
 	# Everything in the bag takes the trip and wears by one: single-use items are
-	# spent, sturdier ones (the blanket) come home with less durability left. (Read
-	# the log off packed_items first — apply_wear only touches RunState.) Remember
-	# this quest's length; it's the gather budget owed.
-	RunState.apply_wear(GameState.packed_items)
+	# spent, sturdier ones (the blanket) come home with less durability left, and an
+	# item packed against its own rules loses extra (see ItemEffect). (Read the log
+	# off packed_items first — apply_wear only touches RunState.) Remember this
+	# quest's length; it's the gather budget owed.
+	RunState.apply_wear(GameState.packed_items, layout)
 	# The quest is over: whatever it lent for the trip goes back. After wear, so a
 	# loaned item that was packed and spent is simply gone rather than double-removed.
 	RunState.reclaim_quest_items()

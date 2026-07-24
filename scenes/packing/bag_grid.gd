@@ -163,6 +163,18 @@ func get_placed_views() -> Array:
 	return _cells_by_view.keys()
 
 
+## An immutable snapshot of the current board, keyed by item instance, for send-off
+## effect resolution (see PackLayout / ItemEffect). Reads each placed view's item,
+## rotation and cells; the board itself is left untouched.
+func snapshot() -> PackLayout:
+	var layout := PackLayout.new()
+	for view in _cells_by_view.keys():
+		var di := view as DraggableItem
+		var cells: Array[Vector2i] = _cells_by_view[view]
+		layout.add(di.item, get_origin(di), di.rotation_steps, cells.duplicate())
+	return layout
+
+
 func show_preview(shape: Array[Vector2i], origin: Vector2i, valid: bool) -> void:
 	highlight.show_cells(cells_for(shape, origin), valid)
 

@@ -129,11 +129,21 @@ func current_difficulty() -> int:
 ## inventory copies (the tray builds off `inventory`), so erasing by identity here
 ## removes exactly the slot that was packed.
 ## (Restock hook unchanged: to regain items, append to `inventory` and emit.)
-func apply_wear(items: Array[ItemData]) -> void:
+## `layout` is the send-off board snapshot (see PackLayout), used to resolve each
+## item's placement effects; pass null (as the tests do) to wear items with no board
+## consequences at all.
+func apply_wear(items: Array[ItemData], layout: PackLayout = null) -> void:
 	if items.is_empty():
 		return
 	for item in items:
 		item.durability -= 1
+		# Placement consequences: each of the item's own effects inspects the final
+		# board and may dock more durability for a bad pack (packed upside down, crushed
+		# from above, next to the wrong thing). Before the perks, so a perk gets the
+		# last, kindest word.
+		if layout != null:
+			for effect in item.effects:
+				effect.resolve_send_off(item, layout)
 		# Each owned perk then gets to change the item after its trip via modify_item
 		# (the crafty perk repairs a combat item now and then, undoing the wear above).
 		# Run before the worn-out check so a perk can rescue an item from being tossed.

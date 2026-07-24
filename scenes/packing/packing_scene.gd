@@ -101,6 +101,13 @@ func _on_quest_changed(quest: QuestData) -> void:
 	quest_title.text = quest.title
 
 
+## The board snapshot Main hands to send-off so each packed item's effects can read
+## the final packing (neighbours, space above, rotation). Built here because this
+## scene owns the bag; see PackLayout / RunState.apply_wear.
+func snapshot_board() -> PackLayout:
+	return bag_grid.snapshot()
+
+
 func _on_send_pressed() -> void:
 	_close_hover_tip()
 	_close_info_menu()
