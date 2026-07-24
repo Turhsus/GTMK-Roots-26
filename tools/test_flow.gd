@@ -265,7 +265,7 @@ func _test_flow() -> void:
 	var select: QuestSelect = main.get_node("%QuestSelect")
 	var packing: PackingScene = main.get_node("%PackingScene")
 	var playout: PlayoutScene = main.get_node("%PlayoutScene")
-	var town: TownScreen = main.get_node("%TownScreen")
+	var town: RoadScene = main.get_node("%RoadScene")
 	var tutorial := RunState.TUTORIAL
 
 	# The forced tutorial is packed first — no picker, no gather before it.
@@ -333,16 +333,17 @@ func _test_flow() -> void:
 	var pre_buy_gold: int = RunState.gold
 	var pre_buy_stock: int = RunState.inventory.size()
 
-	# Travel event on the way to the grocer: forced show grants gold, then Continue
-	# opens the shop. Direct `_enter_shop` (used below) must not re-roll.
+	# Travel event on the road: forced show grants gold, then "Head to the shops"
+	# leads on. Events fire when the road loads now, before any shop is chosen.
 	var found_coin: TravelEvent = load("res://data/travel_events/found_coin.tres")
 	var pre_event_gold: int = RunState.gold
-	town._show_travel_event(found_coin, grocer)
+	town._show_travel_event(found_coin)
 	check(RunState.gold == pre_event_gold + found_coin.gold_reward,
 		"Found coin! grants its gold_reward")
-	check(town._open_shop == null, "the travel event shows before the shop opens")
+	check(town._open_shop == null, "the travel event shows before any shop opens")
 	town._enter_shop(grocer)
-	check(town._open_shop == grocer, "Continue / direct enter opens the grocer")
+	check(town._open_shop == grocer, "entering the grocer opens its shop scene")
+	check(town.shop_scene.visible, "the shop scene covers the road while shopping")
 
 	town._on_buy(apple_item)
 	check(RunState.gold == pre_buy_gold - apple_item.buy_price, "buying spends the item's price")

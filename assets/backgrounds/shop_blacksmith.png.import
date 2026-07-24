@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://da5cgambnfs5b"
-path="res://.godot/imported/bread.png-2832ab06c865409c4dc08ee22d17160d.ctex"
+uid="uid://dv4jvscdv6wxu"
+path="res://.godot/imported/shop_blacksmith.png-e923c76c4b58dc551ac699424eb40ed7.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/items/bread.png"
-dest_files=["res://.godot/imported/bread.png-2832ab06c865409c4dc08ee22d17160d.ctex"]
+source_file="res://assets/backgrounds/shop_blacksmith.png"
+dest_files=["res://.godot/imported/shop_blacksmith.png-e923c76c4b58dc551ac699424eb40ed7.ctex"]
 
 [params]
 

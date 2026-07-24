@@ -7,7 +7,7 @@
 script = ExtResource("1_qpmi0")
 id = "knife"
 display_name = "Knife"
-shape = Array[Vector2i]([Vector2i(0, 0), Vector2i(0, 1)])
+shape = Array[Vector2i]([Vector2i(0, 0), Vector2i(1, 0)])
 icon = ExtResource("1_lhbww")
 combat = 3
 utility = 1

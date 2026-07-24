@@ -4,7 +4,7 @@
 [ext_resource type="PackedScene" path="res://scenes/select/QuestSelect.tscn" id="2_select"]
 [ext_resource type="PackedScene" path="res://scenes/packing/PackingScene.tscn" id="3_packing"]
 [ext_resource type="PackedScene" path="res://scenes/playout/PlayoutScene.tscn" id="4_playout"]
-[ext_resource type="PackedScene" path="res://scenes/gather/TownScreen.tscn" id="5_town"]
+[ext_resource type="PackedScene" path="res://scenes/gather/RoadScene.tscn" id="5_road"]
 [ext_resource type="PackedScene" path="res://scenes/perk/PerkSelect.tscn" id="6_perk"]
 [ext_resource type="PackedScene" path="res://scenes/end/ThankYouScreen.tscn" id="7_end"]
 [ext_resource type="PackedScene" path="res://scenes/pause/PauseMenu.tscn" id="8_pause"]
@@ -28,7 +28,7 @@ unique_name_in_owner = true
 visible = false
 layout_mode = 1
 
-[node name="TownScreen" parent="." instance=ExtResource("5_town")]
+[node name="RoadScene" parent="." instance=ExtResource("5_road")]
 unique_name_in_owner = true
 visible = false
 layout_mode = 1
