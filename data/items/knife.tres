@@ -1,6 +1,6 @@
 [gd_resource type="Resource" script_class="ItemData" format=3 uid="uid://bpppywm8euvo7"]
 
-[ext_resource type="Texture2D" uid="uid://v8ce2va32fin" path="res://assets/items/waterskin.png" id="1_lhbww"]
+[ext_resource type="Texture2D" uid="uid://cfe6ehrjg2g5y" path="res://assets/items/knife.png" id="1_lhbww"]
 [ext_resource type="Script" uid="uid://du5drbi85ateb" path="res://resources/item_data.gd" id="1_qpmi0"]
 
 [resource]
