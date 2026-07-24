@@ -186,11 +186,22 @@ func _test_day_clock() -> void:
 
 func _test_perks() -> void:
 	RunState.reset()
-	var forage: PerkData = load("res://data/perks/forage.tres")
-	var crafty: PerkData = load("res://data/perks/crafty.tres")
+	# Perks are built instances of their subclasses now (no .tres), one of each in
+	# RunState.all_perks; grab them by id to drive the checks below.
+	var forage: PerkData = RunState.find_perk("forage")
+	var crafty: PerkData = RunState.find_perk("crafty")
+	check(forage != null and crafty != null, "the forage and crafty perks are built")
 	check(RunState.owned_perks.is_empty(), "a fresh run owns no perks")
-	check(RunState.food_bonus() == 0, "no perks means no food bonus")
-	check(RunState.combat_wear_skip_chance() == 0.0, "no perks means no wear skip")
+
+	# The perks are their own subclasses now, each owning its behaviour through the
+	# PerkData hooks rather than a typed field a central system reads.
+	check(forage.modify_stats({"food": 0})["food"] == 1,
+		"the forage perk's modify_stats hook adds +1 food")
+	var apple: ItemData = preload("res://data/items/apple.tres")  # food item, no combat
+	var apple_copy := apple.make_owned_copy()
+	var apple_before := apple_copy.durability
+	crafty.modify_item(apple_copy)
+	check(apple_copy.durability == apple_before, "crafty never touches a non-combat item")
 
 	# Offering is contextual: a missed target surfaces the perk that addresses it.
 	var on_food := RunState.offer_perks(["food"])
@@ -207,8 +218,7 @@ func _test_perks() -> void:
 	# Earning the forage perk: its food folds into the current packing, and it's no
 	# longer offered (perks are unique).
 	RunState.add_perk(forage)
-	check(RunState.has_perk("forage") and RunState.food_bonus() == 1,
-		"the forage perk is owned and adds +1 food")
+	check(RunState.has_perk("forage"), "the forage perk is owned")
 	GameState.set_quest(QUEST)
 	check(GameState.stats["food"] == 1, "the food bonus shows on an empty bag, got %d" % GameState.stats["food"])
 	check(not _has_id(RunState.offer_perks(["food"]), "forage"),
@@ -216,15 +226,26 @@ func _test_perks() -> void:
 	RunState.add_perk(forage)
 	check(RunState.owned_perks.size() == 1, "a perk can't be earned twice")
 
-	# Earning crafty gives the combat wear skip its chance.
+	# Earning crafty repairs a combat item's trip wear now and then. The roll is random,
+	# so check the rate over many trials: modify_item (run after the item's default wear)
+	# should undo that point of wear on ~10% of combat items.
 	RunState.add_perk(crafty)
-	check(abs(RunState.combat_wear_skip_chance() - 0.1) < 0.0001,
-		"the crafty perk gives a 10%% chance to skip combat wear")
+	var sword: ItemData = preload("res://data/items/sword.tres")  # a combat item
+	var repaired := 0
+	var trials := 20000
+	for _i in trials:
+		var copy := sword.make_owned_copy()
+		copy.durability -= 1  # the trip's wear, as apply_wear applies it
+		crafty.modify_item(copy)
+		if copy.durability == sword.max_durability:  # the wear was undone
+			repaired += 1
+	var rate := float(repaired) / float(trials)
+	check(abs(rate - 0.1) < 0.02,
+		"crafty repairs a combat item's wear ~10%% of the time, got %.3f" % rate)
 
 	# A fresh run drops every earned perk.
 	RunState.reset()
-	check(RunState.owned_perks.is_empty() and RunState.food_bonus() == 0,
-		"reset clears earned perks")
+	check(RunState.owned_perks.is_empty(), "reset clears earned perks")
 	GameState.set_quest(QUEST)
 	check(GameState.stats["food"] == 0, "with perks cleared the food bonus is gone")
 

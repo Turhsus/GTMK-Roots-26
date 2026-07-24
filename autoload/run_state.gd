@@ -33,14 +33,6 @@ const POOL: QuestPool = preload("res://data/quest_pool.tres")
 ## directly before the normal draw-of-three ever runs (see main.gd). A gentle,
 ## short intro; clearing it kicks off the first gather phase.
 const TUTORIAL: QuestData = preload("res://data/quests/tutorial.tres")
-## Every perk that can be earned this game — permanent upgrades unlocked by failing
-## a quest and picking the lesson that fits (see offer_perks). Authored as .tres;
-## list one here to make it earnable. Held in a const like the starter pack; a pool
-## resource can replace this if the list grows.
-const ALL_PERKS: Array[PerkData] = [
-	preload("res://data/perks/forage.tres"),
-	preload("res://data/perks/crafty.tres"),
-]
 ## Difficulty is capped here; past this every quest is drawn from the top tier.
 const MAX_DIFFICULTY := 4
 ## How many quests to lay out for the player to choose between.
@@ -82,9 +74,14 @@ var inventory: Array[ItemData] = []
 ## partly recouped by selling) in the gather phase.
 var gold: int = STARTING_GOLD
 ## Adventuring perks earned so far this run — permanent upgrades. Each is unique: a
-## perk once owned is never offered again (see offer_perks). Their effects are read
-## through food_bonus (folded into the food stat) and apply_wear (the wear skip).
+## perk once owned is never offered again (see offer_perks). Their effects run through
+## each perk's own hooks — GameState calls modify_stats while packing, apply_wear calls
+## modify_item at send-off — so the systems never special-case an individual perk.
 var owned_perks: Array[PerkData] = []
+## One built instance of every perk kind (one per PERK_TYPES entry), the master list
+## offer_perks and find_perk work from. Filled once in _ready; perks are stateless
+## behaviour, so a single shared instance per kind is all that's ever needed.
+var all_perks: Array[PerkData] = []
 ## The run's global day clock. Starts at TOTAL_DAYS and drops by one for each day
 ## spent in town (see spend_day). Once it hits zero the loop plays one final quest
 ## and ends (see main.gd); it is not what limits an individual gather phase — that
@@ -106,8 +103,17 @@ var _items_by_id: Dictionary = {}
 
 
 func _ready() -> void:
+	_build_perks()
 	_build_lookups()
 	_stock_starter_inventory()
+
+
+## Builds the one instance of each perk kind. Called before anything can offer or grant
+## a perk. Idempotent-ish: clears first so a re-run (tests) doesn't double up.
+func _build_perks() -> void:
+	all_perks.clear()
+	for perk_type in PerkRegistry.TYPES:
+		all_perks.append(perk_type.new())
 
 
 ## The current difficulty tier: one cleared quest per tier, capped at the top.
@@ -126,13 +132,13 @@ func current_difficulty() -> int:
 func apply_wear(items: Array[ItemData]) -> void:
 	if items.is_empty():
 		return
-	var skip_chance := combat_wear_skip_chance()
 	for item in items:
-		# Crafty perk: a combat item sometimes comes home untouched — it isn't spent
-		# this trip, so it skips the wear entirely. Rolled per combat item packed.
-		if skip_chance > 0.0 and item.combat > 0 and randf() < skip_chance:
-			continue
 		item.durability -= 1
+		# Each owned perk then gets to change the item after its trip via modify_item
+		# (the crafty perk repairs a combat item now and then, undoing the wear above).
+		# Run before the worn-out check so a perk can rescue an item from being tossed.
+		for perk in owned_perks:
+			perk.modify_item(item)
 		if item.durability <= 0:
 			inventory.erase(item)
 	inventory_changed.emit(inventory)
@@ -296,26 +302,6 @@ func has_perk(perk_id: String) -> bool:
 	return false
 
 
-## Flat food granted by owned perks, folded into the food stat from the start of
-## packing so the player sees it and packs around it (GameState._recompute reads it).
-func food_bonus() -> int:
-	var bonus := 0
-	for perk in owned_perks:
-		bonus += perk.food_bonus
-	return bonus
-
-
-## The chance a single combat item escapes wear on send-off, combined across owned
-## perks. Perks are unique, so today this is just the crafty perk's 0.1 when owned;
-## combining as independent rolls (1 − product of misses) keeps it sane if more
-## wear-skip perks are ever added — it approaches 1 rather than overflowing it.
-func combat_wear_skip_chance() -> float:
-	var keep_worn := 1.0
-	for perk in owned_perks:
-		keep_worn *= 1.0 - perk.combat_wear_skip_chance
-	return 1.0 - keep_worn
-
-
 ## The perks to offer after a failed quest: those not yet owned whose trigger_stat is
 ## among the missed targets. Contextual — a food shortfall surfaces the forage perk,
 ## a combat shortfall the crafty one; a perk with no trigger_stat is always eligible.
@@ -323,7 +309,7 @@ func combat_wear_skip_chance() -> float:
 ## in which case the loop skips the lesson screen (see main.gd).
 func offer_perks(missed_stats: Array[String]) -> Array[PerkData]:
 	var offers: Array[PerkData] = []
-	for perk in ALL_PERKS:
+	for perk in all_perks:
 		if has_perk(perk.id):
 			continue
 		if perk.trigger_stat == "" or missed_stats.has(perk.trigger_stat):
@@ -468,10 +454,10 @@ func find_item(id: String) -> ItemData:
 	return item
 
 
-## The authored PerkData for an id, or null. Perks are a short const list, so this
+## The built PerkData instance for an id, or null. Perks are a short list, so this
 ## just walks it.
 func find_perk(id: String) -> PerkData:
-	for perk in ALL_PERKS:
+	for perk in all_perks:
 		if perk.id == id:
 			return perk
 	return null

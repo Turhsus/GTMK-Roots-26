@@ -42,7 +42,7 @@ func _test_round_trip() -> void:
 	RunState.completed_count = 2
 	RunState.gold = 137
 	RunState.days_remaining = 4
-	RunState.add_perk(RunState.ALL_PERKS[0])
+	RunState.add_perk(RunState.all_perks[0])
 	# Wear one item down so a non-default durability has to survive the trip.
 	var blanket := _owned("blanket")
 	check(blanket != null, "the fresh inventory has a blanket to wear down")
@@ -62,8 +62,9 @@ func _test_round_trip() -> void:
 	check(RunState.current_difficulty() == 2, "difficulty is derived back from the clears")
 	check(RunState.inventory.size() == before_count,
 		"the inventory came back whole, %d of %d" % [RunState.inventory.size(), before_count])
-	check(RunState.has_perk(RunState.ALL_PERKS[0].id), "the earned perk survived")
-	check(RunState.food_bonus() == 1, "and its effect is live again, got %d" % RunState.food_bonus())
+	check(RunState.has_perk(RunState.all_perks[0].id), "the earned perk survived")
+	var perk_food: int = int(RunState.owned_perks[0].modify_stats({"food": 0}).get("food", 0))
+	check(perk_food == 1, "and its effect is live again, got %d" % perk_food)
 
 	var restored_blanket := _owned("blanket")
 	check(restored_blanket != null and restored_blanket.durability == 2,
