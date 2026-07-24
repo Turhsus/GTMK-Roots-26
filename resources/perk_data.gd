@@ -6,8 +6,8 @@ extends Resource
 ## plain data resource each *kind* of perk is its own subclass that overrides the hooks
 ## below to say how it changes the run. The systems that run the loop don't know about
 ## individual perks — they just loop the owned perks and call the hooks at the right
-## moment (GameState calls modify_stats while packing, RunState.apply_wear calls
-## modify_item at send-off). Adding a genuinely new effect is a new subclass plus,
+## moment (GameState calls modify_stats while packing, RunState.apply_perks_to_items
+## calls modify_item at send-off). Adding a genuinely new effect is a new subclass plus,
 ## if it needs a new moment, a new hook here and the one call site that fires it.
 ##
 ## The fields below are shared by every perk (identity + when it's offered); the

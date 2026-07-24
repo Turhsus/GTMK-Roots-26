@@ -124,21 +124,25 @@ func _test_durability() -> void:
 		"a fresh owned copy starts at full durability")
 
 	# A single-use item is worn out and gone after one send-off.
-	RunState.apply_wear([apple])
+	RunState.apply_wear_to_inventory([apple])
+	RunState.discard_worn_out([apple])
 	check(not RunState.inventory.has(apple), "a 1-durability item is worn out in one quest")
 
 	# A sturdy item survives, losing one trip each send-off, until it too runs out.
-	RunState.apply_wear([blanket])
+	RunState.apply_wear_to_inventory([blanket])
+	RunState.discard_worn_out([blanket])
 	check(RunState.inventory.has(blanket) and blanket.durability == 2, "the blanket has 2 trips left after one")
-	RunState.apply_wear([blanket])
+	RunState.apply_wear_to_inventory([blanket])
+	RunState.discard_worn_out([blanket])
 	check(RunState.inventory.has(blanket) and blanket.durability == 1, "and 1 trip left after two")
-	RunState.apply_wear([blanket])
+	RunState.apply_wear_to_inventory([blanket])
+	RunState.discard_worn_out([blanket])
 	check(not RunState.inventory.has(blanket), "the blanket is worn out after three trips")
 
 	# Wear is per-copy: a freshly bought blanket doesn't inherit a worn one's damage,
 	# and the shared template is never mutated.
 	RunState.reset()
-	RunState.apply_wear([_owned("blanket")])  # the starter blanket drops to 2
+	RunState.apply_wear_to_inventory([_owned("blanket")])  # the starter blanket drops to 2
 	RunState.gain(load("res://data/items/blanket.tres"))  # a bought one enters at 3
 	var durs: Array[int] = []
 	for item in RunState.inventory:
@@ -235,7 +239,7 @@ func _test_perks() -> void:
 	var trials := 20000
 	for _i in trials:
 		var copy := sword.make_owned_copy()
-		copy.durability -= 1  # the trip's wear, as apply_wear applies it
+		copy.durability -= 1  # the trip's wear, as apply_wear_to_inventory applies it
 		crafty.modify_item(copy)
 		if copy.durability == sword.max_durability:  # the wear was undone
 			repaired += 1

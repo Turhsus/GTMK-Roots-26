@@ -31,6 +31,11 @@ extends Control
 ## what follows it (perk offer / gather). Flip back to false to restore the log.
 const DEBUG_SKIP_PLAYOUT: bool = true
 
+## DEBUG: after send-off, pop a modal listing each packed item's durability before
+## and after the trip's wear — the quickest way to see placement effects bite (pack
+## the wine upside down and watch it drop an extra point). Flip to false to disable.
+const DEBUG_SHOW_DURABILITY: bool = true
+
 ## The phases a save can drop the player back into — the three points where the
 ## run is a clean snapshot. Written into the save's "loop" half (see SaveManager).
 const PHASE_PACKING := "packing"
@@ -177,30 +182,56 @@ func _on_quest_chosen(quest: QuestData) -> void:
 
 func _on_sent_off() -> void:
 	var quest := GameState.current_quest
+	# Snapshot the packed board before touching anything — the placement effects read
+	# how each item was packed (neighbours, space above, rotation), and the debug
+	# readout wants every item's before -> after, including copies destroyed below.
+	var layout := packing_scene.snapshot_board()
+	var report := _durability_report(layout)
+
+	# The send-off runs in a deliberate order (see the design note in run_state.gd):
+	# 1. Placement effects dock durability for a bad pack (packed upside down, next to
+	#    the wrong thing) ...
+	RunState.resolve_item_effects(GameState.packed_items, layout)
+	# 2. ... then perks get the last, kindest word (crafty can repair a combat item) ...
+	RunState.apply_perks_to_items(GameState.packed_items)
+	# 3. ... and a copy the pack itself destroyed is gone *before* the quest is judged:
+	#    it broke in the bag, so it neither helps the quest nor comes home.
+	_discard_worn_out()
+
+	# 4. Judge the quest against what actually survived to be used. register_result pays
+	#    the reward on a clear, so the gold is on hand for the gather phase that follows.
 	var cleared := GameState.count_targets_met() == GameState.STAT_KEYS.size()
-	# register_result pays the reward on a clear, so the gold is on hand for the
-	# gather phase that follows.
 	RunState.register_result(quest, cleared)
 	# Remember the outcome for the post-playout perk offer. GameState is still on this
 	# quest here, so read the shortfall now — by the time the playout ends the picker
 	# may have moved on.
 	_last_cleared = cleared
 	_last_missed_stats = _missed_stats()
+	# The log reflects the survivors too — a food item that broke won't tell its beat.
 	var lines := NarrativeEngine.build_log(quest, GameState.packed_items, GameState.stats)
-	# Snapshot the packed board before wearing anything — apply_wear leaves the board
-	# alone, but grab it here where packing is unambiguously final so each item's
-	# effects can read how it was packed (neighbours, space above, rotation).
-	var layout := packing_scene.snapshot_board()
-	# Everything in the bag takes the trip and wears by one: single-use items are
-	# spent, sturdier ones (the blanket) come home with less durability left, and an
-	# item packed against its own rules loses extra (see ItemEffect). (Read the log
-	# off packed_items first — apply_wear only touches RunState.) Remember this
-	# quest's length; it's the gather budget owed.
-	RunState.apply_wear(GameState.packed_items, layout)
+
+	# 5. The trip itself wears every surviving item by one: single-use items are spent,
+	#    sturdier ones (the blanket) come home with less durability left ...
+	RunState.apply_wear_to_inventory(GameState.packed_items)
+	# 6. ... and whatever the trip wore out is thrown away for good.
+	_discard_worn_out()
+
+	for entry in report:
+		entry["after"] = (entry["item"] as ItemData).durability
 	# The quest is over: whatever it lent for the trip goes back. After wear, so a
 	# loaned item that was packed and spent is simply gone rather than double-removed.
 	RunState.reclaim_quest_items()
 	_gather_days = quest.days
+	# Debug: hold the flow on a durability readout until it's dismissed, then carry on
+	# exactly as an undebugged send-off would.
+	if DEBUG_SHOW_DURABILITY and not report.is_empty():
+		_show_durability_debug(report, _proceed_after_send.bind(lines))
+		return
+	_proceed_after_send(lines)
+
+
+## What a finished send-off does next: skip straight past the log (debug) or play it.
+func _proceed_after_send(lines: Array[String]) -> void:
 	if DEBUG_SKIP_PLAYOUT:
 		# Skip showing the log; go straight to what the "continue" button would do.
 		_on_playout_done()
@@ -341,6 +372,93 @@ func _missed_stats() -> Array[String]:
 	return missed
 
 
+## Drops every worn-out copy (durability <= 0) from the current send-off. RunState
+## erases it from the inventory for good; the same copy is then removed from the
+## packing so it stops counting toward the quest and its narrative beats (packed
+## items and inventory copies are the same instances). Called twice in _on_sent_off:
+## once after placement effects/perks (so a destroyed item isn't judged) and once
+## after the trip's flat wear.
+func _discard_worn_out() -> void:
+	for item in RunState.discard_worn_out(GameState.packed_items):
+		GameState.remove_item(item)
+
+
 func _show(screen: Control) -> void:
 	for candidate in [quest_select, packing_scene, playout_scene, road_scene, perk_select, thank_you_screen]:
 		(candidate as Control).visible = candidate == screen
+
+
+# --- debug: durability readout -------------------------------------------------
+
+## One record per packed item, capturing its durability and rotation *before* wear.
+## `after` is filled in once all send-off wear has run (see _on_sent_off).
+func _durability_report(layout: PackLayout) -> Array:
+	var report: Array = []
+	for item in GameState.packed_items:
+		report.append({
+			"item": item,
+			"before": item.durability,
+			"rotation": layout.rotation_of(item),
+		})
+	return report
+
+
+## Modal debug overlay: lists each packed item's before -> after durability so a
+## placement effect's extra bite is visible (an upside-down wine drops two, not one).
+## Sits on its own CanvasLayer above every screen; `on_dismiss` resumes the loop.
+func _show_durability_debug(report: Array, on_dismiss: Callable) -> void:
+	var layer := CanvasLayer.new()
+	layer.layer = 100
+	add_child(layer)
+
+	var dim := ColorRect.new()
+	dim.color = Color(0, 0, 0, 0.6)
+	dim.set_anchors_preset(Control.PRESET_FULL_RECT)
+	layer.add_child(dim)
+
+	var center := CenterContainer.new()
+	center.set_anchors_preset(Control.PRESET_FULL_RECT)
+	layer.add_child(center)
+
+	var panel := PanelContainer.new()
+	var style := StyleBoxFlat.new()
+	style.bg_color = Color(0.12, 0.09, 0.08, 0.98)
+	style.border_color = Color(0.55, 0.42, 0.26)
+	style.set_border_width_all(2)
+	style.set_corner_radius_all(6)
+	style.set_content_margin_all(16)
+	panel.add_theme_stylebox_override("panel", style)
+	center.add_child(panel)
+
+	var box := VBoxContainer.new()
+	box.add_theme_constant_override("separation", 6)
+	panel.add_child(box)
+
+	var title := Label.new()
+	title.text = "DEBUG — packed durability after send-off"
+	title.add_theme_font_size_override("font_size", 20)
+	box.add_child(title)
+
+	for entry in report:
+		var item := entry["item"] as ItemData
+		var before := int(entry["before"])
+		var after := int(entry["after"])
+		var row := Label.new()
+		var text := "%s:   %d → %d   (%+d)" % [item.display_name, before, after, after - before]
+		if int(entry["rotation"]) == 2:
+			text += "   [upside down]"
+		if after <= 0:
+			text += "   SPENT"
+		row.text = text
+		# Flag anything that lost more than the flat one point of trip wear — that's an
+		# effect (or perk) at work, the thing this readout exists to show.
+		if before - after > 1:
+			row.add_theme_color_override("font_color", Color("d08b52"))
+		box.add_child(row)
+
+	var button := Button.new()
+	button.text = "Continue"
+	box.add_child(button)
+	button.pressed.connect(func() -> void:
+		layer.queue_free()
+		on_dismiss.call())

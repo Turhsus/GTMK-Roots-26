@@ -7,8 +7,8 @@ extends Resource
 ## below, so a genuinely new rule is a new *effect* subclass — never a new ItemData
 ## subclass. The item itself stays one class with many .tres instances.
 ##
-## Rules resolve at SEND-OFF, once the bag is final. RunState.apply_wear hands each
-## packed item's effects the board snapshot (PackLayout) so a rule can read the item's
+## Rules resolve at SEND-OFF, once the bag is final. RunState.resolve_item_effects hands
+## each packed item's effects the board snapshot (PackLayout) so a rule can read the item's
 ## neighbours, the space above it, and how it's turned, then dock its durability for a
 ## bad pack. Placement is never blocked — a rule is a consequence, not a wall (the
 ## agreed "send-off penalty" model). Because effects are stateless config, the same

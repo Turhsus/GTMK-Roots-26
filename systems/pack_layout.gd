@@ -6,7 +6,7 @@ extends RefCounted
 ## decide their placement penalties (see ItemEffect), so the bag is worn by *how* it
 ## was packed, not just by the trip.
 ##
-## Built once by BagGrid.snapshot() at send-off and thrown away after apply_wear —
+## Built once by BagGrid.snapshot() at send-off and thrown away after send-off wear —
 ## nothing keeps a reference, so it never drifts out of sync with the live board.
 ## Keyed by the ItemData instance, which is safe because the packed items in
 ## GameState are the very same instances the placed views hold (identity, not id).

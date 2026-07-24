@@ -11,7 +11,8 @@ extends Node
 ## Emitted after a quest is registered, whether or not it was cleared.
 signal progress_changed(completed: int, difficulty: int)
 ## Emitted whenever the owned inventory changes: stocked at the start of a run,
-## worn down each time a pack is sent off (see apply_wear), and moved both ways in
+## worn down each time a pack is sent off (see apply_wear_to_inventory /
+## discard_worn_out), and moved both ways in
 ## the gather phase as the player buys and sells (see gain / release).
 signal inventory_changed(inventory: Array[ItemData])
 ## Emitted whenever the player's gold changes: the starting purse, a quest reward,
@@ -67,7 +68,7 @@ var completed_count: int = 0
 ## whole tier is exhausted, at which point the tier resets (see draw_choices).
 var _cleared_ids: Array[String] = []
 ## The player's owned items for this run — the source the tray builds from.
-## Grows and shrinks via apply_wear() / gain() / release(); stocked from
+## Grows and shrinks via discard_worn_out() / gain() / release(); stocked from
 ## STARTER_INVENTORY on a fresh run.
 var inventory: Array[ItemData] = []
 ## Coins on hand. Starts at STARTING_GOLD, earned by clearing quests, spent (and
@@ -75,8 +76,9 @@ var inventory: Array[ItemData] = []
 var gold: int = STARTING_GOLD
 ## Adventuring perks earned so far this run — permanent upgrades. Each is unique: a
 ## perk once owned is never offered again (see offer_perks). Their effects run through
-## each perk's own hooks — GameState calls modify_stats while packing, apply_wear calls
-## modify_item at send-off — so the systems never special-case an individual perk.
+## each perk's own hooks — GameState calls modify_stats while packing,
+## apply_perks_to_items calls modify_item at send-off — so the systems never
+## special-case an individual perk.
 var owned_perks: Array[PerkData] = []
 ## One built instance of every perk kind (one per PERK_TYPES entry), the master list
 ## offer_perks and find_perk work from. Filled once in _ready; perks are stateless
@@ -121,37 +123,56 @@ func current_difficulty() -> int:
 	return mini(completed_count, MAX_DIFFICULTY)
 
 
-## Wears down every packed item by one trip — this is send-off, where the pack
-## goes out on the quest. Each copy loses a point of durability; one that hits zero
-## is worn out and thrown away for good, while sturdier items (a blanket lasts
-## three) come home with less left and can be packed again. This replaces the old
-## rule of spending the whole pack outright. The packed items are the very
-## inventory copies (the tray builds off `inventory`), so erasing by identity here
-## removes exactly the slot that was packed.
-## (Restock hook unchanged: to regain items, append to `inventory` and emit.)
-## `layout` is the send-off board snapshot (see PackLayout), used to resolve each
-## item's placement effects; pass null (as the tests do) to wear items with no board
-## consequences at all.
-func apply_wear(items: Array[ItemData], layout: PackLayout = null) -> void:
-	if items.is_empty():
+## Resolves each packed item's placement effects against the final board (see
+## PackLayout). An effect may dock durability for a bad pack — packed upside down,
+## crushed from above, next to the wrong thing. This only *changes durability*; it
+## never deletes. Pass null (as the tests do) to skip board consequences entirely.
+## Runs before perks and before the quest is judged, so a pack that destroys an item
+## gets no credit for it (see main._on_sent_off for the send-off order).
+func resolve_item_effects(items: Array[ItemData], layout: PackLayout) -> void:
+	if layout == null:
 		return
 	for item in items:
-		item.durability -= 1
-		# Placement consequences: each of the item's own effects inspects the final
-		# board and may dock more durability for a bad pack (packed upside down, crushed
-		# from above, next to the wrong thing). Before the perks, so a perk gets the
-		# last, kindest word.
-		if layout != null:
-			for effect in item.effects:
-				effect.resolve_send_off(item, layout)
-		# Each owned perk then gets to change the item after its trip via modify_item
-		# (the crafty perk repairs a combat item now and then, undoing the wear above).
-		# Run before the worn-out check so a perk can rescue an item from being tossed.
+		for effect in item.effects:
+			effect.resolve_send_off(item, layout)
+
+
+## Each owned perk gets to change every packed item via its modify_item hook (the
+## crafty perk repairs a combat item now and then). Only changes durability/state;
+## never deletes. Runs after effects so a perk gets the last, kindest word.
+func apply_perks_to_items(items: Array[ItemData]) -> void:
+	for item in items:
 		for perk in owned_perks:
 			perk.modify_item(item)
+
+
+## The trip's flat cost: every packed item loses one point of durability. Nothing
+## else — placement effects, perks, and discarding worn-out copies are each their own
+## step now (see resolve_item_effects / apply_perks_to_items / discard_worn_out), so
+## the send-off can order them around the quest's success check (main._on_sent_off).
+## The packed items are the very inventory copies (the tray builds off `inventory`),
+## so this wears exactly the slots that were packed.
+func apply_wear_to_inventory(items: Array[ItemData]) -> void:
+	for item in items:
+		item.durability -= 1
+
+
+## Throws away every worn-out copy (durability <= 0) among `items`, erasing it from
+## the inventory for good, and returns the copies discarded so the caller can drop
+## them from anywhere else they're tracked — the current packing, so a destroyed item
+## stops counting toward the quest (see main._on_sent_off). Erases by identity: the
+## packed copies are the very inventory copies. (Restock hook unchanged: to regain
+## items, append to `inventory` and emit.)
+func discard_worn_out(items: Array[ItemData]) -> Array[ItemData]:
+	var worn: Array[ItemData] = []
+	for item in items:
 		if item.durability <= 0:
-			inventory.erase(item)
-	inventory_changed.emit(inventory)
+			worn.append(item)
+	for item in worn:
+		inventory.erase(item)
+	if not worn.is_empty():
+		inventory_changed.emit(inventory)
+	return worn
 
 
 ## Records the outcome of a sent-off quest. Only a clear advances difficulty and

@@ -96,13 +96,20 @@ func _test_clear_above() -> void:
 
 func _test_no_adjacent_trait() -> void:
 	var effect := NoAdjacentTraitEffect.new()
-	effect.trait_name = "fire"
+	effect.trait_names = ["fire"] as Array[String]
 	effect.penalty = 1
 
 	# Next to a fire item — docked.
 	check(_wear_adjacent(effect, ["fire"]) == 1, "packed beside fire loses durability")
 	# Next to a non-fire item — safe.
 	check(_wear_adjacent(effect, ["food"]) == 0, "packed beside a safe item is fine")
+
+	# Any one of several listed traits triggers it.
+	var multi := NoAdjacentTraitEffect.new()
+	multi.trait_names = ["fire", "liquid"] as Array[String]
+	multi.penalty = 1
+	check(_wear_adjacent(multi, ["liquid"]) == 1, "packed beside any listed trait loses durability")
+	check(_wear_adjacent(multi, ["food"]) == 0, "packed beside an unlisted trait is fine")
 	# Only docks once even against two fire neighbours.
 	var victim := _item("cloth", ["clothing"])
 	var many := PackLayout.new()
@@ -122,7 +129,7 @@ func _test_describe() -> void:
 	var above := ClearAboveEffect.new()
 	check(above.describe() != "", "ClearAboveEffect describes itself")
 	var adj := NoAdjacentTraitEffect.new()
-	adj.trait_name = "fire"
+	adj.trait_names = ["fire"] as Array[String]
 	check(adj.describe() != "", "a configured NoAdjacentTraitEffect describes itself")
 	# An unconfigured adjacency rule stays silent rather than printing a broken line.
 	check(NoAdjacentTraitEffect.new().describe() == "", "an unset adjacency rule says nothing")

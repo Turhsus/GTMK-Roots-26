@@ -1,7 +1,13 @@
 [gd_resource type="Resource" script_class="ItemData" format=3 uid="uid://de2u8bqn3wgoi"]
 
+[ext_resource type="Script" uid="uid://dw0c3j0carikx" path="res://resources/effects/item_effect.gd" id="1_52gxh"]
 [ext_resource type="Script" uid="uid://du5drbi85ateb" path="res://resources/item_data.gd" id="1_fputx"]
 [ext_resource type="Texture2D" uid="uid://cglc7766lh8oa" path="res://assets/items/wine.png" id="1_qehmw"]
+[ext_resource type="Script" uid="uid://djlh0hn4tejc3" path="res://resources/effects/no_upside_down_effect.gd" id="2_m38is"]
+
+[sub_resource type="Resource" id="Resource_siiyt"]
+script = ExtResource("2_m38is")
+metadata/_custom_type_script = "uid://djlh0hn4tejc3"
 
 [resource]
 script = ExtResource("1_fputx")
@@ -14,5 +20,7 @@ combat = -1
 utility = 1
 traits = Array[String](["liquid", "morale", "cooking", "food", "versatile"])
 flavor = "Liquid courage"
+max_durability = 3
+effects = Array[ExtResource("1_52gxh")]([SubResource("Resource_siiyt")])
 buy_price = 20
 metadata/_custom_type_script = "uid://du5drbi85ateb"
