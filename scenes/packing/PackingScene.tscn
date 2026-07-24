@@ -64,10 +64,10 @@ text = "Send off"
 unique_name_in_owner = true
 custom_minimum_size = Vector2(672, 672)
 anchors_preset = 0
-offset_left = 814.0
-offset_top = 206.0
-offset_right = 1486.0
-offset_bottom = 878.0
+offset_left = 861.0
+offset_top = 170.0
+offset_right = 1539.0
+offset_bottom = 842.0
 
 [node name="QuestTitle" type="Label" parent="." unique_id=1601622728]
 unique_name_in_owner = true
@@ -84,6 +84,10 @@ layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
+offset_left = -30.0
+offset_top = 896.0
+offset_right = -30.0
+offset_bottom = 896.0
 grow_horizontal = 2
 grow_vertical = 2
 mouse_filter = 2
