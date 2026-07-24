@@ -4,8 +4,8 @@
 
 [resource]
 script = ExtResource("1_script")
-id = "found_coin"
-title = "You found a coin!"
-text = "A glint in the dirt on the way to market, you found a coin. How lucky!"
-chance = 0.1
-gold_reward = 1
+id = "found_coin_pouch"
+title = "You found a coin pouch!"
+text = "You stumble upon a lone coin pouch! Somebody might be missing this month's rent..."
+chance = 0.001
+gold_reward = 15

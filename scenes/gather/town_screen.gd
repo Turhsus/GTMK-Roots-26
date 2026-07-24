@@ -37,6 +37,7 @@ const SHOPS: Array[ShopData] = [
 ## `chance` when its shop filter matches; buy/sell rebuilds call `_enter_shop`
 ## directly and never re-roll.
 const TRAVEL_EVENTS: Array[TravelEvent] = [
+	preload("res://data/travel_events/found_coin_pouch.tres"),
 	preload("res://data/travel_events/found_coin.tres"),
 ]
 

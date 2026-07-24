@@ -139,6 +139,16 @@ func remove(view: DraggableItem) -> bool:
 	return true
 
 
+## Top-left cell of a placed item, or (-1, -1) if it isn't on the board.
+func get_origin(view: DraggableItem) -> Vector2i:
+	if not _cells_by_view.has(view):
+		return Vector2i(-1, -1)
+	var origin: Vector2i = _cells_by_view[view][0]
+	for cell in _cells_by_view[view]:
+		origin = Vector2i(mini(origin.x, cell.x), mini(origin.y, cell.y))
+	return origin
+
+
 func clear_board() -> void:
 	_occupancy.clear()
 	_cells_by_view.clear()

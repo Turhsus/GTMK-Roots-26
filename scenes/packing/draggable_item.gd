@@ -11,6 +11,9 @@ signal grabbed(view: DraggableItem, grab_offset: Vector2)
 ## PackingScene answers it with the stats menu, the same panel the hover tooltip
 ## shows, so the player can inspect an item without picking it up.
 signal clicked(view: DraggableItem)
+## Right-click while the item is at rest (tray or bag). PackingScene rotates it
+## in place — no drag required.
+signal rotate_requested(view: DraggableItem)
 
 const HOVER_LIFT := Vector2(0, -6)
 ## How far the mouse may travel while the button is held before the press stops
@@ -123,6 +126,11 @@ func play_shake() -> void:
 
 func _gui_input(event: InputEvent) -> void:
 	if is_dragging:
+		return
+	if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_RIGHT and event.pressed:
+		accept_event()
+		_press_active = false
+		rotate_requested.emit(self)
 		return
 	if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT:
 		if event.pressed:
