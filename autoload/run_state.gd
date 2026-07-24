@@ -52,9 +52,9 @@ const STARTING_GOLD := 50
 const TOTAL_DAYS := 10
 ## Backpack size ladder: tier index -> side length (square bags). Starts at 4×4
 ## and upgrades in town up to 6×6 (see upgrade_bag).
-const BAG_SIZES: Array[int] = [4, 5, 6]
-## Gold cost to go from tier 0→1 and 1→2.
-const BAG_UPGRADE_COSTS: Array[int] = [25, 50]
+const BAG_SIZES: Array[int] = [3, 4, 5, 6]
+## Gold cost to upgrade the back.
+const BAG_UPGRADE_COSTS: Array[int] = [10, 15, 25, 50]
 
 ## The items the player owns at the start of a run. This is the whole tray now —
 ## quests no longer decide what is available, only the targets and story. Authored here (one obvious place) rather than in a .tres; list an item
