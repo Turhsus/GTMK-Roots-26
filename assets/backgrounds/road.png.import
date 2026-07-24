@@ -2,21 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-<<<<<<<< HEAD:assets/items/shield.png.import
-uid="uid://ds4vxkcweyful"
-path="res://.godot/imported/shield.png-38931f9407044bede659d24197a358b0.ctex"
-========
-uid="uid://cdyrk57v4380v"
-path="res://.godot/imported/Bread.png-cdc05f07bf00809bff0d81aaa6c3faac.ctex"
->>>>>>>> origin/main:assets/items/bread.png.import
+uid="uid://cleoc615j0dcq"
+path="res://.godot/imported/road.png-1329cbe5e2b0a830c5426775087a2e50.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/items/shield.png"
-dest_files=["res://.godot/imported/shield.png-38931f9407044bede659d24197a358b0.ctex"]
+source_file="res://assets/backgrounds/road.png"
+dest_files=["res://.godot/imported/road.png-1329cbe5e2b0a830c5426775087a2e50.ctex"]
 
 [params]
 

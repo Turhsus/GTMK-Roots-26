@@ -1,0 +1,18 @@
+[gd_resource type="Resource" script_class="ItemData" format=3 uid="uid://b4gd00khnqv3x"]
+
+[ext_resource type="Script" uid="uid://du5drbi85ateb" path="res://resources/item_data.gd" id="1_1srv3"]
+[ext_resource type="Texture2D" uid="uid://ds4vxkcweyful" path="res://assets/items/shield.png" id="1_ntlcx"]
+
+[resource]
+script = ExtResource("1_1srv3")
+id = "shield"
+display_name = "Shield"
+shape = Array[Vector2i]([Vector2i(0, 0), Vector2i(1, 0), Vector2i(0, 1), Vector2i(1, 1)])
+icon = ExtResource("1_ntlcx")
+combat = 3
+utility = 1
+traits = Array[String](["armor", "defence"])
+flavor = "A trusty shield, its important to wear protection!"
+max_durability = 3
+buy_price = 15
+metadata/_custom_type_script = "uid://du5drbi85ateb"

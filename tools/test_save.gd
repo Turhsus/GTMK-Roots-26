@@ -178,9 +178,9 @@ func _test_resume() -> void:
 	add_child(main)
 	await get_tree().process_frame
 
-	var town: Control = main.get_node("%TownScreen")
+	var town: Control = main.get_node("%RoadScene")
 	var packing: Control = main.get_node("%PackingScene")
-	check(town.visible, "a resumed gather comes up on the town screen")
+	check(town.visible, "a resumed gather comes up on the road (town) screen")
 	check(not packing.visible, "and not on the tutorial packing screen")
 	check(RunState.gold == 200, "the resumed run kept its gold, got %d" % RunState.gold)
 	check(town.get_node("%DayLabel").text.begins_with("Day 3 of 4"),
