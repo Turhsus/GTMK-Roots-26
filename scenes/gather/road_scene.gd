@@ -192,7 +192,7 @@ func _show_road() -> void:
 		body.add_child(skip)
 
 
-## Side purchase on the square: bigger backpack for gold. Does not spend the day.
+## Side purchase on the road: bigger backpack for gold. Does not spend the day.
 func _build_bag_upgrade_button() -> Button:
 	var current := RunState.bag_cols()
 	var next := RunState.next_bag_size()
@@ -210,7 +210,7 @@ func _on_upgrade_bag() -> void:
 	if RunState.upgrade_bag():
 		AudioManager.play("place")
 		_refresh_header()
-		_show_square()
+		_show_road()
 
 
 ## DEBUG: ends the gather phase immediately, whatever day it is. Still bills the
