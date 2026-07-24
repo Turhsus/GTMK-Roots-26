@@ -77,3 +77,31 @@ unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 3
 theme_override_constants/separation = 12
+
+[node name="TravelFade" type="ColorRect" parent="."]
+unique_name_in_owner = true
+visible = false
+modulate = Color(1, 1, 1, 0)
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 0
+color = Color(0.08, 0.07, 0.1, 1)
+
+[node name="Center" type="CenterContainer" parent="TravelFade"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+
+[node name="FadeLabel" type="Label" parent="TravelFade/Center"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 36
+text = "On your way to the shops..."
+horizontal_alignment = 1

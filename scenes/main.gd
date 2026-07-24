@@ -37,12 +37,15 @@ const PHASE_PACKING := "packing"
 const PHASE_GATHER := "gather"
 const PHASE_SELECT := "select"
 
+const MAIN_MENU := "res://scenes/menu/MainMenu.tscn"
+
 @onready var quest_select: QuestSelect = %QuestSelect
 @onready var packing_scene: PackingScene = %PackingScene
 @onready var playout_scene: PlayoutScene = %PlayoutScene
 @onready var town_screen: TownScreen = %TownScreen
 @onready var perk_select: PerkSelect = %PerkSelect
 @onready var thank_you_screen: ThankYouScreen = %ThankYouScreen
+@onready var pause_menu: PauseMenu = %PauseMenu
 
 ## The three quests drawn for the next selection, previewed in town and then
 ## offered on QuestSelect — the same set for both, so the preview isn't a lie.
@@ -68,6 +71,10 @@ func _ready() -> void:
 	town_screen.gather_done.connect(_on_gather_done)
 	town_screen.day_started.connect(_on_town_day_started)
 	perk_select.perk_chosen.connect(_on_perk_chosen)
+	pause_menu.resume_requested.connect(_close_pause)
+	pause_menu.home_requested.connect(_on_pause_home)
+	pause_menu.quit_requested.connect(_on_pause_quit)
+	pause_menu.debug_phase_requested.connect(_on_debug_phase)
 
 	# A run continued from the menu resumes at its saved phase; anything else is a
 	# fresh run and starts on the tutorial.
@@ -76,6 +83,79 @@ func _ready() -> void:
 		_start_tutorial()
 	else:
 		_resume(resume)
+
+
+## Escape opens the pause menu when nothing else claimed the key (e.g. packing
+## cancel-drag). While paused, PauseMenu itself handles Escape to resume.
+func _unhandled_input(event: InputEvent) -> void:
+	if get_tree().paused:
+		return
+	if event is InputEventKey and event.pressed and not event.echo and event.keycode == KEY_ESCAPE:
+		_open_pause()
+		get_viewport().set_input_as_handled()
+
+
+func _open_pause() -> void:
+	pause_menu.open()
+	get_tree().paused = true
+
+
+func _close_pause() -> void:
+	pause_menu.close()
+	get_tree().paused = false
+
+
+## Leaves the run for the title screen. Autosaves already cover Continue; we don't
+## wipe RunState here so a mid-run Home still has a save to pick back up.
+func _on_pause_home() -> void:
+	_close_pause()
+	get_tree().change_scene_to_file(MAIN_MENU)
+
+
+func _on_pause_quit() -> void:
+	_close_pause()
+	get_tree().quit()
+
+
+## Debug-only: jump straight to a loop screen with whatever state we can salvage.
+func _on_debug_phase(phase: String) -> void:
+	_close_pause()
+	match phase:
+		"packing":
+			var quest := GameState.current_quest
+			if quest == null:
+				quest = RunState.TUTORIAL
+				RunState.lend_quest_items(quest)
+			packing_scene.load_quest(quest)
+			_show(packing_scene)
+		"playout":
+			var quest := GameState.current_quest
+			if quest == null:
+				quest = RunState.TUTORIAL
+			var lines := NarrativeEngine.build_log(quest, GameState.packed_items, GameState.stats)
+			if lines.is_empty():
+				lines = ["(debug) Nothing packed yet — placeholder log."]
+			_show(playout_scene)
+			playout_scene.play(lines)
+		"gather":
+			if _gather_days < 1:
+				_gather_days = 2
+			if _upcoming.is_empty():
+				_upcoming = RunState.draw_choices()
+			town_screen.begin(_gather_days, _upcoming)
+			_show(town_screen)
+		"select":
+			if _upcoming.is_empty():
+				_upcoming = RunState.draw_choices()
+			quest_select.present(_upcoming)
+			_show(quest_select)
+		"perk":
+			var offers := RunState.offer_perks(["food", "health", "combat", "utility"])
+			perk_select.present(offers)
+			_show(perk_select)
+		"thank_you":
+			thank_you_screen.show_end()
+			_show(thank_you_screen)
 
 
 ## The forced opener: the tutorial quest, packed directly with no selection.

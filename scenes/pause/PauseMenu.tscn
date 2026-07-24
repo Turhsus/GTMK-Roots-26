@@ -1,0 +1,128 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scenes/pause/pause_menu.gd" id="1_pause"]
+
+[node name="PauseMenu" type="Control"]
+process_mode = 2
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_pause")
+
+[node name="Dim" type="ColorRect" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0.05, 0.04, 0.03, 0.72)
+
+[node name="Center" type="CenterContainer" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="MainPanel" type="VBoxContainer" parent="Center"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_constants/separation = 12
+
+[node name="Title" type="Label" parent="Center/MainPanel"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 40
+text = "Paused"
+horizontal_alignment = 1
+
+[node name="ResumeButton" type="Button" parent="Center/MainPanel"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(260, 48)
+layout_mode = 2
+theme_override_font_sizes/font_size = 20
+text = "Resume"
+
+[node name="HomeButton" type="Button" parent="Center/MainPanel"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(260, 48)
+layout_mode = 2
+theme_override_font_sizes/font_size = 20
+text = "Home screen"
+
+[node name="QuitButton" type="Button" parent="Center/MainPanel"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(260, 48)
+layout_mode = 2
+theme_override_font_sizes/font_size = 20
+text = "Quit"
+
+[node name="DebugButton" type="Button" parent="Center/MainPanel"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(260, 48)
+layout_mode = 2
+theme_override_font_sizes/font_size = 20
+text = "Debug…"
+
+[node name="DebugPanel" type="VBoxContainer" parent="Center"]
+unique_name_in_owner = true
+visible = false
+layout_mode = 2
+theme_override_constants/separation = 10
+
+[node name="DebugTitle" type="Label" parent="Center/DebugPanel"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 32
+text = "Debug — jump to phase"
+horizontal_alignment = 1
+
+[node name="DebugPhases" type="VBoxContainer" parent="Center/DebugPanel"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="Packing" type="Button" parent="Center/DebugPanel/DebugPhases"]
+custom_minimum_size = Vector2(280, 44)
+layout_mode = 2
+text = "Packing"
+metadata/phase = "packing"
+
+[node name="Playout" type="Button" parent="Center/DebugPanel/DebugPhases"]
+custom_minimum_size = Vector2(280, 44)
+layout_mode = 2
+text = "Playout (adventure log)"
+metadata/phase = "playout"
+
+[node name="Gather" type="Button" parent="Center/DebugPanel/DebugPhases"]
+custom_minimum_size = Vector2(280, 44)
+layout_mode = 2
+text = "Gather (town)"
+metadata/phase = "gather"
+
+[node name="Select" type="Button" parent="Center/DebugPanel/DebugPhases"]
+custom_minimum_size = Vector2(280, 44)
+layout_mode = 2
+text = "Quest select"
+metadata/phase = "select"
+
+[node name="Perk" type="Button" parent="Center/DebugPanel/DebugPhases"]
+custom_minimum_size = Vector2(280, 44)
+layout_mode = 2
+text = "Perk select"
+metadata/phase = "perk"
+
+[node name="ThankYou" type="Button" parent="Center/DebugPanel/DebugPhases"]
+custom_minimum_size = Vector2(280, 44)
+layout_mode = 2
+text = "Thank you (end)"
+metadata/phase = "thank_you"
+
+[node name="DebugBackButton" type="Button" parent="Center/DebugPanel"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(280, 44)
+layout_mode = 2
+text = "Back"
