@@ -1,0 +1,11 @@
+[gd_resource type="Resource" script_class="TravelEvent" format=3]
+
+[ext_resource type="Script" path="res://resources/travel_event.gd" id="1_script"]
+
+[resource]
+script = ExtResource("1_script")
+id = "found_coin_pouch"
+title = "You found a coin pouch!"
+text = "You stumble upon a lone coin pouch! Somebody might be missing this month's rent..."
+chance = 0.001
+gold_reward = 15

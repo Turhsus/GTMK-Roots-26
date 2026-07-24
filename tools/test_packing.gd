@@ -10,6 +10,7 @@ var failures: int = 0
 
 
 func _ready() -> void:
+	RunState.reset()
 	var scene := PACKING.instantiate()
 	add_child(scene)
 	await get_tree().process_frame
@@ -21,7 +22,9 @@ func _ready() -> void:
 
 	var stock_size: int = RunState.inventory.size()
 	check(views.size() == stock_size, "tray spawned the whole inventory, got %d of %d" % [views.size(), stock_size])
-	check(bag.cols == 6 and bag.rows == 6, "bag is 6x6")
+	check(bag.cols == RunState.bag_cols() and bag.rows == RunState.bag_rows(),
+		"bag matches the run's backpack size (%dx%d)" % [RunState.bag_cols(), RunState.bag_rows()])
+	check(bag.cols == 4 and bag.rows == 4, "a fresh run starts with a 4x4 bag")
 
 	var sword: DraggableItem = _find(views, "sword")
 	check(sword != null, "sword is in the tray")
@@ -56,31 +59,32 @@ func _ready() -> void:
 	check((combat_row["bar"] as ProgressBar).max_value == GameState.get_targets()["combat"],
 		"a bar's full mark is the quest target")
 
-	# --- snapping math ---
-	check(bag.snap_to_cell(Vector2(200.0, 40.0)) == Vector2i(2, 0),
-		"a point 8 px past cell 2 still snaps to cell 2")
+	# --- snapping math (relative to current cell size) ---
+	var cell := BagGrid.current_cell_size()
+	check(bag.snap_to_cell(Vector2(cell * 2.0 + 8.0, 40.0)) == Vector2i(2, 0),
+		"a point past the midpoint of cell 2 still snaps to cell 2")
 	check(bag.snap_to_cell(Vector2(-40.0, -40.0)) == Vector2i(0, 0), "near-miss above/left snaps back in")
 
-	# --- rotation ---
+	# --- rotation (bread is 2x1 in the starter pack) ---
 	# custom_minimum_size, not size: in the tray the flow container stretches
 	# items to the row height, so `size` is not the shape box there.
-	var rope: DraggableItem = _find(views, "rope")
-	var cell := BagGrid.current_cell_size()
-	var before := rope.custom_minimum_size
-	check(before == Vector2(2, 1) * cell, "rope is a 2x1 box, got %s" % before)
-	rope.rotate_once()
-	check(rope.custom_minimum_size == Vector2(before.y, before.x),
-		"rotating swaps the bounding box: %s -> %s" % [before, rope.custom_minimum_size])
-	check(bag.can_place(rope.get_shape(), Vector2i(0, bag.rows - 1)) == false,
+	var bread: DraggableItem = _find(views, "bread")
+	check(bread != null, "bread is in the tray for rotation tests")
+	var before := bread.custom_minimum_size
+	check(before == Vector2(2, 1) * cell, "bread is a 2x1 box, got %s" % before)
+	bread.rotate_once()
+	check(bread.custom_minimum_size == Vector2(before.y, before.x),
+		"rotating swaps the bounding box: %s -> %s" % [before, bread.custom_minimum_size])
+	check(bag.can_place(bread.get_shape(), Vector2i(0, bag.rows - 1)) == false,
 		"a rotated 1x2 no longer fits on the bottom row")
-	rope.rotate_once()
-	rope.rotate_once()
-	rope.rotate_once()
-	check(rope.custom_minimum_size == before, "four rotations return to the start")
+	bread.rotate_once()
+	bread.rotate_once()
+	bread.rotate_once()
+	check(bread.custom_minimum_size == before, "four rotations return to the start")
 
 	# A drag must leave the tray at true shape size, not the stretched one.
-	scene._on_item_grabbed(rope, Vector2(150, 150))
-	check(rope.size == before, "dragged item is its shape box, got %s" % rope.size)
+	scene._on_item_grabbed(bread, Vector2(150, 150))
+	check(bread.size == before, "dragged item is its shape box, got %s" % bread.size)
 	check(scene._grab_offset.x <= before.x and scene._grab_offset.y <= before.y,
 		"grab offset clamped into the item, got %s" % scene._grab_offset)
 	scene._end_drag(false)
@@ -95,6 +99,21 @@ func _ready() -> void:
 	check(sword.get_parent() == tray.item_container, "an invalid drop returns to the tray")
 	check(sword.rotation_steps == 0, "returning to the tray resets rotation")
 	check(GameState.stats["combat"] == 0, "un-packing takes the stat back off")
+
+	# --- resize board ---
+	# Clear any remaining occupancy, then shrink: a 1x3 sword must not fit on a
+	# row that doesn't exist on a 4x4... already 4x4. Grow to 6x6 and place at
+	# a cell that was out of bounds before.
+	bag.resize_board(4, 4)
+	check(not bag.can_place(sword.get_shape(), Vector2i(0, 2)),
+		"on 4x4 a 1x3 sword cannot start at row 2")
+	bag.resize_board(6, 6)
+	check(bag.cols == 6 and bag.rows == 6, "resize_board grows to 6x6")
+	check(bag.can_place(sword.get_shape(), Vector2i(0, 3)),
+		"on 6x6 a 1x3 sword fits starting at row 3")
+	bag.resize_board(4, 4)
+	check(not bag.can_place(sword.get_shape(), Vector2i(0, 3)),
+		"shrinking back to 4x4 rejects the old out-of-bounds cell")
 
 	# --- pack again ---
 	GameState.reset_packing()

@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://caiwhlxvk6lkb"
-path="res://.godot/imported/Apothecary.png-b5c9a40843c3a22bb7387dd0a30ff928.ctex"
+uid="uid://ds8fjp88sg1sq"
+path="res://.godot/imported/rope.png-b729769ee6bf14a5d2323f44a0a9e903.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://data/shops/Apothecary.png"
-dest_files=["res://.godot/imported/Apothecary.png-b5c9a40843c3a22bb7387dd0a30ff928.ctex"]
+source_file="res://assets/items/rope.png"
+dest_files=["res://.godot/imported/rope.png-b729769ee6bf14a5d2323f44a0a9e903.ctex"]
 
 [params]
 

@@ -7,4 +7,5 @@ script = ExtResource("1_script")
 id = "found_coin"
 title = "You found a coin!"
 text = "A glint in the dirt on the way to market, you found a coin. How lucky!"
+chance = 0.1
 gold_reward = 1

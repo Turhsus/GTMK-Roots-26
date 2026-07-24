@@ -44,6 +44,7 @@ const SHOPS: Array[ShopData] = [
 ## at most one per gather, rolled in begin(). A resumed save (start_day > 1) is
 ## re-opening an old gather, not starting one, so it never re-rolls.
 const TRAVEL_EVENTS: Array[TravelEvent] = [
+	preload("res://data/travel_events/found_coin_pouch.tres"),
 	preload("res://data/travel_events/found_coin.tres"),
 ]
 
@@ -174,6 +175,10 @@ func _show_road() -> void:
 		shops_row.add_child(_build_shop_button(shop))
 	body.add_child(shops_row)
 
+	if RunState.can_upgrade_bag():
+		body.add_child(_spacer(12))
+		body.add_child(_build_bag_upgrade_button())
+
 	body.add_child(_spacer(16))
 	body.add_child(_subheading("Coming up — you'll choose one when you set out:"))
 	body.add_child(_build_quest_preview())
@@ -185,6 +190,27 @@ func _show_road() -> void:
 		skip.custom_minimum_size = Vector2(0, 40)
 		skip.pressed.connect(_skip_gather)
 		body.add_child(skip)
+
+
+## Side purchase on the square: bigger backpack for gold. Does not spend the day.
+func _build_bag_upgrade_button() -> Button:
+	var current := RunState.bag_cols()
+	var next := RunState.next_bag_size()
+	var cost := RunState.bag_upgrade_cost()
+	var button := Button.new()
+	button.text = "Buy a larger bag  %d×%d → %d×%d   %dg" % [current, current, next, next, cost]
+	button.custom_minimum_size = Vector2(0, 48)
+	button.add_theme_font_size_override("font_size", 18)
+	button.disabled = RunState.gold < cost
+	button.pressed.connect(_on_upgrade_bag)
+	return button
+
+
+func _on_upgrade_bag() -> void:
+	if RunState.upgrade_bag():
+		AudioManager.play("place")
+		_refresh_header()
+		_show_square()
 
 
 ## DEBUG: ends the gather phase immediately, whatever day it is. Still bills the
