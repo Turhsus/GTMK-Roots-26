@@ -2,32 +2,26 @@
 class_name BagGrid
 extends Control
 
-## The bag: always a COLS x ROWS (6x6) board. It has no size of its own — it
-## *fills this node's rectangle*, so to fit the grid to your pack art you just
-## resize/position the BagGrid node in the editor (drag its handles or anchor it
-## over the art) and the 6x6 board scales to fill it. Cells stay square, so the
-## board fills the shorter side and is drawn from the top-left corner. The quest's
-## bag dimensions are ignored on purpose: the grid is fixed at 6x6. Owns the cell
-## <-> pixel math and the occupancy map — which cell holds which item. GameState
-## owns *what* is packed; this knows *where*.
+## The bag board. Size is owned by the run (RunState.bag_tier → cols×rows); this
+## node fills its editor rectangle with square cells that fit that board — smaller
+## bags get larger cells inside the same frame. Owns cell <-> pixel math and the
+## occupancy map. GameState owns *what* is packed; this knows *where*.
 
-## The board is always this many cells each way. Fixed by design.
-const COLS := 6
-const ROWS := 6
+## Default / editor preview size when nothing has called resize_board yet.
+const DEFAULT_COLS := 6
+const DEFAULT_ROWS := 6
 
 @export var background_color := Color("2c211b")
 @export var cell_color := Color("3d2f26")
 @export var line_color := Color("554236")
 
-## Kept as fields (not consts) because the grid math reads them; never change
-## from COLS/ROWS — the board is fixed 6x6.
-var cols: int = COLS
-var rows: int = ROWS
+## Live board dimensions. Changed by resize_board (packing applies RunState).
+var cols: int = DEFAULT_COLS
+var rows: int = DEFAULT_ROWS
 
-## Pixels per cell, *derived* from this node's size (shorter side / 6, so cells
-## are square). Recomputed whenever the node is resized. Shared statically so
-## DraggableItem and GridHighlight can match the board without a reference here;
-## _enter_tree seeds it before the tray's _ready spawns items.
+## Pixels per cell, derived from this node's rect and current cols/rows so cells
+## stay square. Shared statically so DraggableItem and GridHighlight match the
+## board without a reference here; _enter_tree seeds it before the tray's _ready.
 var cell_size: float = 96.0
 static var _shared_cell_size: float = 96.0
 
@@ -63,6 +57,16 @@ func _ready() -> void:
 	GameState.quest_changed.connect(_on_quest_changed)
 	if GameState.current_quest != null:
 		_on_quest_changed(GameState.current_quest)
+
+
+## Sets the board to `new_cols` × `new_rows`, clears occupancy, and recomputes
+## cell size. Caller must free or re-home any placed views first.
+func resize_board(new_cols: int, new_rows: int) -> void:
+	cols = maxi(new_cols, 1)
+	rows = maxi(new_rows, 1)
+	clear_board()
+	_recompute_cell_size()
+	queue_redraw()
 
 
 ## Top-left pixel of a cell, relative to the grid's own origin.
@@ -167,8 +171,8 @@ func clear_preview() -> void:
 	highlight.clear()
 
 
-## The grid is fixed 6x6 and takes its size from the node, so a quest switch only
-## clears the board — quests never define the bag size.
+## A quest switch only clears the board — bag size comes from RunState via
+## PackingScene.resize_board, not from the quest.
 func _on_quest_changed(quest: QuestData) -> void:
 	if quest == null:
 		return
@@ -176,11 +180,10 @@ func _on_quest_changed(quest: QuestData) -> void:
 	queue_redraw()
 
 
-## Derive the square cell size from the node's rect (shorter side / 6) and push it
-## to everything that mirrors it. Any board already placed is re-laid so items
-## follow the new size — needed if the node is resized after items are down.
+## Derive square cell size from the node's rect and current cols/rows, then
+## re-lay any placed items. Smaller boards get larger cells in the same frame.
 func _recompute_cell_size() -> void:
-	var derived := maxf(1.0, minf(size.x, size.y) / float(COLS))
+	var derived := maxf(1.0, minf(size.x / float(cols), size.y / float(rows)))
 	if is_equal_approx(derived, cell_size) and is_equal_approx(derived, _shared_cell_size):
 		queue_redraw()
 		return
