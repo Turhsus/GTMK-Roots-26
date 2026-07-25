@@ -23,7 +23,7 @@ signal sell_pressed(item: ItemData)
 ## "Leave — that's the day": the road ends the day and closes this scene.
 signal leave_pressed
 
-const BACKGROUND_PATTERN := "res://assets/backgrounds/shop_%s.png"
+const BACKGROUND_PATTERN := "res://assets/shops/shop_%s.png"
 
 @onready var background_art: TextureRect = %BackgroundArt
 @onready var title_label: Label = %TitleLabel

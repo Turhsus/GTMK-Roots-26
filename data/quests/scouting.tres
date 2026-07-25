@@ -3,10 +3,20 @@
 [ext_resource type="Script" uid="uid://45ajj2ptcv0d" path="res://resources/narrative_event.gd" id="1_t6vdn"]
 [ext_resource type="Script" uid="uid://du5drbi85ateb" path="res://resources/item_data.gd" id="2_t6hnn"]
 [ext_resource type="Script" uid="uid://b8mpss75xj6nx" path="res://resources/quest_data.gd" id="3_570y3"]
+[ext_resource type="Resource" uid="uid://cp48saiwrmtot" path="res://data/items/berries.tres" id="3_t6hnn"]
 
 [resource]
 script = ExtResource("3_570y3")
-difficulty = 1
-gold_reward = 10
-traits = Array[String](["warmth"])
+id = "scouting"
+title = "Explore the Verazon Forest"
+brief = "The Verazon forest has been host to many a strange sound lately. In fact, some villagers are reporting the sounds of strange music in the woods! Someone needs to investigate."
+difficulty = 2
+days = 5
+gold_reward = 25
+traits = Array[String](["warmth", "versatile", "weapon"])
+quest_items = Array[ExtResource("2_t6hnn")]([ExtResource("3_t6hnn")])
+target_food = 6
+target_health = 2
+target_combat = 3
+target_utility = 4
 metadata/_custom_type_script = "uid://b8mpss75xj6nx"

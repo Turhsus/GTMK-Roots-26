@@ -2,6 +2,7 @@
 
 [ext_resource type="Script" uid="uid://c8sd2ok3jllus" path="res://scenes/gather/road_scene.gd" id="1_road"]
 [ext_resource type="PackedScene" uid="uid://dk5r8ny02shqe" path="res://scenes/gather/ShopScene.tscn" id="2_shop"]
+[ext_resource type="Texture2D" uid="uid://cleoc615j0dcq" path="res://assets/backgrounds/road.png" id="2_ww0y7"]
 
 [node name="RoadScene" type="Control" unique_id=2077105480]
 layout_mode = 3
@@ -22,7 +23,7 @@ grow_vertical = 2
 mouse_filter = 2
 color = Color(0.14, 0.15, 0.2, 1)
 
-[node name="BackgroundArt" type="TextureRect" parent="."]
+[node name="BackgroundArt" type="TextureRect" parent="." unique_id=128802634]
 unique_name_in_owner = true
 layout_mode = 1
 anchors_preset = 15
@@ -31,10 +32,11 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 mouse_filter = 2
+texture = ExtResource("2_ww0y7")
 expand_mode = 1
 stretch_mode = 6
 
-[node name="Dim" type="ColorRect" parent="."]
+[node name="Dim" type="ColorRect" parent="." unique_id=595068834]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -100,7 +102,7 @@ layout_mode = 2
 size_flags_horizontal = 3
 theme_override_constants/separation = 12
 
-[node name="ShopScene" parent="." instance=ExtResource("2_shop")]
+[node name="ShopScene" parent="." unique_id=183649162 instance=ExtResource("2_shop")]
 unique_name_in_owner = true
 visible = false
 layout_mode = 1

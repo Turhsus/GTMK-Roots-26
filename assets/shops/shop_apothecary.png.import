@@ -3,15 +3,15 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://caiwhlxvk6lkb"
-path="res://.godot/imported/Apothecary.png-449ee7463912a483952fb27eb5ad1c0e.ctex"
+path="res://.godot/imported/shop_apothecary.png-ce29b6ce43dd17d3fd439a96fb6697ce.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/shops/Apothecary.png"
-dest_files=["res://.godot/imported/Apothecary.png-449ee7463912a483952fb27eb5ad1c0e.ctex"]
+source_file="res://assets/shops/shop_apothecary.png"
+dest_files=["res://.godot/imported/shop_apothecary.png-ce29b6ce43dd17d3fd439a96fb6697ce.ctex"]
 
 [params]
 
