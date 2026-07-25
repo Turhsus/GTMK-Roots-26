@@ -2,11 +2,14 @@
 
 [ext_resource type="Script" uid="uid://du5drbi85ateb" path="res://resources/item_data.gd" id="1_8kas0"]
 [ext_resource type="Script" uid="uid://dw0c3j0carikx" path="res://resources/effects/item_effect.gd" id="1_dvv3t"]
+[ext_resource type="Texture2D" uid="uid://dmnl74pb78yut" path="res://assets/items/hpotion.png" id="2_q6ixs"]
 
 [resource]
 script = ExtResource("1_8kas0")
 id = "health_potion"
 display_name = "Health Potion"
+shape = Array[Vector2i]([Vector2i(0, 0), Vector2i(0, 1), Vector2i(0, 2), Vector2i(-1, 1), Vector2i(1, 1)])
+icon = ExtResource("2_q6ixs")
 food = 1
 health = 3
 traits = Array[String](["food", "healing", "liquid"])

@@ -63,6 +63,12 @@ const STARTER_INVENTORY: Array[ItemData] = [
 	preload("res://data/items/shield.tres"),
 	preload("res://data/items/rope.tres"),
 	preload("res://data/items/axe.tres"),
+	preload("res://data/items/helmet.tres"),
+	preload("res://data/items/flint_and_steel.tres"),
+	preload("res://data/items/health_potion.tres"),
+	preload("res://data/items/flail.tres"),
+	preload("res://data/items/boots.tres"),
+	preload("res://data/items/crowbar.tres"),
 ]
 
 ## Quests cleared so far. Difficulty is derived from this: one clear per tier.

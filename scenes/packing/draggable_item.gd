@@ -23,6 +23,13 @@ const HOVER_LIFT := Vector2(0, -6)
 ## being a click and becomes a drag.
 const DRAG_THRESHOLD := 6.0
 
+## Accents for the info panel. It rides the textbox frame like the rest of the
+## UI, so these are picked to read against the tan fill (#F3DAB8) — the older
+## brighter set was chosen back when the panel drew its own dark box.
+const STAT_COLOR := Color("3f6b23")
+const WARN_COLOR := Color("9a4f14")
+const MUTED_COLOR := Color("6b5d4c")
+
 var item: ItemData
 ## 90-degree clockwise turns applied to `item.shape`.
 var rotation_steps: int = 0
@@ -175,14 +182,7 @@ func _refresh() -> void:
 ## and its flavor line. Static so PackingScene can raise the very same panel on
 ## hover or click without redoing the layout.
 static func build_info_panel(source: ItemData) -> Control:
-	var panel := PanelContainer.new()
-	var style := StyleBoxFlat.new()
-	style.bg_color = Color(0.12, 0.09, 0.08, 0.98)
-	style.border_color = Color(0.55, 0.42, 0.26)
-	style.set_border_width_all(2)
-	style.set_corner_radius_all(6)
-	style.set_content_margin_all(10)
-	panel.add_theme_stylebox_override("panel", style)
+	var panel := Ui.card()
 
 	var box := VBoxContainer.new()
 	box.add_theme_constant_override("separation", 4)
@@ -202,12 +202,12 @@ static func build_info_panel(source: ItemData) -> Control:
 		stat_added = true
 		var row := Label.new()
 		row.text = "%s %+d" % [key.capitalize(), value]
-		row.add_theme_color_override("font_color", Color("7aa356"))
+		row.add_theme_color_override("font_color", STAT_COLOR)
 		box.add_child(row)
 	if not stat_added:
 		var none_label := Label.new()
 		none_label.text = "No stat bonus"
-		none_label.add_theme_color_override("font_color", Color("9a8f80"))
+		none_label.add_theme_color_override("font_color", MUTED_COLOR)
 		box.add_child(none_label)
 
 	# Durability — how many more trips this copy has in it. Single-use items say so;
@@ -220,7 +220,7 @@ static func build_info_panel(source: ItemData) -> Control:
 			dura.text = "Durability: lasts %d trips" % source.max_durability
 	else:
 		dura.text = "Single use"
-	dura.add_theme_color_override("font_color", Color("9a8f80"))
+	dura.add_theme_color_override("font_color", MUTED_COLOR)
 	box.add_child(dura)
 
 	# Placement rules the item carries (see ItemEffect) — warned here so the durability
@@ -228,7 +228,7 @@ static func build_info_panel(source: ItemData) -> Control:
 	for rule_text in source.effect_descriptions():
 		var rule := Label.new()
 		rule.text = "⚠ " + rule_text
-		rule.add_theme_color_override("font_color", Color("d08b52"))
+		rule.add_theme_color_override("font_color", WARN_COLOR)
 		rule.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 		rule.custom_minimum_size.x = 220
 		box.add_child(rule)
@@ -236,7 +236,7 @@ static func build_info_panel(source: ItemData) -> Control:
 	if source.flavor != "":
 		var flavor := Label.new()
 		flavor.text = source.flavor
-		flavor.add_theme_color_override("font_color", Color("c9bba8"))
+		flavor.add_theme_color_override("font_color", MUTED_COLOR)
 		flavor.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 		flavor.custom_minimum_size.x = 220
 		box.add_child(flavor)

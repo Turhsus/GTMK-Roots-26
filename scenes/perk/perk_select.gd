@@ -32,7 +32,7 @@ func present(perks: Array[PerkData]) -> void:
 
 
 func _build_card(perk: PerkData) -> Control:
-	var card := PanelContainer.new()
+	var card := Ui.card()
 	card.custom_minimum_size = Vector2(CARD_WIDTH, 0)
 
 	var margin := MarginContainer.new()

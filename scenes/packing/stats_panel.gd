@@ -11,11 +11,10 @@ extends PanelContainer
 ## Seconds for a bar to slide to its new fill.
 const FILL_TIME := 0.25
 
-@export var under_color := Color("c08040")
-@export var met_color := Color("7aa356")
-## Light enough to stay visible against the panel — an empty bar still has to
-## read as a bar.
-@export var track_color := Color("453529")
+## Both read against the tan panel fill (#F3DAB8), so they are the deeper end of
+## the amber/green pair rather than the bright one a dark panel wanted.
+@export var under_color := Color("a85a24")
+@export var met_color := Color("4e7a2e")
 
 @onready var rows: VBoxContainer = %Rows
 
@@ -74,15 +73,13 @@ func _apply(stats: Dictionary, targets: Dictionary, animate: bool) -> void:
 		row["tween"] = tween
 
 
-## Gives the bar its track and fill boxes and hands back the fill, which is the
-## one the tween recolors as a stat crosses its target.
+## Hands back the bar's fill box, which is the one the tween recolors as a stat
+## crosses its target. The empty track comes from panel_content_theme so it stays
+## in step with the panel art; only the fill has to be built here, since a shared
+## theme StyleBox would be recolored for every bar at once.
 func _style_bar(bar: ProgressBar) -> StyleBoxFlat:
-	var track := StyleBoxFlat.new()
-	track.bg_color = track_color
-	track.set_corner_radius_all(4)
 	var fill := StyleBoxFlat.new()
 	fill.bg_color = under_color
-	fill.set_corner_radius_all(4)
-	bar.add_theme_stylebox_override("background", track)
+	fill.set_corner_radius_all(3)
 	bar.add_theme_stylebox_override("fill", fill)
 	return fill

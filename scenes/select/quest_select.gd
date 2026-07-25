@@ -47,7 +47,7 @@ func _refresh_days_left() -> void:
 
 
 func _build_card(quest: QuestData) -> Control:
-	var card := PanelContainer.new()
+	var card := Ui.card()
 	card.custom_minimum_size = Vector2(CARD_WIDTH, 0)
 
 	var margin := MarginContainer.new()

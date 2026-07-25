@@ -1,0 +1,19 @@
+[gd_resource type="Resource" script_class="ItemData" format=3 uid="uid://1kgu4umo433x"]
+
+[ext_resource type="Script" uid="uid://dw0c3j0carikx" path="res://resources/effects/item_effect.gd" id="1_jvyy3"]
+[ext_resource type="Texture2D" uid="uid://53073plmvjry" path="res://assets/items/crowbar.png" id="2_jejh2"]
+[ext_resource type="Script" uid="uid://du5drbi85ateb" path="res://resources/item_data.gd" id="2_q7net"]
+
+[resource]
+script = ExtResource("2_q7net")
+id = "crowbar"
+display_name = "Crowbar"
+shape = Array[Vector2i]([Vector2i(0, 0), Vector2i(0, 1), Vector2i(0, 2), Vector2i(0, 3), Vector2i(0, 4)])
+icon = ExtResource("2_jejh2")
+combat = 1
+utility = 7
+traits = Array[String](["versatile", "tool"])
+flavor = "A certified classic crowbar. Can be swung in a pinch."
+max_durability = 7
+buy_price = 7
+metadata/_custom_type_script = "uid://du5drbi85ateb"

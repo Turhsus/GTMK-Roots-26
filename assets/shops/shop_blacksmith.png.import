@@ -3,15 +3,15 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://dv4jvscdv6wxu"
-path="res://.godot/imported/shop_blacksmith.png-e923c76c4b58dc551ac699424eb40ed7.ctex"
+path="res://.godot/imported/shop_blacksmith.png-266acbde29382b41854754ec05832cb3.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/backgrounds/shop_blacksmith.png"
-dest_files=["res://.godot/imported/shop_blacksmith.png-e923c76c4b58dc551ac699424eb40ed7.ctex"]
+source_file="res://assets/shops/shop_blacksmith.png"
+dest_files=["res://.godot/imported/shop_blacksmith.png-266acbde29382b41854754ec05832cb3.ctex"]
 
 [params]
 

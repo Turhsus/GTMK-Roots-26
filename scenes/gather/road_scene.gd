@@ -301,7 +301,7 @@ func _build_quest_preview() -> Control:
 
 
 func _build_preview_card(quest: QuestData) -> Control:
-	var card := PanelContainer.new()
+	var card := Ui.card()
 	card.custom_minimum_size = Vector2(260, 0)
 
 	var margin := MarginContainer.new()

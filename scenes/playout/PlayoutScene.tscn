@@ -1,6 +1,7 @@
-[gd_scene load_steps=2 format=3]
+[gd_scene load_steps=3 format=3]
 
 [ext_resource type="Script" path="res://scenes/playout/playout_scene.gd" id="1_playout"]
+[ext_resource type="Theme" path="res://resources/ui/panel_content_theme.tres" id="2_panel_content"]
 
 [node name="PlayoutScene" type="Control"]
 layout_mode = 3
@@ -35,6 +36,7 @@ grow_vertical = 2
 [node name="Card" type="PanelContainer" parent="Center"]
 custom_minimum_size = Vector2(760, 560)
 layout_mode = 2
+theme = ExtResource("2_panel_content")
 
 [node name="Margin" type="MarginContainer" parent="Center/Card"]
 layout_mode = 2
@@ -67,8 +69,8 @@ theme_override_constants/separation = 18
 
 [node name="Hint" type="Label" parent="Center/Card/Margin/Layout"]
 unique_name_in_owner = true
-modulate = Color(1, 1, 1, 0.5)
 layout_mode = 2
+theme_override_colors/font_color = Color(0.42, 0.36, 0.3, 1)
 text = "click to skip ahead"
 horizontal_alignment = 1
 

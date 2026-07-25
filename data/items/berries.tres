@@ -3,6 +3,7 @@
 [ext_resource type="Script" uid="uid://du5drbi85ateb" path="res://resources/item_data.gd" id="1_dkr2t"]
 [ext_resource type="Script" uid="uid://dw0c3j0carikx" path="res://resources/effects/item_effect.gd" id="1_ge1nf"]
 [ext_resource type="Script" uid="uid://d2pihb358f0k8" path="res://resources/effects/no_adjacent_trait_effect.gd" id="2_u1o2l"]
+[ext_resource type="Texture2D" uid="uid://cxupaphfoyu0g" path="res://assets/items/berries.png" id="3_u1o2l"]
 
 [sub_resource type="Resource" id="Resource_1nhuj"]
 script = ExtResource("2_u1o2l")
@@ -13,6 +14,8 @@ metadata/_custom_type_script = "uid://d2pihb358f0k8"
 script = ExtResource("1_dkr2t")
 id = "berries"
 display_name = "Berries"
+shape = Array[Vector2i]([Vector2i(0, 0), Vector2i(0, 1)])
+icon = ExtResource("3_u1o2l")
 food = 1
 traits = Array[String](["food"])
 flavor = "Delicious, Juicy, gone"
