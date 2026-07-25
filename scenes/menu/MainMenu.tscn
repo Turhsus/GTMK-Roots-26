@@ -40,7 +40,7 @@ theme_override_constants/separation = 16
 [node name="Title" type="Label" parent="Center/Layout" unique_id=4412277]
 layout_mode = 2
 theme_override_font_sizes/font_size = 48
-text = "Pack Your Child's Adventure"
+text = "How to Train Your Adventurer"
 horizontal_alignment = 1
 
 [node name="Tagline" type="Label" parent="Center/Layout" unique_id=1063441137]

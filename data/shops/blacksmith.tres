@@ -2,9 +2,19 @@
 
 [ext_resource type="Script" uid="uid://cs53qfm8focrq" path="res://resources/shop_data.gd" id="1_script"]
 [ext_resource type="Script" uid="uid://du5drbi85ateb" path="res://resources/item_data.gd" id="2_item"]
+[ext_resource type="Resource" uid="uid://bke744dbx8hys" path="res://data/items/sword.tres" id="3_sword"]
+[ext_resource type="Resource" uid="uid://bpppywm8euvo7" path="res://data/items/knife.tres" id="4_knife"]
+[ext_resource type="Resource" uid="uid://c6tokvk6rp5e4" path="res://data/items/axe.tres" id="5_axe"]
+[ext_resource type="Resource" uid="uid://kf8y1j8w2j5f" path="res://data/items/flail.tres" id="6_flail"]
+[ext_resource type="Resource" uid="uid://b4gd00khnqv3x" path="res://data/items/shield.tres" id="7_shield"]
+[ext_resource type="Resource" uid="uid://iqq1wh4jxq5n" path="res://data/items/helmet.tres" id="8_helmet"]
+[ext_resource type="Resource" uid="uid://cdx50krnuvk77" path="res://data/items/boots.tres" id="9_boots"]
+[ext_resource type="Resource" uid="uid://e4ulf4l1buer" path="res://data/items/rope.tres" id="10_rope"]
+[ext_resource type="Resource" uid="uid://1kgu4umo433x" path="res://data/items/crowbar.tres" id="11_crowbar"]
 
 [resource]
 script = ExtResource("1_script")
 id = "blacksmith"
 display_name = "The Blacksmith"
 blurb = "Steel and stout boots and good rope. \"Best you can do is send them prepared.\""
+stock = Array[ExtResource("2_item")]([ExtResource("3_sword"), ExtResource("4_knife"), ExtResource("5_axe"), ExtResource("6_flail"), ExtResource("7_shield"), ExtResource("8_helmet"), ExtResource("9_boots"), ExtResource("10_rope"), ExtResource("11_crowbar")])
