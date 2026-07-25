@@ -8,3 +8,5 @@
 # VSCode
 .vscode/
 .vscode/settings.json
+releases/pack_bag.console.exe
+releases/pack_bag.exe
