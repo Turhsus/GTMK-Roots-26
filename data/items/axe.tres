@@ -3,7 +3,7 @@
 [ext_resource type="Script" uid="uid://du5drbi85ateb" path="res://resources/item_data.gd" id="1_e8x3d"]
 [ext_resource type="Script" uid="uid://dw0c3j0carikx" path="res://resources/effects/item_effect.gd" id="1_t363m"]
 [ext_resource type="Texture2D" uid="uid://c4jvais0lyyph" path="res://assets/items/axe.png" id="2_8fsb2"]
-[ext_resource type="Script" uid="uid://ihnb4kqoqc4b" path="res://resources/effects/mo_rotation_effect.gd" id="2_f3ttt"]
+[ext_resource type="Script" uid="uid://ihnb4kqoqc4b" path="res://resources/effects/no_rotation_effect.gd" id="2_f3ttt"]
 
 [sub_resource type="Resource" id="Resource_xtbti"]
 script = ExtResource("2_f3ttt")

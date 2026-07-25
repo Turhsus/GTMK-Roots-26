@@ -4,10 +4,18 @@
 [ext_resource type="Script" uid="uid://du5drbi85ateb" path="res://resources/item_data.gd" id="1_fputx"]
 [ext_resource type="Texture2D" uid="uid://cglc7766lh8oa" path="res://assets/items/wine.png" id="1_qehmw"]
 [ext_resource type="Script" uid="uid://ihnb4kqoqc4b" path="res://resources/effects/no_rotation_effect.gd" id="2_52gxh"]
+[ext_resource type="Script" uid="uid://d2pihb358f0k8" path="res://resources/effects/no_adjacent_trait_effect.gd" id="3_m38is"]
 
 [sub_resource type="Resource" id="Resource_m38is"]
 script = ExtResource("2_52gxh")
 rotate = 2
+
+[sub_resource type="Resource" id="Resource_siiyt"]
+script = ExtResource("3_m38is")
+trait_names = Array[String](["heavy"])
+direction = "up"
+penalty = 99
+metadata/_custom_type_script = "uid://d2pihb358f0k8"
 
 [resource]
 script = ExtResource("1_fputx")
@@ -21,6 +29,6 @@ utility = 1
 traits = Array[String](["liquid", "morale", "cooking", "food", "versatile", "fragile"])
 flavor = "Liquid courage"
 max_durability = 3
-effects = Array[ExtResource("1_52gxh")]([SubResource("Resource_m38is")])
+effects = Array[ExtResource("1_52gxh")]([SubResource("Resource_m38is"), SubResource("Resource_siiyt")])
 buy_price = 20
 metadata/_custom_type_script = "uid://du5drbi85ateb"

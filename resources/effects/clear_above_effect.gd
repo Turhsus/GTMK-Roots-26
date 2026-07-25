@@ -18,4 +18,4 @@ func resolve_send_off(item: ItemData, layout: PackLayout) -> void:
 
 func describe() -> String:
 	var plural := "" if rows == 1 else "s"
-	return "Keep %d square%s above it clear (−%d durability)." % [rows, plural, penalty]
+	return "Keep %d square%s above it clear, otherwise the item will be crushed! (−%d durability)." % [rows, plural, penalty]

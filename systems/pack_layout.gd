@@ -57,8 +57,9 @@ func is_filled(cell: Vector2i) -> bool:
 
 
 ## The distinct items edge-adjacent to the given item — anything sharing a cell wall
-## with it, itself excluded. Diagonals don't count as neighbours.
-func neighbours_of(item: ItemData) -> Array[ItemData]:
+## with it, itself excluded. Diagonals don't count as neighbours. Pass `dirs` to look
+## only across specific edges (e.g. [Vector2i.UP]); it defaults to all four sides.
+func neighbours_of(item: ItemData, dirs: Array[Vector2i] = [Vector2i.LEFT, Vector2i.RIGHT, Vector2i.UP, Vector2i.DOWN]) -> Array[ItemData]:
 	var found: Array[ItemData] = []
 	if not _by_item.has(item):
 		return found
@@ -67,7 +68,7 @@ func neighbours_of(item: ItemData) -> Array[ItemData]:
 	for cell in placement.cells:
 		own[cell] = true
 	for cell in placement.cells:
-		for dir in [Vector2i.LEFT, Vector2i.RIGHT, Vector2i.UP, Vector2i.DOWN]:
+		for dir in dirs:
 			var neighbour_cell: Vector2i = cell + dir
 			if own.has(neighbour_cell):
 				continue

@@ -4,11 +4,18 @@
 [ext_resource type="Script" uid="uid://du5drbi85ateb" path="res://resources/item_data.gd" id="1_lmqjk"]
 [ext_resource type="Script" uid="uid://dw0c3j0carikx" path="res://resources/effects/item_effect.gd" id="1_thsbl"]
 [ext_resource type="Script" uid="uid://d2pihb358f0k8" path="res://resources/effects/no_adjacent_trait_effect.gd" id="2_eyf0y"]
+[ext_resource type="Script" uid="uid://bvghev7pfsy2a" path="res://resources/effects/clear_above_effect.gd" id="3_eyf0y"]
 
 [sub_resource type="Resource" id="Resource_pur8c"]
 script = ExtResource("2_eyf0y")
 trait_names = Array[String](["warmth", "fire"])
 metadata/_custom_type_script = "uid://d2pihb358f0k8"
+
+[sub_resource type="Resource" id="Resource_j7ofh"]
+script = ExtResource("3_eyf0y")
+rows = 3
+penalty = 99
+metadata/_custom_type_script = "uid://bvghev7pfsy2a"
 
 [resource]
 script = ExtResource("1_lmqjk")
@@ -19,6 +26,6 @@ food = 2
 health = 1
 traits = Array[String](["food", "morale"])
 flavor = "There is nothing more rejuvenating than a well cut wedge of cheese."
-effects = Array[ExtResource("1_thsbl")]([SubResource("Resource_pur8c")])
+effects = Array[ExtResource("1_thsbl")]([SubResource("Resource_pur8c"), SubResource("Resource_j7ofh")])
 buy_price = 5
 metadata/_custom_type_script = "uid://du5drbi85ateb"
