@@ -1,6 +1,13 @@
 [gd_resource type="Resource" script_class="ItemData" format=3 uid="uid://cp48saiwrmtot"]
 
 [ext_resource type="Script" uid="uid://du5drbi85ateb" path="res://resources/item_data.gd" id="1_dkr2t"]
+[ext_resource type="Script" uid="uid://dw0c3j0carikx" path="res://resources/effects/item_effect.gd" id="1_ge1nf"]
+[ext_resource type="Script" uid="uid://d2pihb358f0k8" path="res://resources/effects/no_adjacent_trait_effect.gd" id="2_u1o2l"]
+
+[sub_resource type="Resource" id="Resource_1nhuj"]
+script = ExtResource("2_u1o2l")
+trait_names = Array[String](["warmth", "fire"])
+metadata/_custom_type_script = "uid://d2pihb358f0k8"
 
 [resource]
 script = ExtResource("1_dkr2t")
@@ -9,5 +16,7 @@ display_name = "Berries"
 food = 1
 traits = Array[String](["food"])
 flavor = "Delicious, Juicy, gone"
+max_durability = 3
+effects = Array[ExtResource("1_ge1nf")]([SubResource("Resource_1nhuj")])
 buy_price = 2
 metadata/_custom_type_script = "uid://du5drbi85ateb"

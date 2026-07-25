@@ -2,18 +2,29 @@
 class_name BagGrid
 extends Control
 
-## The bag board. Size is owned by the run (RunState.bag_tier → cols×rows); this
-## node fills its editor rectangle with square cells that fit that board — smaller
-## bags get larger cells inside the same frame. Owns cell <-> pixel math and the
-## occupancy map. GameState owns *what* is packed; this knows *where*.
+## The bag board. The *visual* board is always the full FULL_COLS×FULL_ROWS grid
+## (the largest a backpack can ever be), drawn at a fixed cell size. The run's
+## current bag (RunState.bag_tier → cols×rows) is the *playable* region in the
+## top-left; cells outside it are blacked out and reject placement, so a smaller
+## bag looks like part of the same 6×6 frame rather than a scaled-up small grid.
+## Owns cell <-> pixel math and the occupancy map. GameState owns *what* is
+## packed; this knows *where*.
 
-## Default / editor preview size when nothing has called resize_board yet.
+## The full visual board — the largest a backpack ever gets. Cell size is derived
+## from this, not from the current bag, so cells stay the same size at every tier.
+const FULL_COLS := 6
+const FULL_ROWS := 6
+
+## Playable board when nothing has called resize_board yet (editor preview / tests).
 const DEFAULT_COLS := 6
 const DEFAULT_ROWS := 6
 
 @export var background_color := Color("2c211b")
 @export var cell_color := Color("3d2f26")
 @export var line_color := Color("554236")
+## Fill for cells outside the current bag — present in the 6×6 frame but not
+## packable at this bag tier.
+@export var blocked_color := Color("1a120d")
 
 ## Live board dimensions. Changed by resize_board (packing applies RunState).
 var cols: int = DEFAULT_COLS
@@ -192,10 +203,11 @@ func _on_quest_changed(quest: QuestData) -> void:
 	queue_redraw()
 
 
-## Derive square cell size from the node's rect and current cols/rows, then
-## re-lay any placed items. Smaller boards get larger cells in the same frame.
+## Derive square cell size from the node's rect and the *full* board, then re-lay
+## any placed items. Using the full board (not the current bag) keeps the cell
+## size fixed across tiers — a smaller bag just uses fewer of the same-size cells.
 func _recompute_cell_size() -> void:
-	var derived := maxf(1.0, minf(size.x / float(cols), size.y / float(rows)))
+	var derived := maxf(1.0, minf(size.x / float(FULL_COLS), size.y / float(FULL_ROWS)))
 	if is_equal_approx(derived, cell_size) and is_equal_approx(derived, _shared_cell_size):
 		queue_redraw()
 		return
@@ -219,15 +231,17 @@ func _relayout_placed() -> void:
 
 
 func _draw() -> void:
-	var board := Rect2(Vector2.ZERO, Vector2(cols, rows) * cell_size)
+	# Always draw the full 6×6 frame; cells outside the current bag are blacked out.
+	var board := Rect2(Vector2.ZERO, Vector2(FULL_COLS, FULL_ROWS) * cell_size)
 	draw_rect(board, background_color)
-	for y in rows:
-		for x in cols:
+	for y in FULL_ROWS:
+		for x in FULL_COLS:
+			var playable := x < cols and y < rows
 			var cell := Rect2(cell_to_position(Vector2i(x, y)) + Vector2.ONE * 3, Vector2.ONE * (cell_size - 6))
-			draw_rect(cell, cell_color)
-	for x in range(cols + 1):
+			draw_rect(cell, cell_color if playable else blocked_color)
+	for x in range(FULL_COLS + 1):
 		var at_x := x * cell_size
 		draw_line(Vector2(at_x, 0), Vector2(at_x, board.size.y), line_color, 2.0)
-	for y in range(rows + 1):
+	for y in range(FULL_ROWS + 1):
 		var at_y := y * cell_size
 		draw_line(Vector2(0, at_y), Vector2(board.size.x, at_y), line_color, 2.0)

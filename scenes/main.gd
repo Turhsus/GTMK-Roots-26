@@ -202,6 +202,9 @@ func _on_sent_off() -> void:
 	#    the reward on a clear, so the gold is on hand for the gather phase that follows.
 	var cleared := GameState.count_targets_met() == GameState.STAT_KEYS.size()
 	RunState.register_result(quest, cleared)
+	# Snapshot the quest verdict for the debug readout while GameState is still on this
+	# quest and holds the judged stats — the trip wear/discard below can change them.
+	var outcome := _outcome_report(cleared)
 	# Remember the outcome for the post-playout perk offer. GameState is still on this
 	# quest here, so read the shortfall now — by the time the playout ends the picker
 	# may have moved on.
@@ -222,10 +225,10 @@ func _on_sent_off() -> void:
 	# loaned item that was packed and spent is simply gone rather than double-removed.
 	RunState.reclaim_quest_items()
 	_gather_days = quest.days
-	# Debug: hold the flow on a durability readout until it's dismissed, then carry on
-	# exactly as an undebugged send-off would.
-	if DEBUG_SHOW_DURABILITY and not report.is_empty():
-		_show_durability_debug(report, _proceed_after_send.bind(lines))
+	# Debug: hold the flow on a durability + quest-outcome readout until it's dismissed,
+	# then carry on exactly as an undebugged send-off would.
+	if DEBUG_SHOW_DURABILITY:
+		_show_durability_debug(report, outcome, _proceed_after_send.bind(lines))
 		return
 	_proceed_after_send(lines)
 
@@ -403,10 +406,23 @@ func _durability_report(layout: PackLayout) -> Array:
 	return report
 
 
-## Modal debug overlay: lists each packed item's before -> after durability so a
-## placement effect's extra bite is visible (an upside-down wine drops two, not one).
-## Sits on its own CanvasLayer above every screen; `on_dismiss` resumes the loop.
-func _show_durability_debug(report: Array, on_dismiss: Callable) -> void:
+## Snapshot of how the quest was judged: the per-stat have/need, whether each target
+## was met, and the overall clear. Captured while GameState is still on this quest.
+func _outcome_report(cleared: bool) -> Dictionary:
+	var targets := GameState.get_targets()
+	var rows: Array = []
+	for key in GameState.STAT_KEYS:
+		var have := int(GameState.stats.get(key, 0))
+		var need := int(targets.get(key, 0))
+		rows.append({"stat": key, "have": have, "need": need, "met": have >= need})
+	return {"cleared": cleared, "rows": rows}
+
+
+## Modal debug overlay: shows the quest verdict (each stat's have/need and the overall
+## clear) and lists each packed item's before -> after durability so a placement effect's
+## extra bite is visible (an upside-down wine drops two, not one). Sits on its own
+## CanvasLayer above every screen; `on_dismiss` resumes the loop.
+func _show_durability_debug(report: Array, outcome: Dictionary, on_dismiss: Callable) -> void:
 	var layer := CanvasLayer.new()
 	layer.layer = 100
 	add_child(layer)
@@ -435,9 +451,45 @@ func _show_durability_debug(report: Array, on_dismiss: Callable) -> void:
 	panel.add_child(box)
 
 	var title := Label.new()
-	title.text = "DEBUG — packed durability after send-off"
+	title.text = "DEBUG — send-off report"
 	title.add_theme_font_size_override("font_size", 20)
 	box.add_child(title)
+
+	# The quest verdict: a green CLEARED / red FAILED banner, then a have/need line per
+	# stat target (green when met, amber when short).
+	var cleared := bool(outcome.get("cleared", false))
+	var verdict := Label.new()
+	verdict.text = "QUEST %s" % ("CLEARED" if cleared else "FAILED")
+	verdict.add_theme_font_size_override("font_size", 18)
+	verdict.add_theme_color_override("font_color",
+			Color("6fbf73") if cleared else Color("d0574f"))
+	box.add_child(verdict)
+
+	for stat_row in outcome.get("rows", []):
+		var row := Label.new()
+		var met := bool(stat_row["met"])
+		row.text = "%s:   %d / %d   %s" % [
+			String(stat_row["stat"]).capitalize(),
+			int(stat_row["have"]),
+			int(stat_row["need"]),
+			"✓" if met else "✗ short",
+		]
+		row.add_theme_color_override("font_color",
+				Color("6fbf73") if met else Color("d08b52"))
+		box.add_child(row)
+
+	var separator := HSeparator.new()
+	box.add_child(separator)
+
+	var durability_title := Label.new()
+	durability_title.text = "Packed durability after wear"
+	box.add_child(durability_title)
+
+	if report.is_empty():
+		var empty := Label.new()
+		empty.text = "(nothing packed)"
+		empty.add_theme_color_override("font_color", Color(0.7, 0.7, 0.7))
+		box.add_child(empty)
 
 	for entry in report:
 		var item := entry["item"] as ItemData
