@@ -2,11 +2,11 @@ class_name RoadScene
 extends Control
 
 ## The gather phase. Between one quest's playout and the next quest's selection,
-## the child's parent spends a run of days in town — one shop visit per day —
-## buying supplies with gold and selling off whatever won't be needed. The day
-## budget is set by the quest just completed (main.gd passes it in); the three
-## quests the player will choose from next are drawn up front and previewed here,
-## so the shopping has a plan behind it.
+## the child's parent spends a run of days in town — one day action per day
+## (shop visit or work a shift) — buying supplies with gold and selling off
+## whatever won't be needed. The day budget is set by the quest just completed
+## (main.gd passes it in); the three quests the player will choose from next are
+## drawn up front and previewed here, so the shopping has a plan behind it.
 ##
 ## This scene is the *road*: its own background art, the day/quest preview, and
 ## the "where to today?" shop prompt. A shop itself is a separate full-screen
@@ -37,6 +37,9 @@ signal day_started(day: int)
 ## DEBUG: shows a "Skip gather" button on the road that ends the whole phase at
 ## once, no matter how many days are left. Flip to false to remove it.
 const DEBUG_SKIP_GATHER: bool = true
+
+## Gold earned by skipping shopping to work a shift at the cheese shop for the day.
+const WORK_SHIFT_GOLD: int = 5
 
 ## Travel vignettes that can fire when the road loads at the start of a gather —
 ## at most one per gather, rolled in begin(). A resumed save (start_day > 1) is
