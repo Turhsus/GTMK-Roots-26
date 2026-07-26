@@ -28,10 +28,12 @@ func present(perks: Array[PerkData]) -> void:
 		return
 	header.text = "A lesson learned"
 	for perk in perks:
-		card_row.add_child(_build_card(perk))
+		card_row.add_child(_build_choose_card(perk))
 
 
-func _build_card(perk: PerkData) -> Control:
+## Title + description card, no action button — packing's lessons overlay reuses
+## this so the two screens never drift apart on how a perk reads.
+static func build_info_card(perk: PerkData) -> Control:
 	var card := Ui.card()
 	card.custom_minimum_size = Vector2(CARD_WIDTH, 0)
 
@@ -58,11 +60,17 @@ func _build_card(perk: PerkData) -> Control:
 	body.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	layout.add_child(body)
 
+	return card
+
+
+func _build_choose_card(perk: PerkData) -> Control:
+	var card := build_info_card(perk)
+	# The info card's layout is Margin -> VBox; append the choose button there.
+	var layout: VBoxContainer = card.get_child(0).get_child(0)
 	var choose := Button.new()
 	choose.text = "  Learn this  "
 	choose.custom_minimum_size = Vector2(0, 44)
 	choose.add_theme_font_size_override("font_size", 18)
 	choose.pressed.connect(func() -> void: perk_chosen.emit(perk))
 	layout.add_child(choose)
-
 	return card

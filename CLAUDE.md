@@ -188,7 +188,7 @@ be precise.
 |---|---|---|
 | `main.gd` | 516 | Root. Owns the loop and the save's "loop" half. |
 | `menu/main_menu.gd` | 49 | Title screen, outside the loop. |
-| `packing/packing_scene.gd` | 334 | Owns the drag — the only node that sees both bag and tray. |
+| `packing/packing_scene.gd` | 493 | Owns the drag — the only node that sees both bag and tray. Lessons overlay. |
 | `packing/bag_grid.gd` | 247 | Always draws the full 6x6 board; the bag tier is the playable top-left region, the rest blacked out. `@tool`. |
 | `packing/draggable_item.gd` | 262 | One item view, sized to its shape's bounding box at 96 px/cell. |
 | `packing/item_tray.gd` | 118 | Spawns views from `RunState.inventory`; nodes are reparented tray↔bag, never re-instantiated. |
@@ -198,7 +198,7 @@ be precise.
 | `gather/road_scene.gd` | 419 | The gather phase: day budget, one shop per day, next-quest preview, travel events. |
 | `gather/shop_scene.gd` | 196 | Presentation-only buy/sell rows; the road applies the trade. |
 | `select/quest_select.gd` | 138 | Quest picker cards. |
-| `perk/perk_select.gd` | 68 | The lesson screen after a failed quest. |
+| `perk/perk_select.gd` | 76 | The lesson screen after a failed quest; shared info-card builder. |
 | `pause/pause_menu.gd` | 87 | Overlay, `PROCESS_MODE_WHEN_PAUSED`, emits requests to `Main`. |
 | `end/thank_you_screen.gd` | 36 | Run summary sign-off. |
 
