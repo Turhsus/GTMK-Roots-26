@@ -179,8 +179,16 @@ func _gui_input(event: InputEvent) -> void:
 	# Only gate the initial press: once a press has started on an opaque
 	# pixel, the motion/release that follows it must keep tracking even if
 	# it drifts over a transparent one.
-	if event is InputEventMouseButton and event.pressed and not _press_active \
-			and not is_pixel_opaque(event.global_position):
+	#
+	# And only gate it where items can actually overlap, which is the bag — there
+	# BagGrid owns dispatch and has already hit-tested this view before forwarding
+	# (see _topmost_opaque_view), so this is a second opinion on the same question.
+	# In the tray the flow container lays items side by side and nothing can ever
+	# occlude anything, so gating there just makes items hard to pick up: every
+	# press that lands on a transparent part of the box is silently dropped, which
+	# bites hardest on thin art (crowbar, torch) and on small tray scales.
+	if _external_hit_testing and event is InputEventMouseButton and event.pressed \
+			and not _press_active and not is_pixel_opaque(event.global_position):
 		return
 	if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_RIGHT and event.pressed:
 		accept_event()
