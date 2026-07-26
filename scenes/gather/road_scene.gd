@@ -35,10 +35,6 @@ signal gather_done
 ## gather comes back to the right day with the shopping already done.
 signal day_started(day: int)
 
-## DEBUG: shows a "Skip gather" button on the road that ends the whole phase at
-## once, no matter how many days are left. Flip to false to remove it.
-const DEBUG_SKIP_GATHER: bool = true
-
 ## Travel vignettes that can fire when the road loads at the start of a gather —
 ## at most one per gather, rolled in begin(). A resumed save (start_day > 1) is
 ## re-opening an old gather, not starting one, so it never re-rolls.
@@ -185,22 +181,6 @@ func _show_road() -> void:
 	body.add_child(_spacer(16))
 	body.add_child(_subheading("Coming up — you'll choose one when you set out:"))
 	body.add_child(_build_quest_preview())
-
-	if DEBUG_SKIP_GATHER:
-		body.add_child(_spacer(16))
-		var skip := Button.new()
-		skip.text = "DEBUG: Skip gather"
-		skip.custom_minimum_size = Vector2(0, 40)
-		skip.pressed.connect(_skip_gather)
-		body.add_child(skip)
-
-
-## DEBUG: ends the gather phase immediately, whatever day it is. Still bills the
-## global clock for the days it skips, so the endgame is reachable while testing.
-func _skip_gather() -> void:
-	for _day in range(_current_day, _total_days + 1):
-		RunState.spend_day()
-	gather_done.emit()
 
 
 func _build_shop_button(shop: ShopData) -> Button:
