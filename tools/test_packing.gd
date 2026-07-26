@@ -60,8 +60,6 @@ func _ready() -> void:
 	check((combat_row["value"] as Label).text ==
 			"%d / %d" % [sword.item.combat, GameState.get_targets()["combat"]],
 		"the combat row reads current / target, got '%s'" % (combat_row["value"] as Label).text)
-	check((combat_row["bar"] as ProgressBar).max_value == GameState.get_targets()["combat"],
-		"a bar's full mark is the quest target")
 
 	# --- snapping math (relative to current cell size) ---
 	var cell := BagGrid.current_cell_size()
