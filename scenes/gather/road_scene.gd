@@ -323,12 +323,13 @@ func _build_preview_card(quest: QuestData) -> Control:
 ## Opens (or refreshes) the day's shop. The ShopScene is presentation only — it
 ## covers the road full-screen with its own art and signals trades back here,
 ## where the gold, inventory, and purchase counts actually move. Switching shops
-## (or opening one from the road) clears the Buy back list for a fresh visit.
+## (or opening one from the road) clears the Buy back list and starts on Buy.
 func _enter_shop(shop: ShopData) -> void:
-	if _open_shop != shop:
+	var fresh_visit := _open_shop != shop
+	if fresh_visit:
 		_sold_this_visit.clear()
 	_open_shop = shop
-	shop_scene.open(shop, day_label.text, _sold_this_visit)
+	shop_scene.open(shop, day_label.text, _sold_this_visit, fresh_visit)
 	shop_scene.visible = true
 
 
