@@ -9,7 +9,7 @@
 script = ExtResource("1_script")
 id = "tutorial"
 title = "Fetch Quest"
-brief = "A simple errand is always good first quest. The next town over needs a special delivery! Your little one is the perfect choice to get it there. The road is safe, so just make sure has enough food and supplies to make the journey"
+brief = "A simple errand is always a good first quest. The next town over needs a special delivery! Your little one is the perfect choice to get it there. The road is safe, so just make sure he has enough food and supplies to make the journey."
 days = 2
 gold_reward = 5
 traits = Array[String](["warmth", "cutting"])
