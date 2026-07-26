@@ -1,14 +1,15 @@
 class_name StatsPanel
 extends PanelContainer
 
-## Four live bars — Food, Health, Combat, Utility — filling toward the quest's
+## Four live readouts — Food, Health, Combat, Utility — against the quest's
 ## targets. It reads GameState and nothing else: the bag never talks to it, so a
 ## stat change from any source (drop, pick-up, "Pack again") lands here for free.
 ##
 ## One row per GameState.STAT_KEYS entry, authored in the scene and named after
-## the stat. Bar colors are built in code so a row is just Label + ProgressBar.
+## the stat. A row is just Name + Value; with no bar to fill, the number's colour
+## is the whole "target met" signal, so it is the one thing built in code.
 
-## Seconds for a bar to slide to its new fill.
+## Seconds for a value to fade to its new colour.
 const FILL_TIME := 0.25
 
 ## Both read against the tan panel fill (#F3DAB8), so they are the deeper end of
@@ -18,7 +19,7 @@ const FILL_TIME := 0.25
 
 @onready var rows: VBoxContainer = %Rows
 
-## Stat key -> { bar: ProgressBar, value: Label, fill: StyleBoxFlat, tween: Tween }.
+## Stat key -> { value: Label, tween: Tween }.
 var _rows: Dictionary = {}
 
 
@@ -28,11 +29,8 @@ func _ready() -> void:
 		if row == null:
 			push_warning("StatsPanel: no row for stat '%s'" % key)
 			continue
-		var bar: ProgressBar = row.get_node("Bar")
 		_rows[key] = {
-			"bar": bar,
-			"value": row.get_node("Header/Value") as Label,
-			"fill": _style_bar(bar),
+			"value": row.get_node("Value") as Label,
 			"tween": null,
 		}
 	GameState.stats_changed.connect(_on_stats_changed)
@@ -46,40 +44,36 @@ func _on_stats_changed(stats: Dictionary, targets: Dictionary) -> void:
 func _apply(stats: Dictionary, targets: Dictionary, animate: bool) -> void:
 	for key in _rows:
 		var row: Dictionary = _rows[key]
-		var bar: ProgressBar = row["bar"]
+		var label: Label = row["value"]
 		var value := int(stats.get(key, 0))
 		var target := int(targets.get(key, 0))
-		# A target of 0 would make every fill a division by zero; the bar still
-		# has to read as full, so treat it as a 1-point goal.
-		bar.max_value = maxi(target, 1)
-		# The number tells the whole truth (over target, or negative); the bar
-		# only ever draws between empty and full.
-		(row["value"] as Label).text = "%d / %d" % [value, target]
-		var fill := clampf(value, 0.0, bar.max_value)
+		# The number tells the whole truth, including over target or negative.
+		label.text = "%d / %d" % [value, target]
 		var color: Color = met_color if value >= target else under_color
-		var stylebox: StyleBoxFlat = row["fill"]
 
 		if row["tween"] != null and (row["tween"] as Tween).is_valid():
 			(row["tween"] as Tween).kill()
 			row["tween"] = null
 		if not animate:
-			bar.value = fill
-			stylebox.bg_color = color
+			_set_value_color(label, color)
 			continue
-		var tween := create_tween().set_parallel(true)
+		var tween := create_tween()
 		tween.set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
-		tween.tween_property(bar, "value", fill, FILL_TIME)
-		tween.tween_property(stylebox, "bg_color", color, FILL_TIME)
+		# A lambda rather than a bound Callable: the tween supplies the Color and
+		# the label has to ride along, and GDScript checks a `bind` argument
+		# against the *leading* parameter, so `_set_value_color.bind(label)` is a
+		# parse error however the two are ordered. The capture is by value, which
+		# is what we want — each row binds its own label.
+		tween.tween_method(
+			func(c: Color) -> void: _set_value_color(label, c),
+			label.get_theme_color("font_color"),
+			color,
+			FILL_TIME)
 		row["tween"] = tween
 
 
-## Hands back the bar's fill box, which is the one the tween recolors as a stat
-## crosses its target. The empty track comes from panel_content_theme so it stays
-## in step with the panel art; only the fill has to be built here, since a shared
-## theme StyleBox would be recolored for every bar at once.
-func _style_bar(bar: ProgressBar) -> StyleBoxFlat:
-	var fill := StyleBoxFlat.new()
-	fill.bg_color = under_color
-	fill.set_corner_radius_all(3)
-	bar.add_theme_stylebox_override("fill", fill)
-	return fill
+## Recolors one value label. An override rather than `modulate`, because modulate
+## multiplies the theme's own font colour instead of replacing it — against the
+## tan panel that would darken the amber rather than swap it for green.
+func _set_value_color(label: Label, color: Color) -> void:
+	label.add_theme_color_override("font_color", color)

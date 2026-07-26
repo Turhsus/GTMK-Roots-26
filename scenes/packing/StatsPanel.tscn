@@ -14,10 +14,10 @@ script = ExtResource("1_stats")
 
 [node name="Margin" type="MarginContainer" parent="."]
 layout_mode = 2
-theme_override_constants/margin_left = 4
-theme_override_constants/margin_top = 4
-theme_override_constants/margin_right = 4
-theme_override_constants/margin_bottom = 4
+theme_override_constants/margin_left = 8
+theme_override_constants/margin_top = 8
+theme_override_constants/margin_right = 8
+theme_override_constants/margin_bottom = 8
 
 [node name="Layout" type="VBoxContainer" parent="Margin"]
 layout_mode = 2
@@ -30,92 +30,60 @@ text = "Supplies"
 [node name="Rows" type="VBoxContainer" parent="Margin/Layout"]
 unique_name_in_owner = true
 layout_mode = 2
-theme_override_constants/separation = 10
+theme_override_constants/separation = 8
 
-[node name="Food" type="VBoxContainer" parent="Margin/Layout/Rows"]
+[node name="Food" type="HBoxContainer" parent="Margin/Layout/Rows"]
 layout_mode = 2
-theme_override_constants/separation = 2
+theme_override_constants/separation = 12
 
-[node name="Header" type="HBoxContainer" parent="Margin/Layout/Rows/Food"]
+[node name="Name" type="Label" parent="Margin/Layout/Rows/Food"]
 layout_mode = 2
-
-[node name="Name" type="Label" parent="Margin/Layout/Rows/Food/Header"]
-layout_mode = 2
-size_flags_horizontal = 3
 text = "Food"
 
-[node name="Value" type="Label" parent="Margin/Layout/Rows/Food/Header"]
+[node name="Value" type="Label" parent="Margin/Layout/Rows/Food"]
 layout_mode = 2
+size_flags_horizontal = 3
 text = "0 / 0"
 horizontal_alignment = 2
 
-[node name="Bar" type="ProgressBar" parent="Margin/Layout/Rows/Food"]
-custom_minimum_size = Vector2(0, 18)
+[node name="Health" type="HBoxContainer" parent="Margin/Layout/Rows"]
 layout_mode = 2
-show_percentage = false
+theme_override_constants/separation = 12
 
-[node name="Health" type="VBoxContainer" parent="Margin/Layout/Rows"]
+[node name="Name" type="Label" parent="Margin/Layout/Rows/Health"]
 layout_mode = 2
-theme_override_constants/separation = 2
-
-[node name="Header" type="HBoxContainer" parent="Margin/Layout/Rows/Health"]
-layout_mode = 2
-
-[node name="Name" type="Label" parent="Margin/Layout/Rows/Health/Header"]
-layout_mode = 2
-size_flags_horizontal = 3
 text = "Health"
 
-[node name="Value" type="Label" parent="Margin/Layout/Rows/Health/Header"]
+[node name="Value" type="Label" parent="Margin/Layout/Rows/Health"]
 layout_mode = 2
+size_flags_horizontal = 3
 text = "0 / 0"
 horizontal_alignment = 2
 
-[node name="Bar" type="ProgressBar" parent="Margin/Layout/Rows/Health"]
-custom_minimum_size = Vector2(0, 18)
+[node name="Combat" type="HBoxContainer" parent="Margin/Layout/Rows"]
 layout_mode = 2
-show_percentage = false
+theme_override_constants/separation = 12
 
-[node name="Combat" type="VBoxContainer" parent="Margin/Layout/Rows"]
+[node name="Name" type="Label" parent="Margin/Layout/Rows/Combat"]
 layout_mode = 2
-theme_override_constants/separation = 2
-
-[node name="Header" type="HBoxContainer" parent="Margin/Layout/Rows/Combat"]
-layout_mode = 2
-
-[node name="Name" type="Label" parent="Margin/Layout/Rows/Combat/Header"]
-layout_mode = 2
-size_flags_horizontal = 3
 text = "Combat"
 
-[node name="Value" type="Label" parent="Margin/Layout/Rows/Combat/Header"]
-layout_mode = 2
-text = "0 / 0"
-horizontal_alignment = 2
-
-[node name="Bar" type="ProgressBar" parent="Margin/Layout/Rows/Combat"]
-custom_minimum_size = Vector2(0, 18)
-layout_mode = 2
-show_percentage = false
-
-[node name="Utility" type="VBoxContainer" parent="Margin/Layout/Rows"]
-layout_mode = 2
-theme_override_constants/separation = 2
-
-[node name="Header" type="HBoxContainer" parent="Margin/Layout/Rows/Utility"]
-layout_mode = 2
-
-[node name="Name" type="Label" parent="Margin/Layout/Rows/Utility/Header"]
+[node name="Value" type="Label" parent="Margin/Layout/Rows/Combat"]
 layout_mode = 2
 size_flags_horizontal = 3
-text = "Utility"
-
-[node name="Value" type="Label" parent="Margin/Layout/Rows/Utility/Header"]
-layout_mode = 2
 text = "0 / 0"
 horizontal_alignment = 2
 
-[node name="Bar" type="ProgressBar" parent="Margin/Layout/Rows/Utility"]
-custom_minimum_size = Vector2(0, 18)
+[node name="Utility" type="HBoxContainer" parent="Margin/Layout/Rows"]
 layout_mode = 2
-show_percentage = false
+theme_override_constants/separation = 12
+
+[node name="Name" type="Label" parent="Margin/Layout/Rows/Utility"]
+layout_mode = 2
+text = "Utility"
+
+[node name="Value" type="Label" parent="Margin/Layout/Rows/Utility"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "0 / 0"
+horizontal_alignment = 2

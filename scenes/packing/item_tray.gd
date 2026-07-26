@@ -23,6 +23,31 @@ const TRAY_SCALE := 0.55
 ## a trait vocabulary together; DEFAULT is the inventory's own order.
 enum SortMode { DEFAULT, FOOD, HEALTH, COMBAT, UTILITY, TRAIT }
 
+## Where a shut drawer parks its *rect's* right edge — which is not where the
+## drawer looks like it ends. The art's last 63px are the handle arc, and that
+## arc only occupies the vertical middle, so at any other height the visible edge
+## is 63px further left. The coiled rope in finalpacking_bg.png spans x407 to
+## x620 and sits well below the handle, so covering its left quarter means
+## putting the *body* edge at x460 — hence 460 + 63 here. Measuring to the rect
+## instead leaves the drawer short of the rope entirely.
+## Open, that edge is at x800, making the slide ~277px.
+@export var closed_right_edge := 523.0
+
+## How close the pointer has to come to the drawer's leading edge to pull it out.
+@export var hover_margin := 50.0
+
+## Seconds for a full open or shut.
+const SLIDE_TIME := 0.45
+
+## The authored x, captured at _ready — the drawer's open position.
+var _open_x := 0.0
+var _open := true
+var _slide: Tween = null
+
+## Pins the drawer open. The auto-retract is good for seeing the board, and bad
+## when you are working out of the tray and the pointer keeps straying right.
+var _locked := false
+
 ## Dropdown label per mode, in SortMode order (the option index IS the mode).
 const SORT_LABELS: Array[String] = [
 	"Default", "Food", "Health", "Combat", "Utility", "Trait",
@@ -32,15 +57,56 @@ var _sort_mode: SortMode = SortMode.DEFAULT
 
 @onready var item_container: HFlowContainer = %ItemContainer
 @onready var sort_button: OptionButton = %SortButton
+@onready var lock_button: Button = %LockButton
 
 
 func _ready() -> void:
+	_open_x = position.x
 	for label in SORT_LABELS:
 		sort_button.add_item("Sort: %s" % label)
 	sort_button.item_selected.connect(_on_sort_selected)
+	lock_button.toggled.connect(_on_lock_toggled)
 	GameState.quest_changed.connect(_on_quest_changed)
 	if GameState.current_quest != null:
 		_on_quest_changed(GameState.current_quest)
+
+
+## Slides the drawer to match where the pointer is. Each threshold is measured
+## against the edge the drawer would have in its *current* state, which gives it
+## hysteresis for free: shut, it opens once the pointer is inside x573; open, it
+## does not shut again until the pointer passes x850. Measuring against the live
+## position instead would let a single mid-slide frame flip the state back and
+## forth and leave the drawer juddering in place.
+##
+## An item being dragged out lives on the packing scene's drag layer, not in the
+## tray, so the drawer is free to shut behind it — and a cancelled drag lands
+## back in the flow container, which re-lays it out wherever the drawer is.
+func _process(_delta: float) -> void:
+	# Before the first layout pass size.x is 0, which would put the leading edge
+	# at the drawer's left and shut it for one frame on scene entry.
+	if size.x <= 0.0:
+		return
+	var wants_open := _locked or get_global_mouse_position().x <= _leading_edge() + hover_margin
+	if wants_open == _open:
+		return
+	_open = wants_open
+	if _slide != null and _slide.is_valid():
+		_slide.kill()
+	# Sine in-out rather than cubic out: cubic out leaves at full speed and slams
+	# into the stop, which is what reads as "poppy". Sine eases both ends, so a
+	# heavy drawer starts and settles instead of snapping.
+	_slide = create_tween().set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
+	_slide.tween_property(self, "position:x", _open_x if _open else _shut_x(), SLIDE_TIME)
+
+
+## The drawer's right edge in its current state — the thing the pointer has to
+## get near. Deliberately the state's edge, not the live one; see _process.
+func _leading_edge() -> float:
+	return (_open_x if _open else _shut_x()) + size.x
+
+
+func _shut_x() -> float:
+	return closed_right_edge - size.x
 
 
 ## Rebuilds the tray from a list of items.
@@ -74,6 +140,14 @@ func adopt(view: DraggableItem) -> void:
 		return
 	view.reparent(item_container, false)
 	_apply_sort()
+
+
+## Locking only forces the drawer open; unlocking hands it straight back to the
+## pointer, so it shuts on the next frame if the pointer is already away rather
+## than waiting for the pointer to leave and come back.
+func _on_lock_toggled(pressed: bool) -> void:
+	_locked = pressed
+	lock_button.text = "Lock: On" if pressed else "Lock: Off"
 
 
 func _on_sort_selected(index: int) -> void:
