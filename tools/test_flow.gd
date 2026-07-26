@@ -158,6 +158,43 @@ func _test_progression() -> void:
 		print("  SKIP  no-repeat needs 2+ quests in the drawn tier, pool has %d" % tier.size())
 	RunState.reset()
 
+	# Carry-forward: an easier quest the player never sent off stays draweable after
+	# they move up a tier; one they already played does not come back.
+	RunState.reset()
+	RunState.completed_count = 2
+	var below: Array = RunState._unattempted_below(RunState.current_difficulty())
+	if below.size() >= 2:
+		var played: QuestData = below[0]
+		var skipped: QuestData = below[1]
+		RunState.register_result(played, false)
+		# register_result advances nothing on a failure, but it does bank the attempt.
+		RunState.completed_count = 2
+		var still_below: Array = RunState._unattempted_below(RunState.current_difficulty())
+		check(not _has_id(still_below, played.id),
+			"a lower-tier quest already attempted is left behind")
+		check(_has_id(still_below, skipped.id),
+			"a lower-tier quest never attempted is still carried forward")
+		# Draw enough times that the shuffle can't hide a candidate that is in the set.
+		var seen_skipped := false
+		var seen_played := false
+		var seen_current := false
+		for _i in range(60):
+			var draw := RunState.draw_choices()
+			for quest in draw:
+				if quest.id == skipped.id:
+					seen_skipped = true
+				elif quest.id == played.id:
+					seen_played = true
+				elif quest.difficulty == RunState.current_difficulty():
+					seen_current = true
+		check(seen_skipped, "the skipped easier quest turns up in the draw")
+		check(not seen_played, "the attempted easier quest never turns up again")
+		check(seen_current, "the current tier is still drawn from too")
+	else:
+		print("  SKIP  carry-forward needs 2+ unattempted quests below tier %d, pool has %d"
+			% [RunState.current_difficulty(), below.size()])
+	RunState.reset()
+
 
 # --- item durability, at the RunState level ------------------------------------
 

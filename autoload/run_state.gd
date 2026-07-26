@@ -93,6 +93,12 @@ var attempted_count: int = 0
 ## Ids of quests already cleared. A cleared quest is not offered again until its
 ## whole tier is exhausted, at which point the tier resets (see draw_choices).
 var _cleared_ids: Array[String] = []
+## Ids of quests already sent off, cleared or not. Only used to decide which
+## *easier* quests are still worth carrying forward: a quest the player never
+## chose at its own tier keeps showing up later, one they already played does not
+## (see draw_choices). Within the current tier a failed quest is still offered
+## again immediately — that leniency is _cleared_ids' job, not this list's.
+var _attempted_ids: Array[String] = []
 ## The player's owned items for this run — the source the tray builds from.
 ## Grows and shrinks via discard_worn_out() / gain() / release(); stocked from
 ## STARTER_INVENTORY on a fresh run.
@@ -247,6 +253,8 @@ func discard_worn_out(items: Array[ItemData]) -> Array[ItemData]:
 func register_result(quest: QuestData, success: bool) -> void:
 	if quest != null:
 		attempted_count += 1
+		if not _attempted_ids.has(quest.id):
+			_attempted_ids.append(quest.id)
 	if success and quest != null:
 		if not _cleared_ids.has(quest.id):
 			_cleared_ids.append(quest.id)
@@ -572,9 +580,11 @@ func offer_perks(missed_stats: Array[String]) -> Array[PerkData]:
 	return offers
 
 
-## Up to CHOICE_COUNT quests from the current tier, cleared ones held back until
-## the tier runs dry, then the tier resets and is offered fresh. Fewer than three
-## may come back if that is all the tier has; an empty tier falls back to the
+## Up to CHOICE_COUNT quests, drawn from the current tier plus every *easier*
+## quest the player has never sent off — passing on a quest at its own tier shelves
+## it, it doesn't lose it for the run. Cleared quests are held back until the
+## current tier runs dry, then that tier resets and is offered fresh. Fewer than
+## three may come back if that is all there is; an empty tier falls back to the
 ## nearest one that has quests, so a sparse pool never dead-ends the loop.
 func draw_choices() -> Array[QuestData]:
 	var tier := POOL.by_difficulty(current_difficulty())
@@ -586,6 +596,11 @@ func draw_choices() -> Array[QuestData]:
 	var available: Array[QuestData] = []
 	for quest in tier:
 		if not _cleared_ids.has(quest.id):
+			available.append(quest)
+	# The carry-forward. Deduped because _nearest_tier may already have handed us a
+	# tier below the current one.
+	for quest in _unattempted_below(current_difficulty()):
+		if not available.has(quest):
 			available.append(quest)
 	if available.is_empty():
 		# Every quest here is cleared: wipe this tier's clears and offer it anew.
@@ -605,6 +620,7 @@ func reset() -> void:
 	completed_count = 0
 	attempted_count = 0
 	_cleared_ids.clear()
+	_attempted_ids.clear()
 	_stock_starter_inventory()
 	gold = STARTING_GOLD
 	gold_changed.emit(gold)
@@ -652,6 +668,7 @@ func to_dict() -> Dictionary:
 		"completed_count": completed_count,
 		"attempted_count": attempted_count,
 		"cleared_ids": _cleared_ids.duplicate(),
+		"attempted_ids": _attempted_ids.duplicate(),
 		"gold": gold,
 		"days_remaining": days_remaining,
 		"bag_tier": bag_tier,
@@ -674,6 +691,12 @@ func from_dict(data: Dictionary) -> void:
 	_cleared_ids.clear()
 	for id in data.get("cleared_ids", []):
 		_cleared_ids.append(String(id))
+	# A save written before the carry-forward existed has no attempted list. Clearing
+	# a quest implies attempting it, so seed from the clears: the worst that costs is
+	# re-offering an easier quest the player once failed, which is the forgiving miss.
+	_attempted_ids.clear()
+	for id in data.get("attempted_ids", _cleared_ids):
+		_attempted_ids.append(String(id))
 	gold = maxi(int(data.get("gold", STARTING_GOLD)), 0)
 	days_remaining = int(data.get("days_remaining", TOTAL_DAYS))
 	bag_tier = clampi(int(data.get("bag_tier", 0)), 0, BAG_SIZES.size() - 1)
@@ -796,6 +819,19 @@ func _stock_starter_inventory() -> void:
 	for item in STARTER_INVENTORY:
 		inventory.append(item.make_owned_copy())
 	inventory_changed.emit(inventory)
+
+
+## Every quest below `tier` that has never been sent off, easiest first. These ride
+## along with the current tier's draw so a lower-difficulty quest the player never
+## picked stays reachable for the rest of the run. A quest already attempted — won
+## or lost — has had its turn and is left behind once the player moves up.
+func _unattempted_below(tier: int) -> Array[QuestData]:
+	var out: Array[QuestData] = []
+	for level in range(0, tier):
+		for quest in POOL.by_difficulty(level):
+			if not _attempted_ids.has(quest.id):
+				out.append(quest)
+	return out
 
 
 ## The closest tier to `tier` that actually has quests, searching outward (down

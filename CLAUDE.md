@@ -81,6 +81,17 @@ MainMenu -> Main -> tutorial quest -> Packing -> send-off -> Playout
 The first quest is a fixed tutorial (`RunState.TUTORIAL`) — packed immediately, no picker
 and no gather before it. `ThankYouScreen` ends the run when the day clock runs out.
 
+**What the picker offers** (`RunState.draw_choices`) is the current tier *plus every
+easier quest the player never sent off*, shuffled and cut to `CHOICE_COUNT`. Two
+different held-back lists do that, and the difference is the point: `_cleared_ids` is
+forgiving and tier-local — a *failed* quest at the current tier can be redrawn straight
+away, and a tier whose quests are all cleared wipes its clears and offers itself anew.
+`_attempted_ids` is one-way and only ever consulted for tiers *below* the current one
+(`_unattempted_below`) — sending a quest off, cleared or not, spends it, so climbing a
+tier leaves played quests behind while ones the player passed on stay on the table for
+the rest of the run. Both are saved. A carried-forward quest competes for the same three
+slots as the current tier, so a tier change never guarantees three *new* briefs.
+
 **Three layers of state, and the split matters:**
 
 - `GameState` — the *current* packing. What is in the bag and the stats that follow.
@@ -278,7 +289,9 @@ Gitignored: `.godot/`, `/android/`, `/build/`, `.vscode/`, and the built `releas
   `wine_delivery` alone at tier 3. `tutorial` is deliberately out — `main.gd` hands it
   over directly, and pooling it would let it be redrawn. **No pooled quest sits at tier
   0 or tier 4**, so the first draw of a run and everything past the fourth clear both
-  rely on `RunState._nearest_tier()` to have anything to offer.
+  rely on `RunState._nearest_tier()` to have anything to offer. With the pool this
+  shallow the unattempted carry-forward does most of the late-run work: past tier 3 the
+  only quests left are the easier ones never picked.
 - `data/quests/rescue.tres` sets no `gold_reward`, so it pays the default **0** — the
   only pool quest that pays nothing, and one a tier-1 player meets early. Looks like an
   authoring omission rather than a choice, but it is a balance number, so it is left for
