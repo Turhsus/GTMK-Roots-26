@@ -13,8 +13,13 @@ func _ready() -> void:
 	_test_layout_queries()
 	_test_clear_above()
 	_test_no_adjacent_trait()
+	_test_no_trait_in_bag()
+	_test_requires_adjacent_trait()
 	_test_neighbor_stat_boost()
 	_test_describe()
+	_test_evaluate_is_pure()
+	_test_appliers_agree_with_evaluate()
+	_test_board_evaluation()
 
 	if failures == 0:
 		print("ALL PASS")
@@ -108,6 +113,107 @@ func _test_no_adjacent_trait() -> void:
 	check(victim.durability == 4, "two bad neighbours still dock only once")
 
 
+# --- NoTraitInBagEffect ----------------------------------------------------------
+
+## The whole-bag rule a quest requirement hangs on: "deliver this, and take nothing
+## sharp". Distance must not matter — that is the whole difference from the adjacency
+## rule above.
+func _test_no_trait_in_bag() -> void:
+	var effect := NoTraitInBagEffect.new()
+	effect.trait_names = ["sharp"] as Array[String]
+	effect.penalty = 1
+
+	var parcel := _item("parcel", ["fragile"])
+	var sword := _item("sword", ["weapon", "sharp"])
+
+	# Opposite corners of the board — nowhere near each other, still a violation.
+	var far := PackLayout.new()
+	far.add(parcel, Vector2i(0, 0), 0, [Vector2i(0, 0)] as Array[Vector2i])
+	far.add(sword, Vector2i(5, 5), 0, [Vector2i(5, 5)] as Array[Vector2i])
+	parcel.durability = 3
+	effect.resolve_send_off(parcel, far)
+	check(parcel.durability == 2, "anything sharp anywhere in the bag docks the parcel")
+	check(effect.get_violation_message(parcel, far).contains("sword"),
+		"the violation names what shouldn't have been packed")
+
+	# A blunt bag is fine, however full.
+	var blunt := PackLayout.new()
+	blunt.add(parcel, Vector2i(0, 0), 0, [Vector2i(0, 0)] as Array[Vector2i])
+	blunt.add(_item("bread", ["food"]), Vector2i(1, 0), 0, [Vector2i(1, 0)] as Array[Vector2i])
+	blunt.add(_item("rope", ["tying"]), Vector2i(5, 5), 0, [Vector2i(5, 5)] as Array[Vector2i])
+	parcel.durability = 3
+	effect.resolve_send_off(parcel, blunt)
+	check(parcel.durability == 3, "a bag with nothing sharp in it costs nothing")
+
+	# Docks once however many offenders came along.
+	var armoury := PackLayout.new()
+	armoury.add(parcel, Vector2i(0, 0), 0, [Vector2i(0, 0)] as Array[Vector2i])
+	armoury.add(_item("axe", ["sharp"]), Vector2i(2, 0), 0, [Vector2i(2, 0)] as Array[Vector2i])
+	armoury.add(_item("knife", ["sharp"]), Vector2i(4, 4), 0, [Vector2i(4, 4)] as Array[Vector2i])
+	parcel.durability = 3
+	effect.resolve_send_off(parcel, armoury)
+	check(parcel.durability == 2, "two offenders still dock only once")
+
+	# The rule never fires on the item's own traits — a sharp thing may carry it.
+	var self_sharp := _item("blade", ["sharp"])
+	var alone := PackLayout.new()
+	alone.add(self_sharp, Vector2i(0, 0), 0, [Vector2i(0, 0)] as Array[Vector2i])
+	check(not effect.evaluate(self_sharp, alone).active, "an item never violates itself")
+
+	# Left in the tray, it met nothing: the offender is aboard but the carrier isn't.
+	var unpacked := PackLayout.new()
+	unpacked.add(sword, Vector2i(5, 5), 0, [Vector2i(5, 5)] as Array[Vector2i])
+	check(not effect.evaluate(parcel, unpacked).active, "an unpacked item breaks no rule")
+
+
+# --- RequiresAdjacentTraitEffect --------------------------------------------------
+
+## The mirror rule: it fires on a neighbour being *missing*, so it is live from the
+## moment the item is placed and goes quiet only once the player solves it.
+func _test_requires_adjacent_trait() -> void:
+	var effect := RequiresAdjacentTraitEffect.new()
+	effect.trait_names = ["armor"] as Array[String]
+	effect.penalty = 2
+
+	var bottle := _item("tonic", ["fragile", "liquid"])
+
+	# Packed alone — nothing to brace against.
+	var loose := PackLayout.new()
+	loose.add(bottle, Vector2i(2, 2), 0, [Vector2i(2, 2)] as Array[Vector2i])
+	bottle.durability = 5
+	effect.resolve_send_off(bottle, loose)
+	check(bottle.durability == 3, "an unbraced item is docked")
+	check(effect.get_violation_message(bottle, loose) != "", "the requirement explains itself")
+
+	# Neighbour without the trait doesn't count.
+	var soft := PackLayout.new()
+	soft.add(bottle, Vector2i(2, 2), 0, [Vector2i(2, 2)] as Array[Vector2i])
+	soft.add(_item("bread", ["food"]), Vector2i(3, 2), 0, [Vector2i(3, 2)] as Array[Vector2i])
+	bottle.durability = 5
+	effect.resolve_send_off(bottle, soft)
+	check(bottle.durability == 3, "the wrong neighbour doesn't satisfy the requirement")
+
+	# The right neighbour, on any side, satisfies it.
+	var braced := PackLayout.new()
+	braced.add(bottle, Vector2i(2, 2), 0, [Vector2i(2, 2)] as Array[Vector2i])
+	braced.add(_item("helmet", ["armor", "defence"]), Vector2i(2, 1), 0,
+		[Vector2i(2, 1)] as Array[Vector2i])
+	bottle.durability = 5
+	effect.resolve_send_off(bottle, braced)
+	check(bottle.durability == 5, "a neighbour carrying the trait costs nothing")
+	check(not effect.evaluate(bottle, braced).active, "a satisfied requirement goes dormant")
+
+	# Diagonals are not neighbours here either.
+	var corner := PackLayout.new()
+	corner.add(bottle, Vector2i(2, 2), 0, [Vector2i(2, 2)] as Array[Vector2i])
+	corner.add(_item("shield", ["armor"]), Vector2i(3, 3), 0, [Vector2i(3, 3)] as Array[Vector2i])
+	check(effect.evaluate(bottle, corner).active, "a diagonal neighbour doesn't brace anything")
+
+	# Still in the tray: a requirement isn't a standing violation on an empty board.
+	check(not effect.evaluate(bottle, PackLayout.new()).active,
+		"an unpacked item isn't in violation of its own requirement")
+
+
 # --- NeighborStatBoostEffect -----------------------------------------------------
 
 func _test_neighbor_stat_boost() -> void:
@@ -190,6 +296,166 @@ func _test_describe() -> void:
 	check(adj.describe() != "", "a configured NoAdjacentTraitEffect describes itself")
 	# An unconfigured adjacency rule stays silent rather than printing a broken line.
 	check(NoAdjacentTraitEffect.new().describe() == "", "an unset adjacency rule says nothing")
+	var in_bag := NoTraitInBagEffect.new()
+	in_bag.trait_names = ["sharp"] as Array[String]
+	check(in_bag.describe().contains("sharp"), "a whole-bag rule names the trait it forbids")
+	check(NoTraitInBagEffect.new().describe() == "", "an unset whole-bag rule says nothing")
+	var needs := RequiresAdjacentTraitEffect.new()
+	needs.trait_names = ["armor"] as Array[String]
+	check(needs.describe().contains("armor"), "a requirement names the trait it wants")
+	check(RequiresAdjacentTraitEffect.new().describe() == "", "an unset requirement says nothing")
+
+
+# --- evaluate(): the pure hook ---------------------------------------------------
+
+## The property the whole live-warning system rests on: asking a rule what it would do
+## must never actually do it. If evaluate() mutated, the packing screen would wear the
+## bag out just by redrawing after every drag.
+func _test_evaluate_is_pure() -> void:
+	var effect := ClearAboveEffect.new()
+	effect.penalty = 2
+
+	var fragile := _item("egg", ["fragile"])
+	fragile.durability = 5
+	var crushed := PackLayout.new()
+	crushed.add(fragile, Vector2i(1, 3), 0, [Vector2i(1, 3)] as Array[Vector2i])
+	crushed.add(_item("rock", []), Vector2i(1, 2), 0, [Vector2i(1, 2)] as Array[Vector2i])
+
+	# Evaluate repeatedly — a mutating implementation would drain it.
+	for _i in range(5):
+		effect.evaluate(fragile, crushed)
+	check(fragile.durability == 5, "evaluate never mutates the item, however often it's asked")
+
+	var outcome := effect.evaluate(fragile, crushed)
+	check(outcome.active, "a crushed item's rule reports itself as firing")
+	check(outcome.durability_delta == -2, "the outcome carries the penalty as a negative delta")
+	check(outcome.is_warning(), "a firing rule that costs durability is a warning")
+	check(not outcome.is_boon(), "a penalty is not a boon")
+	check(outcome.line != "", "a firing rule explains itself")
+	check(outcome.line.contains("rock"), "the explanation names the item doing the crushing")
+
+	# Clear board — dormant, and silent.
+	var open := PackLayout.new()
+	open.add(fragile, Vector2i(1, 3), 0, [Vector2i(1, 3)] as Array[Vector2i])
+	var quiet := effect.evaluate(fragile, open)
+	check(not quiet.active, "a rule nothing triggers stays dormant")
+	check(not quiet.is_warning(), "a dormant rule is not a warning")
+	check(quiet.line == "", "a dormant rule says nothing")
+
+
+## The three appliers are thin readers of evaluate(), so each must agree with it. This
+## is what stops the amber warning from ever disagreeing with the send-off penalty.
+func _test_appliers_agree_with_evaluate() -> void:
+	var effect := NoAdjacentTraitEffect.new()
+	effect.trait_names = ["fire"] as Array[String]
+	effect.penalty = 2
+
+	var victim := _item("cloth", ["fragile"])
+	var layout := PackLayout.new()
+	layout.add(victim, Vector2i(2, 2), 0, [Vector2i(2, 2)] as Array[Vector2i])
+	layout.add(_item("torch", ["fire"]), Vector2i(3, 2), 0, [Vector2i(3, 2)] as Array[Vector2i])
+
+	var predicted := effect.evaluate(victim, layout)
+	victim.durability = 5
+	effect.resolve_send_off(victim, layout)
+	check(victim.durability == 5 + predicted.durability_delta,
+		"resolve_send_off applies exactly the durability evaluate predicted")
+	check(effect.get_violation_message(victim, layout) == predicted.line,
+		"the send-off mistakes modal shows the same line the live warning does")
+
+	# A boon must never be reported as a mistake, however loudly it fires.
+	var blanket_rule := ProtectAdjacentItemEffect.new()
+	blanket_rule.trait_names = ["fragile"] as Array[String]
+	blanket_rule.penalty = 1
+	var blanket := _item("blanket", ["warmth"])
+	blanket.durability = 3
+	var padded := PackLayout.new()
+	padded.add(blanket, Vector2i(2, 2), 0, [Vector2i(2, 2)] as Array[Vector2i])
+	padded.add(_item("egg", ["fragile"]), Vector2i(3, 2), 0, [Vector2i(3, 2)] as Array[Vector2i])
+	var boon := blanket_rule.evaluate(blanket, padded)
+	check(boon.is_boon() and not boon.is_warning(), "a durability gain is a boon, not a warning")
+	check(blanket_rule.get_violation_message(blanket, padded) == "",
+		"a boon never reaches the mistakes modal")
+
+	# A live stat bonus reaches live_bonus and leaves durability alone.
+	var warm := NeighborStatBoostEffect.new()
+	warm.trait_names = ["fire"] as Array[String]
+	warm.food_bonus = 4
+	var bread := _item("bread", ["food"])
+	bread.durability = 3
+	var fireside := PackLayout.new()
+	fireside.add(bread, Vector2i(2, 2), 0, [Vector2i(2, 2)] as Array[Vector2i])
+	fireside.add(_item("torch", ["fire"]), Vector2i(3, 2), 0, [Vector2i(3, 2)] as Array[Vector2i])
+	warm.resolve_send_off(bread, fireside)
+	check(bread.durability == 3, "a live-only rule docks nothing at send-off")
+	check(warm.get_violation_message(bread, fireside) == "",
+		"a live stat bonus is never a mistake")
+
+	# NoRotationEffect fires on the configured turn and names it in words.
+	var upright_only := NoRotationEffect.new()
+	upright_only.rotate = 2
+	upright_only.penalty = 1
+	check(_wear_one("wine", ["liquid"], upright_only, 2) == 1, "the forbidden turn docks")
+	check(_wear_one("wine", ["liquid"], upright_only, 0) == 0, "any other turn is free")
+	check(upright_only.describe().contains("upside down"),
+		"the rotation rule describes the forbidden turn in words, not a step number")
+
+
+# --- BagGrid.evaluate_board: the live sweep ---------------------------------------
+
+## The one entry point PackingScene calls after every placement change. It must hand
+## back both halves — the stat bonus and the firing rules — off a single snapshot.
+func _test_board_evaluation() -> void:
+	var bag := (preload("res://scenes/packing/BagGrid.tscn") as PackedScene).instantiate() as BagGrid
+	add_child(bag)
+	bag.resize_board(6, 6)
+
+	var crush := ClearAboveEffect.new()
+	crush.penalty = 1
+	crush.rows = 1
+
+	var cheese := ItemData.new()
+	cheese.id = "cheese"
+	cheese.display_name = "Cheese Wedge"
+	cheese.shape = [Vector2i.ZERO] as Array[Vector2i]
+	cheese.effects = [crush] as Array[ItemEffect]
+	var cheese_view := (preload("res://scenes/packing/DraggableItem.tscn") as PackedScene).instantiate() as DraggableItem
+	add_child(cheese_view)
+	var cheese_copy := cheese.make_owned_copy()
+	cheese_view.setup(cheese_copy)
+	bag.place(cheese_view, Vector2i(2, 2))
+
+	# Nothing on top yet: no firing rules anywhere on the board.
+	check(bag.evaluate_board()["outcomes"].is_empty(),
+		"an untroubled board reports no firing rules")
+
+	var axe := ItemData.new()
+	axe.id = "axe"
+	axe.display_name = "Axe"
+	axe.shape = [Vector2i.ZERO] as Array[Vector2i]
+	var axe_view := (preload("res://scenes/packing/DraggableItem.tscn") as PackedScene).instantiate() as DraggableItem
+	add_child(axe_view)
+	axe_view.setup(axe.make_owned_copy())
+	bag.place(axe_view, Vector2i(2, 1))
+
+	var outcomes: Dictionary = bag.evaluate_board()["outcomes"]
+	check(outcomes.has(cheese_copy), "placing something on top makes the rule fire")
+	var firing: Dictionary = outcomes.get(cheese_copy, {})
+	check(firing.has(crush), "outcomes are keyed by the effect that produced them")
+	check((firing[crush] as EffectOutcome).is_warning(), "the firing rule is a warning")
+	check((firing[crush] as EffectOutcome).line.contains("Axe"),
+		"the live explanation names the offending item")
+
+	# The board sweep must not wear the bag out just by looking at it.
+	check(cheese_copy.durability == cheese_copy.max_durability,
+		"evaluating the board never docks durability")
+
+	# Move the crusher away and the warning clears.
+	bag.remove(axe_view)
+	check(bag.evaluate_board()["outcomes"].is_empty(),
+		"moving the offending item away clears the warning")
+
+	bag.queue_free()
 
 
 # --- helpers -------------------------------------------------------------------

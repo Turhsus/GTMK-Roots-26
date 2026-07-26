@@ -1,9 +1,13 @@
 class_name NoAdjacentTraitEffect
 extends ItemEffect
 
-## "Don't pack me next to X." At send-off, if any item sharing a cell wall with this
-## one carries any of `trait_names`, the item loses `penalty` durability — once, however
+## "Don't pack me next to X." If any item sharing a cell wall with this one carries any
+## of `trait_names`, the item loses `penalty` durability at send-off — once, however
 ## many bad neighbours it ended up against. The classic fragile-next-to-fire rule.
+##
+## The single bite is deliberate: the player is being told off for a *mistake*, not for
+## a quantity of mistake, so the first offender ends the search and names itself in the
+## warning line.
 
 ## The neighbouring traits that spoil this item, from the canonical vocabulary (see
 ## the Traits autoload / TraitRegistry) — e.g. ["fire", "water"]. A neighbour carrying
@@ -15,14 +19,19 @@ extends ItemEffect
 @export_enum("all", "up", "down", "left", "right") var direction: String = "all"
 
 
-func resolve_send_off(item: ItemData, layout: PackLayout) -> void:
+func evaluate(item: ItemData, layout: PackLayout) -> EffectOutcome:
+	var outcome := EffectOutcome.new()
 	if trait_names.is_empty():
-		return
+		return outcome
 	for other in layout.neighbours_of(item, _directions()):
 		for trait_name in trait_names:
 			if other.traits.has(trait_name):
-				item.durability -= penalty
-				return
+				outcome.active = true
+				outcome.durability_delta = -penalty
+				outcome.line = "%s is packed %s %s, which is %s! (−%d durability)" \
+					% [name_of(item), _relation(), name_of(other), trait_name, penalty]
+				return outcome
+	return outcome
 
 
 func describe() -> String:
@@ -36,19 +45,20 @@ func describe() -> String:
 	return "Don't pack %s items %s (−%d durability)." % [", ".join(trait_names), where, penalty]
 
 
-func get_violation_message(item: ItemData, layout: PackLayout) -> String:
-	if trait_names.is_empty():
-		return ""
-	for other in layout.neighbours_of(item, _directions()):
-		for trait_name in trait_names:
-			if other.traits.has(trait_name):
-				var direction_text := "above" if direction == "up" \
-					else "below" if direction == "down" \
-					else "left of" if direction == "left" \
-					else "right of" if direction == "right" \
-					else "next to"
-				return "%s was packed %s a %s item!" % [item.display_name, direction_text, trait_name]
-	return ""
+## Where the offending neighbour sits relative to this item, for the violation line.
+## `direction` names the edge we inspect, so the offender is on the far side of it.
+func _relation() -> String:
+	match direction:
+		"up":
+			return "under"
+		"down":
+			return "on top of"
+		"left":
+			return "to the right of"
+		"right":
+			return "to the left of"
+		_:
+			return "against"
 
 
 ## The edge offset(s) matching `direction`, for PackLayout.neighbours_of. Board y grows

@@ -28,7 +28,12 @@ godot --headless --path . res://tools/TestShop.tscn      # shop stock, buy/sell,
 Each prints failures and sets a nonzero exit on failure. `TestSave` writes to the real
 `user://` save path but backs up and restores any existing save. A harness whose script
 fails to *parse* never reaches `quit()` and so hangs rather than exiting — if a run seems
-to stall, look for a `Parse Error` in its first lines (this is `TestEffects` today).
+to stall, look for a `Parse Error` in its first lines. Note a parse error can also read
+as a *false green*: the failing script never runs its checks, so `failures` stays 0 and
+the harness can still print `ALL PASS` — always scan for `SCRIPT ERROR` too, not just the
+verdict line. Adding a new `class_name` script needs one
+`godot --headless --path . --import` before any harness can resolve it, or every
+dependent script reports "Could not resolve class".
 
 `tools/Screenshot.tscn` photographs the loop screens. It must **not** run headless — the
 dummy renderer captures blank frames:
@@ -91,12 +96,22 @@ never learns about stats.
   `modify_item` (at send-off). `resources/perks/perk_registry.gd` is *the one place* to
   register a perk: write the subclass, add its class name to `TYPES`. No `.tres` needed.
 - **Item effects** (`resources/effects/item_effect.gd`) — per-item placement rules,
-  composed onto an `ItemData` via its `effects` array. Most resolve at **send-off** against
-  a `PackLayout` snapshot and dock durability — a bad pack is a *consequence*, never a
-  blocked placement. A separate `live_bonus` hook resolves continuously *while packing*
-  (BagGrid.compute_live_bonus -> GameState.set_layout_bonus) for temporary,
-  neighbour-dependent stat bonuses that never touch durability and don't survive send-off
-  (see `neighbor_stat_boost_effect.gd`).
+  composed onto an `ItemData` via its `effects` array. A subclass overrides exactly one
+  method, `evaluate(item, layout) -> EffectOutcome`, and it is **pure**: it reads the
+  board and reports what the rule *would* do without mutating anything. Everything else
+  is a thin applier over it, so one condition has four readers and none can drift:
+  `resolve_send_off` applies `durability_delta` once at send-off, `live_bonus` reads
+  `stat_delta` continuously while packing, `get_violation_message` feeds the send-off
+  mistakes modal, and the packing screen reads `active`/`line` to warn *live*.
+  A bad pack is a *consequence*, never a blocked placement — and because the rule can be
+  asked as well as applied, that consequence is now visible while it can still be fixed:
+  `BagGrid.evaluate_board` sweeps the board after every placement change and
+  `PackingScene._refresh_layout_feedback` fans the one result out to the stat bars, a
+  slowly throbbing amber wash on any offending item, and the hover panel's explanation.
+  Warning is never blocking: nothing refuses a drop, and Send stays live.
+  `stat_delta` vs `durability_delta` is what makes a rule live-only or send-off-only —
+  the timing is a property of the field, not of a separate hook (see
+  `neighbor_stat_boost_effect.gd`, which fills only the former).
 
 `systems/` is deliberately free of scene-tree and autoload access — `NarrativeEngine` is a
 pure `(quest, packed_items, stats) -> Array[String]`, which is why the playout can be
@@ -164,7 +179,7 @@ be precise.
 | `narrative_event.gd` / `narrative_line.gd` | 18 / 31 | A beat and its conditional variants — first passing variant wins, so authored order is priority. |
 | `perk_data.gd` | 45 | Perk base class. |
 | `perks/` | | `perk_registry.gd` (the `TYPES` list), `forage_perk.gd`, `crafty_perk.gd`. |
-| `effects/` | | `item_effect.gd` (base: `resolve_send_off` + `live_bonus`), `clear_above_effect.gd`, `no_adjacent_trait_effect.gd`, `no_rotation_effect.gd`, `protect_adjacent_item_effect.gd`, `neighbor_stat_boost_effect.gd` (live-only neighbour stat bonus, no `.tres` registry needed — effects are picked straight off `class_name` in the inspector). |
+| `effects/` | | `item_effect.gd` (base: the pure `evaluate` hook, plus the `resolve_send_off` / `live_bonus` / `get_violation_message` appliers over it), `effect_outcome.gd` (`EffectOutcome` — one rule's whole verdict: `active`, `durability_delta`, `stat_delta`, `line`), `clear_above_effect.gd`, `no_adjacent_trait_effect.gd`, `no_rotation_effect.gd`, `protect_adjacent_item_effect.gd`, `neighbor_stat_boost_effect.gd` (live-only neighbour stat bonus). No `.tres` registry needed — effects are picked straight off `class_name` in the inspector. |
 | `ui/*.tres` | | `roots_theme.tres`, `panel_content_theme.tres`, `panel_frame.tres`, `button_{normal,hover,pressed,focus,disabled}.tres`. |
 
 ### scenes/
@@ -222,19 +237,14 @@ Gitignored: `.godot/`, `/android/`, `/build/`, `.vscode/`, and the built `releas
   `drowning_fish` and `jessica` exist but are not in the pool, so they are unreachable;
   and **no quest sits at tier 0**, so a fresh run relies on `RunState._nearest_tier()`
   to have anything to offer.
-- `tools/test_effects.gd` references a `NoUpsideDownEffect` class that no longer exists —
-  **the script fails to parse, so that harness hangs instead of exiting.** `NoRotationEffect`
-  replaced it but is not a straight rename: it takes an exported `rotate` step and docks
-  when `rotation_of(item) == rotate`, so the old "only 180° bites" assertions need
-  `rotate = 2` set explicitly rather than just a renamed constructor.
 - `NoRotationEffect.rotate` defaults to **0**, which docks an item for being packed
-  *upright* — the opposite of the class docstring. `data/items/flail.tres` configures the
-  effect without setting `rotate`, so it currently takes that penalty; axe (1), wine (2)
-  and flint_and_steel (1, 3) all set it.
-- `tools/test_packing.gd` has 3 failing assertions, all on cell size: the harness compares
-  against `BagGrid.current_cell_size()` while the tray's item views are sized from a
-  different value (it reads 61.6 where the harness expects otherwise). Needs a decision on
-  the intended sizing contract.
+  *upright*. `data/items/flail.tres` composes the effect without setting `rotate`, so the
+  flail is penalised for being packed the right way up; axe (1), wine (2) and
+  flint_and_steel (1, 3) all set it. This used to be an invisible one-point durability
+  leak — since the live warning landed it is loud: the flail throbs amber the moment it
+  is placed and its hover reads "Flail is packed upright!". **Setting `rotate = 2` on
+  flail.tres is a one-line fix but a balance change, so it is left for a human to call.**
+  (The class docstring is now explicit that `rotate` names the *forbidden* turn.)
 - `data/items/apple.tres` is authored with `id = "Apple"`; all 21 other items are
   lowercase. `RunState.find_item()` masks this via its `data/items/<id>.tres` filename
   fallback, but anything comparing `item.id` against a lowercase literal silently misses.

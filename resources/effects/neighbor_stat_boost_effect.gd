@@ -1,10 +1,16 @@
 class_name NeighborStatBoostEffect
 extends ItemEffect
 
-## "Packed next to a heat source, this pulls its weight harder." While packing, this
-## item grants a stat bonus for as long as it sits next to a neighbour carrying any of
-## `trait_names` — live only (see ItemEffect.live_bonus), gone the moment it's moved
-## away and never docks durability or fires at send-off. `penalty` is unused here.
+## "Packed next to a heat source, this pulls its weight harder." This item grants a
+## stat bonus for as long as it sits next to a neighbour carrying any of `trait_names`.
+##
+## Live only: it fills the outcome's stat_delta and leaves durability_delta at zero, so
+## ItemEffect.live_bonus reads it every time the board changes while resolve_send_off
+## has nothing to apply. Move the item away and the bonus is gone next recompute; it
+## never survives send-off. `penalty` is unused here — this rule costs nothing.
+##
+## It is a boon, so it shows green in the info panel and never reaches the send-off
+## mistakes modal (the base get_violation_message filters on a *negative* delta).
 
 ## The neighbouring traits that wake this item up, from the canonical vocabulary
 ## (see the Traits autoload / TraitRegistry) — e.g. ["fire"] for a heat source. A
@@ -24,36 +30,58 @@ extends ItemEffect
 @export var utility_bonus: int = 0
 
 
-func live_bonus(item: ItemData, layout: PackLayout) -> Dictionary:
-	if trait_names.is_empty() or not _triggered(item, layout):
-		return {}
+func evaluate(item: ItemData, layout: PackLayout) -> EffectOutcome:
+	var outcome := EffectOutcome.new()
+	if trait_names.is_empty():
+		return outcome
+	var source := _trigger(item, layout)
+	if source == null:
+		return outcome
 	var delta: Dictionary = {}
-	for entry in [["food", food_bonus], ["health", health_bonus],
-			["combat", combat_bonus], ["utility", utility_bonus]]:
+	for entry in _bonus_entries():
 		if entry[1] != 0:
 			delta[entry[0]] = entry[1]
-	return delta
+	# A rule configured with every bonus at zero has nothing to grant, so it stays
+	# dormant rather than reporting itself as a firing boon that does nothing.
+	if delta.is_empty():
+		return outcome
+	outcome.active = true
+	outcome.stat_delta = delta
+	outcome.line = "%s while packed next to %s." % [_bonus_text(), name_of(source)]
+	return outcome
 
 
 func describe() -> String:
 	if trait_names.is_empty():
 		return ""
+	var text := _bonus_text()
+	if text == "":
+		return ""
+	return "%s while packed next to %s." % [text, ", ".join(trait_names)]
+
+
+## "+4 food, +1 health", or "" when nothing is configured.
+func _bonus_text() -> String:
 	var parts: Array[String] = []
-	for entry in [["food", food_bonus], ["health", health_bonus],
-			["combat", combat_bonus], ["utility", utility_bonus]]:
+	for entry in _bonus_entries():
 		if entry[1] != 0:
 			parts.append("+%d %s" % [entry[1], entry[0]])
-	if parts.is_empty():
-		return ""
-	return "%s while packed next to %s." % [", ".join(parts), ", ".join(trait_names)]
+	return ", ".join(parts)
 
 
-func _triggered(item: ItemData, layout: PackLayout) -> bool:
+func _bonus_entries() -> Array:
+	return [["food", food_bonus], ["health", health_bonus],
+		["combat", combat_bonus], ["utility", utility_bonus]]
+
+
+## The neighbour granting the bonus, or null when none does — returned rather than a
+## bool so the warning line can name what is helping.
+func _trigger(item: ItemData, layout: PackLayout) -> ItemData:
 	for other in layout.neighbours_of(item, _directions()):
 		for trait_name in trait_names:
 			if other.traits.has(trait_name):
-				return true
-	return false
+				return other
+	return null
 
 
 func _directions() -> Array[Vector2i]:

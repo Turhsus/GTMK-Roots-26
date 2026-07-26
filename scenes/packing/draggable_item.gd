@@ -32,6 +32,24 @@ const NEG_STAT_COLOR := Color("9a3a2a")
 const WARN_COLOR := Color("9a4f14")
 const MUTED_COLOR := Color("6b5d4c")
 
+## Amber wash laid over the icon while one of this item's placement rules is currently
+## being violated (see ItemEffect.evaluate). It is a *warning and nothing more*: the
+## placement stays legal, the drop is never refused, and the bag can be sent exactly as
+## it is. The player simply finds out now, on the board, instead of after the trip.
+## Applied to the icon rather than to this node so it composes with the drag's alpha.
+const VIOLATION_TINT := Color("ffab5e")
+## The pale end of the throb. The warning breathes between this and VIOLATION_TINT
+## rather than sitting still, so it catches the eye on a busy board without ever
+## flashing — this is a cozy game, and a violated rule is a nudge, not an alarm.
+const VIOLATION_TINT_SOFT := Color("ffdcbb")
+## Seconds for one full breath, out and back. Slow on purpose.
+const VIOLATION_THROB_PERIOD := 1.8
+## How long the wash takes to arrive and to clear.
+const VIOLATION_FADE := 0.18
+## Accent for a rule that is firing *right now*, hotter than the muted WARN_COLOR the
+## same rule uses while it's only a possibility.
+const ACTIVE_WARN_COLOR := Color("b03a1a")
+
 ## Durability bar in the hover/inspect panel (non-single-use only).
 const DURA_BAR_FULL := Color("4e7a2e")
 const DURA_BAR_MID := Color("a85a24")
@@ -47,6 +65,10 @@ var item: ItemData
 ## 90-degree clockwise turns applied to `item.shape`.
 var rotation_steps: int = 0
 var is_dragging: bool = false
+## True while at least one of this item's placement rules is firing against the current
+## board — drives the amber wash. Set by PackingScene, never inferred here: this view
+## can see itself but not its neighbours, and a rule is about the neighbourhood.
+var is_violating: bool = false
 ## True while a placed item sits in BagGrid's ItemLayer, where sprites can
 ## visually overlap (a cross-shaped item's empty corner over another item's
 ## cell). BagGrid disables normal input dispatch there and hit-tests +
@@ -91,6 +113,7 @@ var _icon_image: Image = null
 var _rot_target := 0.0
 var _offset_tween: Tween
 var _rot_tween: Tween
+var _tint_tween: Tween
 
 @onready var icon: TextureRect = $Icon
 
@@ -164,6 +187,43 @@ func set_dragging(value: bool) -> void:
 		# shape box again or the snap lands a cell off.
 		display_scale = 1.0
 		_refresh()
+	# An item in transit has no neighbourhood to break rules against, so it never wears
+	# the warning: picking one up clears it, and dropping it hands the question straight
+	# back to _refresh_layout_feedback, which re-tints it if the new spot is still bad.
+	set_violating(false)
+
+
+## Washes the icon amber while one of this item's placement rules is currently being
+## violated, and clears it when the board stops breaking the rule. Driven by
+## PackingScene._refresh_layout_feedback after every placement change.
+##
+## Warning only: nothing about this refuses or undoes the placement. The player is told
+## what the bag is doing to the item and left to decide — the pack is theirs to get
+## wrong, which is the whole "consequence, not a wall" model (see ItemEffect).
+func set_violating(value: bool) -> void:
+	if is_violating == value:
+		return
+	is_violating = value
+	if icon == null:
+		return
+	_kill(_tint_tween)
+	# Tweening needs the tree; a view being set up off-tree just takes the colour flat.
+	if not is_inside_tree():
+		icon.modulate = VIOLATION_TINT if value else Color.WHITE
+		return
+	if not value:
+		_tint_tween = create_tween()
+		_tint_tween.tween_property(icon, "modulate", Color.WHITE, VIOLATION_FADE) \
+			.set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
+		return
+	# Breathe, forever, until the board stops breaking the rule. The first leg starts
+	# from whatever the icon is now (white on the way in), so the wash arrives smoothly
+	# instead of snapping to the top of the cycle.
+	_tint_tween = create_tween().set_loops()
+	_tint_tween.tween_property(icon, "modulate", VIOLATION_TINT, VIOLATION_THROB_PERIOD * 0.5) \
+		.set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
+	_tint_tween.tween_property(icon, "modulate", VIOLATION_TINT_SOFT, VIOLATION_THROB_PERIOD * 0.5) \
+		.set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
 
 
 ## Slides the icon in from where the item visually was when the player let go,
@@ -253,10 +313,17 @@ func _refresh() -> void:
 	icon.position = _icon_base + juice_offset
 
 
-## The "what would this add" panel: the item's name, every stat it contributes,
-## and its flavor line. Static so PackingScene can raise the very same panel on
-## hover without redoing the layout.
-static func build_info_panel(source: ItemData) -> Control:
+## The "what would this add" panel: the item's name, every stat it contributes, its
+## placement rules, and its flavor line. Static so PackingScene can raise the very same
+## panel on hover without redoing the layout.
+##
+## `firing` is the ItemEffect -> EffectOutcome map for this item from the current board
+## (see BagGrid.evaluate_board), or empty for an item in the tray, which has no
+## neighbourhood yet. Every rule the item carries is listed either way — that's the
+## point, the player can read what an item wants *before* committing it — but a rule
+## that is actually firing right now shows its live line, naming the specific offender,
+## in place of its general description.
+static func build_info_panel(source: ItemData, firing: Dictionary = {}) -> Control:
 	var panel := Ui.card()
 
 	var pad := MarginContainer.new()
@@ -307,12 +374,37 @@ static func build_info_panel(source: ItemData) -> Control:
 		dura.add_theme_color_override("font_color", MUTED_COLOR)
 		box.add_child(dura)
 
-	# Placement rules the item carries (see ItemEffect) — warned here so the durability
-	# hit at send-off isn't a surprise. Skipped entirely for a plain item.
-	for rule_text in source.effect_descriptions():
+	# Placement rules the item carries (see ItemEffect), so the durability hit at
+	# send-off is never a surprise. Skipped entirely for a plain item.
+	#
+	# Three states, deliberately distinct at a glance:
+	#   ▲ hot red   — firing right now, and it costs: the amber tint's explanation
+	#   ✦ green     — firing right now in the player's favour
+	#   ⚠ muted     — a rule this item carries that nothing is currently triggering
+	for effect in source.effects:
+		if effect == null:
+			continue
+		var outcome: EffectOutcome = firing.get(effect, null)
+		var text := ""
+		var color := WARN_COLOR
+		var marker := "⚠ "
+		if outcome != null and outcome.line != "":
+			text = outcome.line
+			if outcome.is_warning():
+				color = ACTIVE_WARN_COLOR
+				marker = "▲ "
+			else:
+				color = STAT_COLOR
+				marker = "✦ "
+		else:
+			text = effect.describe()
+		# A rule with nothing to say (an unconfigured adjacency rule) stays silent
+		# rather than printing a broken line.
+		if text == "":
+			continue
 		var rule := Label.new()
-		rule.text = "⚠ " + rule_text
-		rule.add_theme_color_override("font_color", WARN_COLOR)
+		rule.text = marker + text
+		rule.add_theme_color_override("font_color", color)
 		rule.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 		rule.custom_minimum_size.x = 220
 		box.add_child(rule)
