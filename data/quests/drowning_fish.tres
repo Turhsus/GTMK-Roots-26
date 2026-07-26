@@ -1,0 +1,22 @@
+[gd_resource type="Resource" script_class="QuestData" format=3 uid="uid://bchgvk5yh5a8b"]
+
+[ext_resource type="Script" uid="uid://45ajj2ptcv0d" path="res://resources/narrative_event.gd" id="1_g02jw"]
+[ext_resource type="Script" uid="uid://du5drbi85ateb" path="res://resources/item_data.gd" id="2_yjlux"]
+[ext_resource type="Script" uid="uid://b8mpss75xj6nx" path="res://resources/quest_data.gd" id="3_jw2tt"]
+[ext_resource type="Resource" uid="uid://e4ulf4l1buer" path="res://data/items/rope.tres" id="3_yjlux"]
+
+[resource]
+script = ExtResource("3_jw2tt")
+id = "drowning_fish"
+title = "Drowning Fish"
+brief = "Your little one heard splashing in a nearby creak and shouts for help. They rushed off to lend a hand until they saw a hapless gentlemen Conrad Cod. Ensure there is some rope to fish Mr. Cod out. Also, bring some food to help nurse his hurt ego. "
+difficulty = 1
+days = 1
+gold_reward = 10
+traits = Array[String](["food"])
+required_items = Array[ExtResource("2_yjlux")]([ExtResource("3_yjlux")])
+target_food = 3
+target_health = 0
+target_combat = 0
+target_utility = 2
+metadata/_custom_type_script = "uid://b8mpss75xj6nx"
