@@ -10,7 +10,7 @@
 script = ExtResource("3_lifxc")
 id = "jessica"
 title = "Jessica in Trouble"
-brief = "Jessica is being chased by the woeful Imposter Syndrome"
+brief = "Jessica is being chased by the woeful Imposter Syndrome."
 difficulty = 2
 gold_reward = 10
 quest_items = Array[ExtResource("2_4sfpj")]([ExtResource("3_hytdl"), ExtResource("4_j4df6")])

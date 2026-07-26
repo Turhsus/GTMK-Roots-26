@@ -8,7 +8,7 @@
 script = ExtResource("3_0ey1s")
 id = "rescue"
 title = "A Trapped Chipmunk!"
-brief = "Elfie the Chipmunk has found herself trapped underneath a dislodged beaver damn! Make sure you pack something to dislodge the wood, and bring items to make sure Elfie is alright."
+brief = "Elfie the Chipmunk has found herself trapped underneath a dislodged beaver dam, damn! Make sure you pack something to dislodge the wood, and bring items to make sure Elfie is alright."
 difficulty = 1
 traits = Array[String](["cutting", "healing", "morale"])
 target_food = 2
