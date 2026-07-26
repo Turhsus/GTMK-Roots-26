@@ -40,6 +40,19 @@ var is_dragging: bool = false
 ## forwards events itself, topmost opaque pixel wins — see set_dragging().
 var _external_hit_testing: bool = false
 
+## How big this view draws relative to a board cell. The bag and the tray used to
+## share one cell size, which made a 1x3 sword 336 px tall and let three items fill
+## the tray. On the board the size is load-bearing — the box has to line up with the
+## grid — but in the tray it only has to be readable, so the tray shrinks its copies
+## (see ItemTray.TRAY_SCALE) and grabbing one restores it to 1.0.
+var display_scale: float = 1.0:
+	set(value):
+		if is_equal_approx(display_scale, value):
+			return
+		display_scale = value
+		if is_node_ready():
+			_refresh()
+
 ## A left button is down but hasn't moved far enough to drag yet: releasing now
 ## is a click, crossing DRAG_THRESHOLD starts the drag.
 var _press_active := false
@@ -131,9 +144,12 @@ func set_dragging(value: bool) -> void:
 		# A lifted or mid-shake icon must not carry its offset into the drag.
 		_kill(_offset_tween)
 		juice_offset = Vector2.ZERO
-		# The tray's flow container stretches rows to their tallest item, so an
-		# item can leave it wider or taller than its shape. Off the container,
-		# size must be the shape box again or the snap lands a cell off.
+		# Back to board scale the moment it is picked up: from here the item has to
+		# match the grid it is being dropped onto, not the tray it came from. The
+		# flow container also stretches rows to their tallest item, so an item can
+		# leave it wider or taller than its shape — either way, size must be the
+		# shape box again or the snap lands a cell off.
+		display_scale = 1.0
 		_refresh()
 
 
@@ -191,7 +207,7 @@ func _gui_input(event: InputEvent) -> void:
 func _refresh() -> void:
 	if item == null:
 		return
-	var cell := BagGrid.current_cell_size()
+	var cell := BagGrid.current_cell_size() * display_scale
 	custom_minimum_size = Vector2(ItemData.get_shape_size(get_shape())) * cell
 	size = custom_minimum_size
 	if icon.texture != item.icon:

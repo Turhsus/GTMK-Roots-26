@@ -11,6 +11,13 @@ signal item_ready(view: DraggableItem)
 
 const DRAGGABLE_ITEM := preload("res://scenes/packing/DraggableItem.tscn")
 
+## How big tray items draw next to a board cell (see DraggableItem.display_scale).
+## At 1.0 a single 1x3 item was a third of the tray, so most of the inventory sat
+## below the scroll line; the art is authored far above cell resolution, so drawing
+## it smaller costs nothing and roughly triples what fits. Grabbing an item snaps it
+## back to full board scale, so what you drag is always what you drop.
+const TRAY_SCALE := 0.55
+
 ## How the tray orders its items. Stat modes sort descending on that stat (the
 ## four requirement values quests set targets on); TRAIT groups items that share
 ## a trait vocabulary together; DEFAULT is the inventory's own order.
@@ -45,6 +52,8 @@ func populate(pool: Array[ItemData]) -> void:
 			continue
 		var view: DraggableItem = DRAGGABLE_ITEM.instantiate()
 		view.setup(item)
+		# Set before it enters the tree, so its first layout is already tray-sized.
+		view.display_scale = TRAY_SCALE
 		item_container.add_child(view)
 		item_ready.emit(view)
 	_apply_sort()
@@ -58,6 +67,9 @@ func adopt(view: DraggableItem) -> void:
 	# Only BagGrid needs to own hit-testing (items overlap there); back in the
 	# tray, plain engine dispatch is correct again.
 	view.set_external_hit_testing(false)
+	# Coming back from the board (or a cancelled drag) it is still at full board
+	# scale — shrink it to tray scale on the way in.
+	view.display_scale = TRAY_SCALE
 	if view.get_parent() == item_container:
 		return
 	view.reparent(item_container, false)
@@ -83,8 +95,15 @@ func _apply_sort() -> void:
 		item_container.move_child(views[i], i)
 
 
-## Comparator for the current mode. Ties (and DEFAULT) fall through to the
-## inventory's own order so the sort is stable and every copy has a fixed slot.
+## Comparator for the current mode. Ties (and DEFAULT) fall through to height and
+## then to the inventory's own order, so the sort is stable and every copy has a
+## fixed slot.
+##
+## Height matters because the flow container makes every row as tall as its tallest
+## item: one 1x3 sword sharing a row with two apples wastes two thirds of that row.
+## Grouping equal heights together packs the rows tight. It is the primary key only
+## in DEFAULT — under a stat sort the stat has to lead, or the dropdown would look
+## broken — so the stat modes get the tighter rows only among equal values.
 func _sort_before(a: DraggableItem, b: DraggableItem) -> bool:
 	match _sort_mode:
 		SortMode.FOOD, SortMode.HEALTH, SortMode.COMBAT, SortMode.UTILITY:
@@ -98,6 +117,12 @@ func _sort_before(a: DraggableItem, b: DraggableItem) -> bool:
 			var key_b := _trait_key(b.item)
 			if key_a != key_b:
 				return key_a < key_b
+	# Tallest first. Items in the tray are always unrotated (adopt resets them), so
+	# the authored shape is what will be laid out.
+	var height_a: int = a.item.get_size().y
+	var height_b: int = b.item.get_size().y
+	if height_a != height_b:
+		return height_a > height_b
 	return RunState.inventory.find(a.item) < RunState.inventory.find(b.item)
 
 
