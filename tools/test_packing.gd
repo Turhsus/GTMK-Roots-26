@@ -18,7 +18,8 @@ func _ready() -> void:
 	var bag: BagGrid = scene.get_node("%BagGrid")
 	var tray = scene.get_node("%ItemTray")
 	var drag_layer: Control = scene.get_node("%DragLayer")
-	var views: Array = tray.item_container.get_children()
+	# item_views(), not get_children(): the container also holds the sort divider.
+	var views: Array = tray.item_views()
 
 	var stock_size: int = RunState.inventory.size()
 	check(views.size() == stock_size, "tray spawned the whole inventory, got %d of %d" % [views.size(), stock_size])

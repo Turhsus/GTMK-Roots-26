@@ -42,7 +42,7 @@ func _ready() -> void:
 	# The tray is a child, so its _ready() ran before this one. If the quest was
 	# already set by then (Main does that), it has *already* populated and fired
 	# item_ready for every item into an empty signal. Sweep up what is there.
-	for view in item_tray.item_container.get_children():
+	for view in item_tray.item_views():
 		_on_item_ready(view)
 	GameState.quest_changed.connect(_on_quest_changed)
 	send_button.pressed.connect(_on_send_pressed)

@@ -188,12 +188,19 @@ func current_difficulty() -> int:
 ## never deletes. Pass null (as the tests do) to skip board consequences entirely.
 ## Runs before perks and before the quest is judged, so a pack that destroys an item
 ## gets no credit for it (see main._on_sent_off for the send-off order).
-func resolve_item_effects(items: Array[ItemData], layout: PackLayout) -> void:
+## Returns an array of player-friendly violation messages describing which penalties
+## were triggered, so the player understands what went wrong with their packing.
+func resolve_item_effects(items: Array[ItemData], layout: PackLayout) -> Array[String]:
+	var violations: Array[String] = []
 	if layout == null:
-		return
+		return violations
 	for item in items:
 		for effect in item.effects:
 			effect.resolve_send_off(item, layout)
+			var violation_msg: String = effect.get_violation_message(item, layout)
+			if violation_msg != "":
+				violations.append(violation_msg)
+	return violations
 
 
 ## Each owned perk gets to change every packed item via its modify_item hook (the

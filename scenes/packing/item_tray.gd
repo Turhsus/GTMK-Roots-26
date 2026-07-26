@@ -58,6 +58,7 @@ var _sort_mode: SortMode = SortMode.DEFAULT
 @onready var item_container: HFlowContainer = %ItemContainer
 @onready var sort_button: OptionButton = %SortButton
 @onready var lock_button: Button = %LockButton
+@onready var divider: Label = %Divider
 
 
 func _ready() -> void:
@@ -66,6 +67,10 @@ func _ready() -> void:
 		sort_button.add_item("Sort: %s" % label)
 	sort_button.item_selected.connect(_on_sort_selected)
 	lock_button.toggled.connect(_on_lock_toggled)
+	# The container has no width until the first layout pass, and the drawer
+	# changes it again on every slide, so the divider re-fits rather than being
+	# sized once at sort time.
+	item_container.resized.connect(_fit_divider)
 	GameState.quest_changed.connect(_on_quest_changed)
 	if GameState.current_quest != null:
 		_on_quest_changed(GameState.current_quest)
@@ -111,8 +116,11 @@ func _shut_x() -> float:
 
 ## Rebuilds the tray from a list of items.
 func populate(pool: Array[ItemData]) -> void:
+	# Only the item views: the divider is authored in the scene and lives in the
+	# same container, so a blanket free would take it out on the first repopulate.
 	for child in item_container.get_children():
-		child.queue_free()
+		if child is DraggableItem:
+			child.queue_free()
 	for item in pool:
 		if item == null:
 			continue
@@ -142,6 +150,19 @@ func adopt(view: DraggableItem) -> void:
 	_apply_sort()
 
 
+## The item views, without the sort divider the flow container also holds.
+## Anything walking the tray's children wants this rather than get_children():
+## the container stopped being "nothing but items" when the divider moved in.
+## Views mid-queue_free from a repopulate are skipped; they drift to the back and
+## vanish at frame end.
+func item_views() -> Array[DraggableItem]:
+	var views: Array[DraggableItem] = []
+	for child in item_container.get_children():
+		if child is DraggableItem and not child.is_queued_for_deletion():
+			views.append(child)
+	return views
+
+
 ## Locking only forces the drawer open; unlocking hands it straight back to the
 ## pointer, so it shuts on the next frame if the pointer is already away rather
 ## than waiting for the pointer to leave and come back.
@@ -157,16 +178,60 @@ func _on_sort_selected(index: int) -> void:
 
 ## Reorders the tray's existing item nodes in place (move_child, never rebuild —
 ## the same nodes travel tray <-> bag, so re-instantiating here would orphan
-## views the packing scene is tracking). Views mid-queue_free from a repopulate
-## are skipped; they drift to the back and vanish at frame end.
+## views the packing scene is tracking).
 func _apply_sort() -> void:
-	var views: Array[DraggableItem] = []
-	for child in item_container.get_children():
-		if child is DraggableItem and not child.is_queued_for_deletion():
-			views.append(child)
+	var views := item_views()
 	views.sort_custom(_sort_before)
 	for i in views.size():
 		item_container.move_child(views[i], i)
+	# After the loop the divider has been pushed to the end; put it back on the
+	# boundary. Done here rather than in the comparator because it is not an item
+	# and has no place in the ordering.
+	_place_divider(views)
+
+
+## Splits the sorted run into "gives this" and "does not", for the sort modes
+## that have such a notion. The comparator already puts the giving items first —
+## stat modes sort descending, and the trait key "~" sorts trait-less items last
+## — so the boundary is just the first item that does not give.
+##
+## Hidden when the split would be degenerate: DEFAULT has nothing to divide by,
+## and a run that is all-giving or all-not has no boundary to draw.
+func _place_divider(views: Array[DraggableItem]) -> void:
+	if _sort_mode == SortMode.DEFAULT:
+		divider.visible = false
+		return
+	var split := views.size()
+	for i in views.size():
+		if not _gives(views[i].item):
+			split = i
+			break
+	if split == 0 or split == views.size():
+		divider.visible = false
+		return
+	divider.text = ("No trait" if _sort_mode == SortMode.TRAIT
+		else "No %s" % SORT_LABELS[_sort_mode].to_lower())
+	divider.visible = true
+	_fit_divider()
+	item_container.move_child(divider, split)
+
+
+## A flow container gives a child its own line only when the child is as wide as
+## the container, so the divider's width has to track that rather than its text.
+## Kept a hair under the full width: matching it exactly makes the divider drive
+## the container's own minimum width, which fights the scroll container for it.
+func _fit_divider() -> void:
+	divider.custom_minimum_size.x = maxf(item_container.size.x - 4.0, 0.0)
+
+
+## Whether an item contributes to whatever the tray is currently sorted by.
+func _gives(item: ItemData) -> bool:
+	match _sort_mode:
+		SortMode.DEFAULT:
+			return true
+		SortMode.TRAIT:
+			return not item.traits.is_empty()
+	return int(item.get(SORT_LABELS[_sort_mode].to_lower())) > 0
 
 
 ## Comparator for the current mode. Ties (and DEFAULT) fall through to height and

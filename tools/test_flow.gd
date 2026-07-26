@@ -395,14 +395,14 @@ func _test_flow() -> void:
 	check(packing.visible and not select.visible and not playout.visible and not town.visible,
 		"the tutorial quest is packed first, with no picker")
 	check(GameState.current_quest == tutorial, "the first quest is the fixed tutorial")
-	check(packing.item_tray.item_container.get_child_count() == RunState.inventory.size(),
-		"the tray filled from the player's inventory, got %d" % packing.item_tray.item_container.get_child_count())
+	check(packing.item_tray.item_views().size() == RunState.inventory.size(),
+		"the tray filled from the player's inventory, got %d" % packing.item_tray.item_views().size())
 
 	# The tray populated under Main; every item must be draggable, and exactly once
 	# (the item_ready wiring is what once broke under Main).
 	var unwired := 0
 	var doubled := 0
-	for view in packing.item_tray.item_container.get_children():
+	for view in packing.item_tray.item_views():
 		var count: int = view.grabbed.get_connections().size()
 		if count == 0:
 			unwired += 1
@@ -513,11 +513,11 @@ func _test_flow() -> void:
 	check(packing.bag_grid.is_cell_free(Vector2i(0, 0)), "the new quest frees the board")
 	check(not is_instance_valid(cheese) or cheese.get_parent() != packing.bag_grid.item_layer,
 		"the previous quest's placed items don't linger in the bag")
-	check(packing.item_tray.item_container.get_child_count() == RunState.inventory.size(),
-		"the tray rebuilt from the depleted inventory, got %d" % packing.item_tray.item_container.get_child_count())
-	check(_find(packing.item_tray.item_container.get_children(), _id("cheese_wedge")) == null,
+	check(packing.item_tray.item_views().size() == RunState.inventory.size(),
+		"the tray rebuilt from the depleted inventory, got %d" % packing.item_tray.item_views().size())
+	check(_find(packing.item_tray.item_views(),_id("cheese_wedge")) == null,
 		"a spent item does not come back in the new quest's tray (cheese)")
-	check(_find(packing.item_tray.item_container.get_children(), _id("apple")) == null,
+	check(_find(packing.item_tray.item_views(),_id("apple")) == null,
 		"a spent item does not come back in the new quest's tray (apple)")
 
 	# And the loop actually loops — and keeps wearing the pack down. The sword is a
@@ -542,7 +542,7 @@ func _test_flow() -> void:
 ## goes through the `grabbed` signal rather than calling the handler, because
 ## the wiring of that signal is exactly what once broke under Main.
 func _pack(packing: PackingScene, id: String, origin: Vector2i) -> DraggableItem:
-	var view := _find(packing.item_tray.item_container.get_children(), id)
+	var view := _find(packing.item_tray.item_views(),id)
 	view.grabbed.emit(view, Vector2.ZERO)
 	check(packing._dragging == view, "grabbing %s starts a drag" % id)
 	packing._preview_origin = origin

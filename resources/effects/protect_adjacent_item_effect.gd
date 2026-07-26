@@ -18,3 +18,8 @@ func describe() -> String:
 	if trait_names.is_empty():
 		return ""
 	return "Protects its neighboring items with the %s trait! (+%d durability)." % [", ".join(trait_names), penalty]
+
+
+func get_violation_message(_item: ItemData, _layout: PackLayout) -> String:
+	# This is a beneficial effect, never a violation
+	return ""
