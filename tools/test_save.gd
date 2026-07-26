@@ -40,6 +40,7 @@ func _ready() -> void:
 func _test_round_trip() -> void:
 	RunState.reset()
 	RunState.completed_count = 2
+	RunState.attempted_count = 3
 	RunState.gold = 137
 	RunState.days_remaining = 4
 	RunState.add_perk(RunState.all_perks[0])
@@ -57,6 +58,7 @@ func _test_round_trip() -> void:
 
 	RunState.from_dict(data)
 	check(RunState.completed_count == 2, "completed_count survived the round trip")
+	check(RunState.attempted_count == 3, "attempted_count survived the round trip")
 	check(RunState.gold == 137, "gold survived, got %d" % RunState.gold)
 	check(RunState.days_remaining == 4, "the day clock survived, got %d" % RunState.days_remaining)
 	check(RunState.current_difficulty() == 2, "difficulty is derived back from the clears")

@@ -48,10 +48,12 @@ func _test_progression() -> void:
 	RunState.register_result(first[0], false)
 	check(RunState.current_difficulty() == 0, "a failed quest doesn't raise difficulty")
 	check(RunState.completed_count == 0, "a failed quest isn't counted as cleared")
+	check(RunState.attempted_count == 1, "a failed quest still counts as attempted")
 
 	# One clear = one tier up (until the cap).
 	RunState.register_result(first[0], true)
 	check(RunState.completed_count == 1, "a cleared quest is counted")
+	check(RunState.attempted_count == 2, "a cleared quest also counts as attempted")
 	check(RunState.current_difficulty() == 1, "one clear moves to difficulty 1")
 
 	# Difficulty is capped, and clears past the cap keep counting.

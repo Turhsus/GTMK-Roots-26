@@ -94,6 +94,9 @@ const STARTER_INVENTORY: Array[ItemData] = [
 
 ## Quests cleared so far. Difficulty is derived from this: one clear per tier.
 var completed_count: int = 0
+## Quests sent off so far, cleared or not — the denominator for the end-of-run
+## win/loss check (see register_result and ThankYouScreen.show_end).
+var attempted_count: int = 0
 ## Ids of quests already cleared. A cleared quest is not offered again until its
 ## whole tier is exhausted, at which point the tier resets (see draw_choices).
 var _cleared_ids: Array[String] = []
@@ -218,6 +221,8 @@ func discard_worn_out(items: Array[ItemData]) -> Array[ItemData]:
 ## nothing. The reward lands here so the gold is on hand for the gather phase that
 ## follows the playout.
 func register_result(quest: QuestData, success: bool) -> void:
+	if quest != null:
+		attempted_count += 1
 	if success and quest != null:
 		if not _cleared_ids.has(quest.id):
 			_cleared_ids.append(quest.id)
@@ -501,6 +506,7 @@ func draw_choices() -> Array[QuestData]:
 ## inventory, so a new run starts with a full pack of starter items.
 func reset() -> void:
 	completed_count = 0
+	attempted_count = 0
 	_cleared_ids.clear()
 	_stock_starter_inventory()
 	gold = STARTING_GOLD
@@ -545,6 +551,7 @@ func to_dict() -> Dictionary:
 		shelves[shop_id] = (_shop_stock[shop_id] as Dictionary).duplicate()
 	return {
 		"completed_count": completed_count,
+		"attempted_count": attempted_count,
 		"cleared_ids": _cleared_ids.duplicate(),
 		"gold": gold,
 		"days_remaining": days_remaining,
@@ -562,6 +569,7 @@ func to_dict() -> Dictionary:
 ## Emits every signal at the end so screens already in the tree catch up.
 func from_dict(data: Dictionary) -> void:
 	completed_count = maxi(int(data.get("completed_count", 0)), 0)
+	attempted_count = maxi(int(data.get("attempted_count", completed_count)), completed_count)
 	_cleared_ids.clear()
 	for id in data.get("cleared_ids", []):
 		_cleared_ids.append(String(id))
