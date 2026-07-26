@@ -162,7 +162,8 @@ func _show_road() -> void:
 	shop_scene.visible = false
 	_clear_body()
 
-	body.add_child(_heading("Your little one is out on his quest! Gathering some more supplies before they come back. You have %d left until they come back." % _total_days))
+	body.add_child(_heading("Your little one is out on his quest! Gathering some more supplies before they come back. You have %d days left until they come back." % _total_days))
+	body.add_child(_subheading("Each activity takes a day to do!"))
 	body.add_child(_subheading("Where to today?"))
 	var shops_row := HBoxContainer.new()
 	shops_row.add_theme_constant_override("separation", 16)

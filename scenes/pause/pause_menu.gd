@@ -17,12 +17,15 @@ const ITEMS_DIR := "res://data/items/"
 
 @onready var main_panel: VBoxContainer = %MainPanel
 @onready var debug_panel: VBoxContainer = %DebugPanel
+@onready var controls_panel: VBoxContainer = %ControlsPanel
 @onready var debug_toggles: VBoxContainer = %DebugToggles
 @onready var resume_button: Button = %ResumeButton
 @onready var home_button: Button = %HomeButton
 @onready var quit_button: Button = %QuitButton
 @onready var debug_button: Button = %DebugButton
 @onready var debug_back_button: Button = %DebugBackButton
+@onready var controls_button: Button = %ControlsButton
+@onready var controls_back_button: Button = %ControlsBackButton
 @onready var add_gold_button: Button = %AddGoldButton
 @onready var add_item_option: OptionButton = %AddItemOption
 @onready var add_item_button: Button = %AddItemButton
@@ -39,6 +42,8 @@ func _ready() -> void:
 	quit_button.pressed.connect(func() -> void: quit_requested.emit())
 	debug_button.pressed.connect(_show_debug)
 	debug_back_button.pressed.connect(_show_main)
+	controls_button.pressed.connect(_show_controls)
+	controls_back_button.pressed.connect(_show_main)
 	add_gold_button.pressed.connect(_on_add_gold)
 	add_item_button.pressed.connect(_on_add_item)
 
@@ -113,7 +118,7 @@ func _unhandled_input(event: InputEvent) -> void:
 	if not visible:
 		return
 	if event is InputEventKey and event.pressed and not event.echo and event.keycode == KEY_ESCAPE:
-		if debug_panel.visible:
+		if debug_panel.visible or controls_panel.visible:
 			_show_main()
 		else:
 			resume_requested.emit()
@@ -123,13 +128,22 @@ func _unhandled_input(event: InputEvent) -> void:
 func _show_main() -> void:
 	main_panel.visible = true
 	debug_panel.visible = false
+	controls_panel.visible = false
 	resume_button.grab_focus()
 
 
 func _show_debug() -> void:
 	main_panel.visible = false
 	debug_panel.visible = true
+	controls_panel.visible = false
 	debug_back_button.grab_focus()
+
+
+func _show_controls() -> void:
+	main_panel.visible = false
+	debug_panel.visible = false
+	controls_panel.visible = true
+	controls_back_button.grab_focus()
 
 
 func _on_debug_phase(phase: String) -> void:
