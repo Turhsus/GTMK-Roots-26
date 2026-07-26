@@ -55,6 +55,9 @@ func populate(pool: Array[ItemData]) -> void:
 ## puts the returned item where the current sort says it belongs, not at the end.
 func adopt(view: DraggableItem) -> void:
 	view.reset_rotation()
+	# Only BagGrid needs to own hit-testing (items overlap there); back in the
+	# tray, plain engine dispatch is correct again.
+	view.set_external_hit_testing(false)
 	if view.get_parent() == item_container:
 		return
 	view.reparent(item_container, false)

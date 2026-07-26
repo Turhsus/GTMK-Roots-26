@@ -34,6 +34,11 @@ var item: ItemData
 ## 90-degree clockwise turns applied to `item.shape`.
 var rotation_steps: int = 0
 var is_dragging: bool = false
+## True while a placed item sits in BagGrid's ItemLayer, where sprites can
+## visually overlap (a cross-shaped item's empty corner over another item's
+## cell). BagGrid disables normal input dispatch there and hit-tests +
+## forwards events itself, topmost opaque pixel wins — see set_dragging().
+var _external_hit_testing: bool = false
 
 ## A left button is down but hasn't moved far enough to drag yet: releasing now
 ## is a click, crossing DRAG_THRESHOLD starts the drag.
@@ -51,6 +56,10 @@ var juice_offset := Vector2.ZERO:
 
 ## Where the icon sits when nothing is animating, recomputed by _refresh().
 var _icon_base := Vector2.ZERO
+## CPU-side copy of the icon texture, kept only so clicks/rotates can sample
+## alpha at the cursor — a cross-shaped sprite's corner cells are transparent
+## and must let the click fall through to whatever sits underneath.
+var _icon_image: Image = null
 ## Continuous target angle. Accumulates 90 per rotate so three quarter-turns
 ## then a fourth spins forward instead of unwinding 270 degrees back to 0.
 var _rot_target := 0.0
@@ -98,11 +107,25 @@ func reset_rotation() -> void:
 	_refresh()
 
 
+## Called by BagGrid.place()/ItemTray.adopt() as a view crosses between the
+## two: only the bag can have items visually overlap, so only there does
+## BagGrid need to own dispatch instead of the engine's normal top-control
+## search (which can only ever pick one node, not fall through to a sibling).
+func set_external_hit_testing(value: bool) -> void:
+	_external_hit_testing = value
+	_apply_mouse_filter()
+
+
+func _apply_mouse_filter() -> void:
+	mouse_filter = Control.MOUSE_FILTER_IGNORE if (is_dragging or _external_hit_testing) \
+		else Control.MOUSE_FILTER_STOP
+
+
 ## While dragging the node lives on the drag layer and must not swallow the
 ## mouse, or the release that ends the drag never reaches PackingScene.
 func set_dragging(value: bool) -> void:
 	is_dragging = value
-	mouse_filter = Control.MOUSE_FILTER_IGNORE if value else Control.MOUSE_FILTER_STOP
+	_apply_mouse_filter()
 	modulate.a = 0.85 if value else 1.0
 	if value:
 		# A lifted or mid-shake icon must not carry its offset into the drag.
@@ -137,6 +160,12 @@ func play_shake() -> void:
 func _gui_input(event: InputEvent) -> void:
 	if is_dragging:
 		return
+	# Only gate the initial press: once a press has started on an opaque
+	# pixel, the motion/release that follows it must keep tracking even if
+	# it drifts over a transparent one.
+	if event is InputEventMouseButton and event.pressed and not _press_active \
+			and not is_pixel_opaque(event.global_position):
+		return
 	if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_RIGHT and event.pressed:
 		accept_event()
 		_press_active = false
@@ -165,7 +194,11 @@ func _refresh() -> void:
 	var cell := BagGrid.current_cell_size()
 	custom_minimum_size = Vector2(ItemData.get_shape_size(get_shape())) * cell
 	size = custom_minimum_size
-	icon.texture = item.icon
+	if icon.texture != item.icon:
+		icon.texture = item.icon
+		_icon_image = item.icon.get_image() if item.icon != null else null
+		if _icon_image != null and _icon_image.is_compressed():
+			_icon_image.decompress()
 	# The art is drawn for the unrotated shape, so the icon keeps its original
 	# box and spins inside ours — a 2x1 sprite turned 90 degrees fills our 1x2.
 	var art_size := Vector2(item.get_size()) * cell
@@ -242,6 +275,32 @@ static func build_info_panel(source: ItemData) -> Control:
 		box.add_child(flavor)
 
 	return panel
+
+
+## True unless the given point (viewport space) lands on a transparent icon
+## pixel. Used to let a press fall through a cross-shaped sprite's empty
+## corner cells to whatever is stacked underneath. Errs opaque (true) when
+## there's nothing to sample, so a missing/uncached image never blocks input.
+## Public: BagGrid hit-tests overlapping placed items against this directly.
+func is_pixel_opaque(global_pos: Vector2) -> bool:
+	if icon == null or icon.texture == null or _icon_image == null:
+		return true
+	if icon.size.x <= 0.0 or icon.size.y <= 0.0:
+		return true
+	var tex_size := Vector2(icon.texture.get_size())
+	if tex_size.x <= 0.0 or tex_size.y <= 0.0:
+		return true
+	# Icon uses STRETCH_KEEP_ASPECT_CENTERED: the art is scaled to fit inside
+	# icon.size preserving aspect, then centered — so the drawn rect is
+	# usually smaller than icon.size and letterboxed on one axis.
+	var local: Vector2 = icon.get_global_transform().affine_inverse() * global_pos
+	var fit_scale: float = minf(icon.size.x / tex_size.x, icon.size.y / tex_size.y)
+	var disp_size := tex_size * fit_scale
+	var disp_offset := (icon.size - disp_size) * 0.5
+	var px := (local - disp_offset) / fit_scale
+	if px.x < 0.0 or px.y < 0.0 or px.x >= tex_size.x or px.y >= tex_size.y:
+		return false
+	return _icon_image.get_pixel(int(px.x), int(px.y)).a > 0.05
 
 
 func _on_hover_changed(hovered: bool) -> void:

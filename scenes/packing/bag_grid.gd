@@ -51,6 +51,12 @@ var _occupancy: Dictionary = {}
 ## DraggableItem -> Array[Vector2i], so removal doesn't have to scan the board.
 var _cells_by_view: Dictionary = {}
 
+## The placed view currently owning an in-progress press, or null between
+## gestures. Once a press lands on a view, every event until release goes to
+## that same view regardless of what the cursor drifts over — only a fresh
+## press re-hit-tests. See _gui_input().
+var _input_owner: DraggableItem = null
+
 
 # Seed the shared cell size from the node's rect before anything reads it — this
 # runs top-down as the scene enters the tree, ahead of the tray's _ready.
@@ -103,6 +109,50 @@ func snap_global_to_cell(global_point: Vector2) -> Vector2i:
 	return snap_to_cell(get_global_transform().affine_inverse() * global_point)
 
 
+## Placed items sit with mouse_filter IGNORE (see place()) so the engine's own
+## "one topmost control" search skips straight past them to us. We do the
+## real hit-test ourselves — topmost-first, skipping transparent pixels — and
+## hand the (coordinate-adjusted) event to whichever view wins.
+func _gui_input(event: InputEvent) -> void:
+	if event is InputEventMouseButton:
+		if event.pressed:
+			if _input_owner == null:
+				_input_owner = _topmost_opaque_view(event.global_position)
+			if _input_owner != null:
+				_dispatch_to_view(_input_owner, event)
+		elif _input_owner != null:
+			var gesture_owner := _input_owner
+			_input_owner = null
+			_dispatch_to_view(gesture_owner, event)
+	elif event is InputEventMouseMotion and _input_owner != null:
+		_dispatch_to_view(_input_owner, event)
+
+
+## Placed views, front-to-back (later placements draw on top and get first
+## refusal), filtered to whichever one is actually opaque under the cursor.
+func _topmost_opaque_view(global_pos: Vector2) -> DraggableItem:
+	var children := item_layer.get_children()
+	for i in range(children.size() - 1, -1, -1):
+		var view := children[i] as DraggableItem
+		if view == null or not _cells_by_view.has(view):
+			continue
+		var rect := Rect2(view.global_position, view.size)
+		if rect.has_point(global_pos) and view.is_pixel_opaque(global_pos):
+			return view
+	return null
+
+
+## Re-targets a mouse event at `view`: `.position` must be view-local (the
+## engine does this automatically for a normally-dispatched control; we have
+## to do it ourselves since this event actually landed on us, not on view).
+## `.global_position` is left untouched — it's already correct everywhere.
+func _dispatch_to_view(view: DraggableItem, event: InputEvent) -> void:
+	var local_event: InputEvent = event.duplicate()
+	if local_event is InputEventMouseButton or local_event is InputEventMouseMotion:
+		local_event.position = view.get_global_transform().affine_inverse() * (event as InputEventMouse).global_position
+	view._gui_input(local_event)
+
+
 func is_in_bounds(cell: Vector2i) -> bool:
 	return cell.x >= 0 and cell.y >= 0 and cell.x < cols and cell.y < rows
 
@@ -138,6 +188,11 @@ func place(view: DraggableItem, origin: Vector2i) -> void:
 		view.reparent(item_layer, false)
 	view.position = cell_to_position(origin)
 	view.size = view.custom_minimum_size
+	# Placed items can visually overlap (a cross-shaped item's empty corner
+	# over a neighbour's cell), which the engine's own input dispatch can't
+	# see past — it always hands a click to a single topmost control. Take
+	# dispatch over ourselves; see _gui_input().
+	view.set_external_hit_testing(true)
 	_cells_by_view[view] = cells
 	for cell in cells:
 		_occupancy[cell] = view
