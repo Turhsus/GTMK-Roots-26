@@ -77,7 +77,8 @@ func _test_buying_depletes_one_shelf() -> void:
 
 	# Selling an item back is not a delivery: the shop's own supply stays bare.
 	RunState.gain(apple)
-	check(RunState.release(apple), "the bought apple can be sold back")
+	# release() hands back the copy it removed (or null), not a bool.
+	check(RunState.release(apple) != null, "the bought apple can be sold back")
 	check(RunState.shop_stock(grocer, apple) == 0, "selling back does not restock the shelf")
 
 	grocer.stock[apple] = authored
@@ -249,7 +250,7 @@ func _test_buyback() -> void:
 	road.begin(1, [])
 	road._enter_shop(grocer)
 
-	var apple := _owned("apple")
+	var apple := _owned(_id("apple"))
 	check(apple != null, "starter pack has an apple to sell")
 	var gold_before := RunState.gold
 	var durability_before := apple.durability
@@ -273,6 +274,13 @@ func _owned(id: String) -> ItemData:
 		if item != null and item.id == id:
 			return item
 	return null
+
+
+## The id an item file actually declares. Worth going through rather than writing
+## the literal: apple.tres is authored as "Apple" while every other item is
+## lowercase, so these tests keep working whichever way that gets settled.
+func _id(file: String) -> String:
+	return (load("res://data/items/%s.tres" % file) as ItemData).id
 
 
 func check(condition: bool, label: String) -> void:

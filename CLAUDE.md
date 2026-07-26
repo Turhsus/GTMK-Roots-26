@@ -201,22 +201,28 @@ Gitignored: `.godot/`, `/android/`, `/build/`, `.vscode/`, and the built `releas
 
 ## Known drift
 
-- **No quest has any authored `narrative` at all.** All five `.tres` files have an empty
-  beats array, so every playout is just `NarrativeEngine`'s generated departure and
-  homecoming lines. `NarrativeEvent`/`NarrativeLine` and the first-match-wins variant
-  system are fully built and entirely unused — the conditional-variant tests in
-  `test_flow.gd` report SKIP until a quest gets beats.
-- `data/quest_pool.tres` holds only `rescue` (tier 1) and `scouting` (tier 2).
-  `racoons` and `drowning_fish` exist but are not in the pool, so they are unreachable;
+- **No quest has any authored `narrative` at all.** Every quest `.tres` has an empty beats
+  array, so every playout is just `NarrativeEngine`'s generated departure and homecoming
+  lines. `NarrativeEvent`/`NarrativeLine` and the first-match-wins variant system are fully
+  built and entirely unused — the conditional-variant tests in `test_flow.gd` report SKIP
+  until a quest gets beats.
+- `data/quest_pool.tres` holds only `rescue` (tier 1) and `scouting` (tier 2). `racoons`,
+  `drowning_fish` and `jessica` exist but are not in the pool, so they are unreachable;
   and **no quest sits at tier 0**, so a fresh run relies on `RunState._nearest_tier()`
   to have anything to offer.
 - `tools/test_effects.gd` references a `NoUpsideDownEffect` class that no longer exists —
-  **the script fails to parse, so that harness hangs instead of exiting.** Whatever
-  replaced it (`NoRotationEffect`?) needs the assertions rewritten, not just renamed.
-- `tools/test_packing.gd` has 4 failing assertions: one on the stats-panel bar maximum,
-  and three on cell size — the harness compares against `BagGrid.current_cell_size()`
-  while the tray's item views are sized from a different value (it reads 61.6 where the
-  harness expects otherwise). Needs a decision on the intended sizing contract.
+  **the script fails to parse, so that harness hangs instead of exiting.** `NoRotationEffect`
+  replaced it but is not a straight rename: it takes an exported `rotate` step and docks
+  when `rotation_of(item) == rotate`, so the old "only 180° bites" assertions need
+  `rotate = 2` set explicitly rather than just a renamed constructor.
+- `NoRotationEffect.rotate` defaults to **0**, which docks an item for being packed
+  *upright* — the opposite of the class docstring. `data/items/flail.tres` configures the
+  effect without setting `rotate`, so it currently takes that penalty; axe (1), wine (2)
+  and flint_and_steel (1, 3) all set it.
+- `tools/test_packing.gd` has 3 failing assertions, all on cell size: the harness compares
+  against `BagGrid.current_cell_size()` while the tray's item views are sized from a
+  different value (it reads 61.6 where the harness expects otherwise). Needs a decision on
+  the intended sizing contract.
 - `data/items/apple.tres` is authored with `id = "Apple"`; all 21 other items are
   lowercase. `RunState.find_item()` masks this via its `data/items/<id>.tres` filename
   fallback, but anything comparing `item.id` against a lowercase literal silently misses.
