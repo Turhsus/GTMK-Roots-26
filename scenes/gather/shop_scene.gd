@@ -133,12 +133,11 @@ func _rebuild() -> void:
 	blurb.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	body.add_child(blurb)
 
-	# Cheese shop is shift-only — no Buy/Sell tabs, just the three jobs + leave.
+	# Cheese shop is shift-only — no Buy/Sell tabs and no Leave. Pick two jobs
+	# and "Get to work" applies the rewards and ends the day.
 	if _shop.offers_cheese_shift:
 		body.add_child(_spacer(8))
 		_rebuild_cheese_shift()
-		body.add_child(_spacer(12))
-		body.add_child(_build_leave_button())
 		return
 
 	body.add_child(_build_tabs())

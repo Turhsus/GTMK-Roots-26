@@ -144,9 +144,9 @@ regenerated, previewed, or tested headless.
   `RunState.bag_upgrade_available()`: one per town day, and one per quest — his bench
   refills in `register_result`, not on the `RESTOCK_INTERVAL_DAYS` clock the item
   shops use. Costs are `BAG_UPGRADE_COSTS` = 15 / 25 / 40 for the 4×4 / 5×5 / 6×6.
-- The **cheese shop** (`ShopData.offers_cheese_shift`) has no shelf and no trade
-  tabs — only a pick-2-of-3 work shift (sell cheese / make cheese / repair blanket).
-  Confirm applies the rewards and ends the day.
+- The **cheese shop** (`ShopData.offers_cheese_shift`) has no shelf, no trade tabs,
+  and no Leave — only a pick-2-of-3 work shift. Confirm applies the rewards and ends
+  the day.
 
 ## File map
 
