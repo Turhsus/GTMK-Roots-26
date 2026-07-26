@@ -322,6 +322,13 @@ func _build_preview_card(quest: QuestData) -> Control:
 	needs.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	layout.add_child(needs)
 
+	if not quest.required_items.is_empty():
+		var packing := Label.new()
+		packing.text = "Pack: " + _required_items_summary(quest)
+		packing.add_theme_font_size_override("font_size", 13)
+		packing.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		layout.add_child(packing)
+
 	return card
 
 
@@ -466,3 +473,14 @@ func _target_summary(quest: QuestData) -> String:
 	if parts.is_empty():
 		return "just a safe trip"
 	return ", ".join(parts)
+
+
+## "Blanket, Rope" for a quest's required_items, falling back to id if a
+## display_name wasn't authored.
+func _required_items_summary(quest: QuestData) -> String:
+	var names: Array[String] = []
+	for item in quest.required_items:
+		if item == null:
+			continue
+		names.append(item.display_name if item.display_name != "" else item.id)
+	return ", ".join(names)

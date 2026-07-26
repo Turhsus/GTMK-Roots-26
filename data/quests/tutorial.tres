@@ -4,14 +4,14 @@
 [ext_resource type="Script" uid="uid://du5drbi85ateb" path="res://resources/item_data.gd" id="1_tcgay"]
 [ext_resource type="Script" uid="uid://45ajj2ptcv0d" path="res://resources/narrative_event.gd" id="3_event"]
 [ext_resource type="Resource" uid="uid://b5cuj5rp6sql1" path="res://data/items/package.tres" id="3_tcgay"]
-[ext_resource type="Resource" path="res://data/narrative_events/tutorial_beat.tres" id="4_beat"]
-[ext_resource type="Resource" path="res://data/narrative_events/tutorial_supplies_beat.tres" id="5_beat"]
+[ext_resource type="Resource" uid="uid://v1tnk7mfn88w" path="res://data/narrative_events/tutorial_beat.tres" id="4_beat"]
+[ext_resource type="Resource" uid="uid://cw0ga1uh841py" path="res://data/narrative_events/tutorial_supplies_beat.tres" id="5_beat"]
 
 [resource]
 script = ExtResource("1_script")
 id = "tutorial"
 title = "Fetch Quest"
-brief = "A simple errand is always a good first quest. The next town over needs a special delivery! Your little one is the perfect choice to get it there. The road is safe, so just make sure he has enough food and supplies to make the journey."
+brief = "A simple errand is always a good first quest. The next town over needs a special delivery! Your little one is the perfect choice to get it there. The road is safe, so just make sure he has enough food and supplies to make the journey. And make sure that they don't forget the package!"
 days = 2
 gold_reward = 5
 traits = Array[String](["warmth", "cutting"])
