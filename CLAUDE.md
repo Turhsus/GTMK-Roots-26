@@ -45,7 +45,8 @@ godot --path . res://tools/Screenshot.tscn -- --phases packing,gather --out shot
 ### Debug switches
 
 The `DebugFlags` autoload holds the runtime switches (`skip_playout`,
-`durability_report`, `debug_menu`). They are toggleable mid-run from the pause menu's
+`durability_report`, `debug_menu`, `quest_picker` — the last one gates the quest
+screen's "pick any quest" shortcut). They are toggleable mid-run from the pause menu's
 debug panel, and settable at launch:
 
 ```

@@ -36,6 +36,10 @@ const FLAGS := {
 		"label": "Debug menu",
 		"default": true,
 	},
+	"quest_picker": {
+		"label": "Quest picker shortcut",
+		"default": true,
+	},
 }
 
 ## False in an exported build, where every flag reads off no matter what it was

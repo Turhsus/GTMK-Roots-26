@@ -15,10 +15,18 @@ const CARD_WIDTH := 300
 @onready var days_left_label: Label = %DaysLeftLabel
 
 
+func _ready() -> void:
+	# Follow the flag live so flipping it in the pause menu takes effect without
+	# leaving and re-entering the picker.
+	DebugFlags.changed.connect(func(key: String, _value: bool) -> void:
+		if key == DEBUG_PICKER_FLAG:
+			_refresh_debug_picker())
+
+
 ## Lays out a card per quest. Called every time the picker is shown, so it clears
 ## the previous round first.
 func present(quests: Array[QuestData]) -> void:
-	_ensure_debug_picker()
+	_refresh_debug_picker()
 	_refresh_days_left()
 	if RunState.days_are_up():
 		header.text = "One last quest before you go"
@@ -87,13 +95,28 @@ func _build_card(quest: QuestData) -> Control:
 # A dev-only button that lets you jump straight into ANY authored quest (every
 # .tres in data/quests/, pool or not — tutorial and frost_hollow included),
 # bypassing the difficulty draw. Emits quest_chosen just like a real card, so
-# Main loads it the same way. To remove: delete this whole block and the
-# _ensure_debug_picker() call in present().
+# Main loads it the same way. Gated on the "quest_picker" DebugFlag, so it is
+# gone from an exported build no matter what and can be switched off mid-run
+# from the pause menu. To remove: delete this whole block, the flag entry, and
+# the _refresh_debug_picker() calls above.
 
+const DEBUG_PICKER_FLAG := "quest_picker"
 const _DEBUG_QUEST_DIR := "res://data/quests/"
 
 var _debug_menu: PopupMenu
+var _debug_button: Button
 var _debug_quests: Array[QuestData] = []
+
+
+## Shows or hides the shortcut to match the flag, building it on first need so a
+## build that never turns the flag on never loads the quest list.
+func _refresh_debug_picker() -> void:
+	if not DebugFlags.is_on(DEBUG_PICKER_FLAG):
+		if _debug_button != null:
+			_debug_button.visible = false
+		return
+	_ensure_debug_picker()
+	_debug_button.visible = true
 
 
 ## Builds the debug button + popup once, then reuses them. Lives in the header's
@@ -111,14 +134,14 @@ func _ensure_debug_picker() -> void:
 		_debug_menu.add_item("%s   (diff %d)" % [quest.title, quest.difficulty], i)
 	_debug_menu.id_pressed.connect(func(id: int) -> void: quest_chosen.emit(_debug_quests[id]))
 
-	var button := Button.new()
-	button.text = "🔧 DEBUG: pick any quest"
-	button.add_theme_font_size_override("font_size", 14)
-	button.pressed.connect(func() -> void:
+	_debug_button = Button.new()
+	_debug_button.text = "🔧 DEBUG: pick any quest"
+	_debug_button.add_theme_font_size_override("font_size", 14)
+	_debug_button.pressed.connect(func() -> void:
 		_debug_menu.position = Vector2i(get_global_mouse_position())
 		_debug_menu.reset_size()
 		_debug_menu.popup())
-	header.get_parent().add_child(button)
+	header.get_parent().add_child(_debug_button)
 
 
 ## Loads every QuestData .tres under data/quests/, in directory order.
