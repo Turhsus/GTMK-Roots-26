@@ -20,6 +20,8 @@ signal sent_off
 const QUEST: QuestData = preload("res://data/quests/tutorial.tres")
 
 @onready var quest_title: Label = %QuestTitle
+@onready var quest_brief: Label = %QuestBrief
+@onready var quest_brief_card: PanelContainer = %QuestBriefCard
 @onready var bag_grid: BagGrid = %BagGrid
 @onready var item_tray: ItemTray = %ItemTray
 @onready var drag_layer: Control = %DragLayer
@@ -123,8 +125,13 @@ func _on_empty_bag_pressed() -> void:
 
 func _on_quest_changed(quest: QuestData) -> void:
 	if quest == null:
+		quest_brief_card.visible = false
 		return
 	quest_title.text = quest.title
+	var brief := quest.brief.strip_edges()
+	quest_brief.text = brief
+	quest_brief.visible = not brief.is_empty()
+	quest_brief_card.visible = not quest.title.strip_edges().is_empty() or not brief.is_empty()
 
 
 ## The board snapshot Main hands to send-off so each packed item's effects can read

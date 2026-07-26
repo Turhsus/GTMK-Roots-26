@@ -1,10 +1,14 @@
-[gd_scene format=3 uid="uid://buybgjfm1brbj"]
+[gd_scene load_steps=7 format=3 uid="uid://buybgjfm1brbj"]
 
 [ext_resource type="Script" uid="uid://3uhjl2tyews6" path="res://scenes/packing/packing_scene.gd" id="1_packing"]
 [ext_resource type="Texture2D" uid="uid://bjpyo2b4rwlil" path="res://assets/ui/finalpacking_bg.png" id="2_b1ulo"]
 [ext_resource type="PackedScene" path="res://scenes/packing/BagGrid.tscn" id="2_grid"]
 [ext_resource type="PackedScene" path="res://scenes/packing/ItemTray.tscn" id="3_tray"]
 [ext_resource type="PackedScene" path="res://scenes/packing/StatsPanel.tscn" id="4_stats"]
+[ext_resource type="Theme" path="res://resources/ui/panel_content_theme.tres" id="5_panel_content"]
+
+[sub_resource type="SystemFont" id="SystemFont_quest_title"]
+font_weight = 700
 
 [node name="PackingScene" type="Control" unique_id=1241708757]
 layout_mode = 3
@@ -21,18 +25,55 @@ offset_right = 1920.0
 offset_bottom = 1080.0
 texture = ExtResource("2_b1ulo")
 
-[node name="StatsPanel" parent="." unique_id=1818831373 instance=ExtResource("4_stats")]
+[node name="RightColumn" type="VBoxContainer" parent="."]
 unique_name_in_owner = true
 layout_mode = 0
-anchors_preset = 0
-anchor_right = 0.0
-anchor_bottom = 0.0
 offset_left = 1620.0
 offset_top = 24.0
 offset_right = 1896.0
-offset_bottom = 208.0
-grow_horizontal = 1
-grow_vertical = 1
+offset_bottom = 520.0
+theme_override_constants/separation = 12
+
+[node name="QuestBriefCard" type="PanelContainer" parent="RightColumn"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 0
+theme = ExtResource("5_panel_content")
+
+[node name="BriefMargin" type="MarginContainer" parent="RightColumn/QuestBriefCard"]
+layout_mode = 2
+theme_override_constants/margin_left = 12
+theme_override_constants/margin_top = 10
+theme_override_constants/margin_right = 12
+theme_override_constants/margin_bottom = 10
+
+[node name="BriefLayout" type="VBoxContainer" parent="RightColumn/QuestBriefCard/BriefMargin"]
+layout_mode = 2
+theme_override_constants/separation = 6
+
+[node name="QuestTitle" type="Label" parent="RightColumn/QuestBriefCard/BriefMargin/BriefLayout"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_fonts/font = SubResource("SystemFont_quest_title")
+theme_override_font_sizes/font_size = 18
+text = "Quest"
+autowrap_mode = 3
+
+[node name="QuestBrief" type="Label" parent="RightColumn/QuestBriefCard/BriefMargin/BriefLayout"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 80)
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_font_sizes/font_size = 15
+text = "Quest brief"
+autowrap_mode = 3
+
+[node name="StatsPanel" parent="RightColumn" unique_id=1818831373 instance=ExtResource("4_stats")]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
 size_flags_vertical = 0
 
 [node name="ItemTray" parent="." unique_id=1512273912 instance=ExtResource("3_tray")]
@@ -53,10 +94,10 @@ size_flags_vertical = 3
 unique_name_in_owner = true
 custom_minimum_size = Vector2(0, 48)
 layout_mode = 0
-offset_left = 1546.0
-offset_top = 790.0
-offset_right = 1836.0
-offset_bottom = 838.0
+offset_left = 1046.0
+offset_top = 114.0
+offset_right = 1336.0
+offset_bottom = 162.0
 theme_override_font_sizes/font_size = 20
 text = "Empty backpack"
 
@@ -79,15 +120,6 @@ offset_left = 852.0
 offset_top = 174.0
 offset_right = 1530.0
 offset_bottom = 846.0
-
-[node name="QuestTitle" type="Label" parent="." unique_id=1601622728]
-unique_name_in_owner = true
-layout_mode = 0
-offset_left = 1134.0
-offset_top = 20.0
-offset_right = 1181.0
-offset_bottom = 43.0
-text = "Quest"
 
 [node name="DragLayer" type="Control" parent="." unique_id=753836405]
 unique_name_in_owner = true

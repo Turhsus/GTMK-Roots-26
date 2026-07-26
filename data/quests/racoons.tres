@@ -7,8 +7,8 @@
 [resource]
 script = ExtResource("3_dqj2g")
 id = "racoons"
-title = "Thieving Racoons"
-brief = "A pack of racoons are pillaging a neighboring village and you've been tasked to politely ask them to leave and if they refuse... Well Ma always says \"stay strapped!\""
+title = "Thieving Raccoons"
+brief = "A pack of raccoons are pillaging a neighboring village and you've been tasked to politely ask them to leave and if they refuse... Well Ma always says \"stay strapped!\""
 difficulty = 2
 days = 4
 gold_reward = 30
