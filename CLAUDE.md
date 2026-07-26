@@ -22,10 +22,36 @@ godot --headless --path . res://tools/TestPacking.tscn   # mouseless drag end-to
 godot --headless --path . res://tools/TestEffects.tscn   # PackLayout + ItemEffects, no scene tree
 godot --headless --path . res://tools/TestSave.tscn      # save round-trip + corrupt/outdated files
 godot --headless --path . res://tools/TestFlow.tscn      # full loop + RunState progression
+godot --headless --path . res://tools/TestShop.tscn      # shop stock, buy/sell, restock
 ```
 
 Each prints failures and sets a nonzero exit on failure. `TestSave` writes to the real
-`user://` save path but backs up and restores any existing save.
+`user://` save path but backs up and restores any existing save. A harness whose script
+fails to *parse* never reaches `quit()` and so hangs rather than exiting — if a run seems
+to stall, look for a `Parse Error` in its first lines (this is `TestEffects` today).
+
+`tools/Screenshot.tscn` photographs the loop screens. It must **not** run headless — the
+dummy renderer captures blank frames:
+
+```
+godot --path . res://tools/Screenshot.tscn -- --phases packing,gather --out shots
+```
+
+### Debug switches
+
+The `DebugFlags` autoload holds the runtime switches (`skip_playout`,
+`durability_report`, `debug_menu`). They are toggleable mid-run from the pause menu's
+debug panel, and settable at launch:
+
+```
+godot --path . res://scenes/Main.tscn -- --skip-playout=false
+```
+
+`DebugFlags.available` is `OS.is_debug_build()`, so **every flag reads off in an exported
+build** no matter its default — a shipped build cannot skip the playout. Nothing persists;
+flags are launch-scoped, which is why the harnesses force the ones they care about off in
+`_ready()` rather than depending on the defaults. Adding a switch is one entry in
+`DebugFlags.FLAGS` — the pause-menu toggle is built from that dictionary.
 
 Export presets are **Web** (`build/web/index.html`, single-threaded on purpose so itch.io
 works without the SharedArrayBuffer toggle) and **Windows** (`releases/pack_bag.exe`).
@@ -40,10 +66,10 @@ Full release checklist in `SHIPPING.md`.
 
 ```
 MainMenu -> Main -> tutorial quest -> Packing -> send-off -> Playout
-                      ^                                        |
-                      |                          (on failure) PerkSelect
-                      |                                        |
-                 QuestSelect <- RoadScene/ShopScene (gather) <-+
+					  ^                                        |
+					  |                          (on failure) PerkSelect
+					  |                                        |
+				 QuestSelect <- RoadScene/ShopScene (gather) <-+
 ```
 
 The first quest is a fixed tutorial (`RunState.TUTORIAL`) — packed immediately, no picker
@@ -110,6 +136,7 @@ be precise.
 | `save_manager.gd` | 122 | Reads/writes the single autosave file. |
 | `traits.gd` | 23 | Global access to the trait vocabulary. |
 | `audio_manager.gd` | 30 | One-shot SFX; a missing stream is a harmless no-op. |
+| `debug_flags.gd` | 78 | Runtime debug switches; off in exported builds. See "Debug switches". |
 
 ### systems/ — pure logic, no scene tree
 | File | | |
@@ -167,17 +194,39 @@ Also `scenes/gather/TownScreen.tscn` (no paired script).
 finalpacking_bg), `sfx/` (place, rotate, invalid, send).
 
 ### tools/
-The four test harnesses above, plus asset generators `make_placeholders.py`,
-`make_backgrounds.py`, `make_sfx.py`.
+The five test harnesses and `Screenshot.tscn` above, plus asset generators
+`make_placeholders.py`, `make_backgrounds.py`, `make_sfx.py`.
 
 Gitignored: `.godot/`, `/android/`, `/build/`, `.vscode/`, and the built `releases/pack_bag*.exe`.
 
 ## Known drift
 
-- `tools/test_flow.gd` preloads `res://data/quests/whisper_woods.tres`, which no longer
-  exists — **that harness won't load until the const points at a real quest.**
-- Only 3 quests exist against 19 items, so `RunState`'s difficulty-filtered draw has very
-  little to draw from.
+- **No quest has any authored `narrative` at all.** Every quest `.tres` has an empty beats
+  array, so every playout is just `NarrativeEngine`'s generated departure and homecoming
+  lines. `NarrativeEvent`/`NarrativeLine` and the first-match-wins variant system are fully
+  built and entirely unused — the conditional-variant tests in `test_flow.gd` report SKIP
+  until a quest gets beats.
+- `data/quest_pool.tres` holds only `rescue` (tier 1) and `scouting` (tier 2). `racoons`,
+  `drowning_fish` and `jessica` exist but are not in the pool, so they are unreachable;
+  and **no quest sits at tier 0**, so a fresh run relies on `RunState._nearest_tier()`
+  to have anything to offer.
+- `tools/test_effects.gd` references a `NoUpsideDownEffect` class that no longer exists —
+  **the script fails to parse, so that harness hangs instead of exiting.** `NoRotationEffect`
+  replaced it but is not a straight rename: it takes an exported `rotate` step and docks
+  when `rotation_of(item) == rotate`, so the old "only 180° bites" assertions need
+  `rotate = 2` set explicitly rather than just a renamed constructor.
+- `NoRotationEffect.rotate` defaults to **0**, which docks an item for being packed
+  *upright* — the opposite of the class docstring. `data/items/flail.tres` configures the
+  effect without setting `rotate`, so it currently takes that penalty; axe (1), wine (2)
+  and flint_and_steel (1, 3) all set it.
+- `tools/test_packing.gd` has 3 failing assertions, all on cell size: the harness compares
+  against `BagGrid.current_cell_size()` while the tray's item views are sized from a
+  different value (it reads 61.6 where the harness expects otherwise). Needs a decision on
+  the intended sizing contract.
+- `data/items/apple.tres` is authored with `id = "Apple"`; all 21 other items are
+  lowercase. `RunState.find_item()` masks this via its `data/items/<id>.tres` filename
+  fallback, but anything comparing `item.id` against a lowercase literal silently misses.
+  The harnesses route through the resource's own id to stay neutral on it.
 - `SHIPPING.md` says the Windows export lands at `build/windows/pack-your-childs-adventure.exe`
   and asks for 4.6.2-stable templates; the actual preset writes `releases/pack_bag.exe` and
   `project.godot` declares feature `4.7`. Trust `export_presets.cfg` and `project.godot`.

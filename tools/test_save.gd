@@ -44,10 +44,12 @@ func _test_round_trip() -> void:
 	RunState.gold = 137
 	RunState.days_remaining = 4
 	RunState.add_perk(RunState.all_perks[0])
-	# Wear one item down so a non-default durability has to survive the trip.
-	var blanket := _owned("blanket")
-	check(blanket != null, "the fresh inventory has a blanket to wear down")
-	blanket.durability = 2
+	# Wear one item down so a non-default durability has to survive the trip. The
+	# rope is the multi-trip starter item (the blanket this used to use is no longer
+	# in STARTER_INVENTORY).
+	var rope := _owned(_id("rope"))
+	check(rope != null, "the fresh inventory has a rope to wear down")
+	rope.durability = 2
 
 	var before_count := RunState.inventory.size()
 	var data := RunState.to_dict()
@@ -68,17 +70,17 @@ func _test_round_trip() -> void:
 	var perk_food: int = int(RunState.owned_perks[0].modify_stats({"food": 0}).get("food", 0))
 	check(perk_food == 1, "and its effect is live again, got %d" % perk_food)
 
-	var restored_blanket := _owned("blanket")
-	check(restored_blanket != null and restored_blanket.durability == 2,
-		"per-copy durability survived, got %s" % _durability_of(restored_blanket))
+	var restored_rope := _owned(_id("rope"))
+	check(restored_rope != null and restored_rope.durability == 2,
+		"per-copy durability survived, got %s" % _durability_of(restored_rope))
 	# The saved copy must be its own instance, not the shared authored resource —
 	# otherwise wearing it would corrupt the template for the whole project.
-	check(restored_blanket != null and restored_blanket != RunState.find_item("blanket"),
+	check(restored_rope != null and restored_rope != RunState.find_item(_id("rope")),
 		"a restored item is an owned copy, not the shared template")
 	# Templates never carry wear at all: ItemData.durability stays at its -1
 	# sentinel until make_owned_copy stamps a real value on the copy.
-	check(RunState.find_item("blanket").durability == -1,
-		"the shared template is untouched, got %s" % _durability_of(RunState.find_item("blanket")))
+	check(RunState.find_item(_id("rope")).durability == -1,
+		"the shared template is untouched, got %s" % _durability_of(RunState.find_item(_id("rope"))))
 
 
 ## An id that no longer exists is skipped rather than crashing the load — this is
@@ -101,8 +103,8 @@ func _test_unknown_ids() -> void:
 ## item in the editor can't leave old saves carrying over-durable copies.
 func _test_durability_clamp() -> void:
 	RunState.reset()
-	RunState.from_dict({"inventory": [{"id": "apple", "durability": 999}]})
-	var apple := _owned("apple")
+	RunState.from_dict({"inventory": [{"id": _id("apple"), "durability": 999}]})
+	var apple := _owned(_id("apple"))
 	check(apple != null and apple.durability == apple.max_durability,
 		"an over-durable save is clamped to max, got %s" % _durability_of(apple))
 
@@ -225,6 +227,13 @@ func _owned(id: String) -> ItemData:
 		if item.id == id:
 			return item
 	return null
+
+
+## The id an item file actually declares. Worth going through rather than writing
+## the literal: apple.tres is authored as "Apple" while every other item is
+## lowercase, so these tests keep working whichever way that gets settled.
+func _id(file: String) -> String:
+	return (load("res://data/items/%s.tres" % file) as ItemData).id
 
 
 ## Prints a durability without blowing up on a null, for failure messages.
