@@ -19,6 +19,8 @@ signal debug_phase_requested(phase: String)
 @onready var debug_button: Button = %DebugButton
 @onready var debug_back_button: Button = %DebugBackButton
 @onready var add_gold_button: Button = %AddGoldButton
+@onready var music_slider: HSlider = %MusicSlider
+@onready var sfx_slider: HSlider = %SfxSlider
 
 
 func _ready() -> void:
@@ -34,6 +36,11 @@ func _ready() -> void:
 
 	quit_button.visible = not OS.has_feature("web")
 	debug_button.visible = DebugFlags.is_on("debug_menu")
+
+	music_slider.value = AudioManager.get_music_volume()
+	sfx_slider.value = AudioManager.get_sfx_volume()
+	music_slider.value_changed.connect(AudioManager.set_music_volume)
+	sfx_slider.value_changed.connect(AudioManager.set_sfx_volume)
 
 	for child in %DebugPhases.get_children():
 		if child is Button:

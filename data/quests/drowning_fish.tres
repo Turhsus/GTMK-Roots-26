@@ -9,7 +9,7 @@
 script = ExtResource("3_jw2tt")
 id = "drowning_fish"
 title = "Drowning Fish"
-brief = "Your little one heard splashing in a nearby creak and shouts for help. They rushed off to lend a hand until they saw a hapless gentlemen Conrad Cod. Ensure there is some rope to fish Mr. Cod out. Also, bring some food to help nurse his hurt ego. "
+brief = "Your little one heard splashing in a nearby creek and shouts for help. They rushed off to lend a hand until they saw a hapless gentlemen Conrad Cod. Ensure there is some rope to fish Mr. Cod out. Also, bring some food to help nurse his hurt ego. "
 difficulty = 1
 days = 1
 gold_reward = 10

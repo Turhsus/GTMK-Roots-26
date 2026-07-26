@@ -48,6 +48,15 @@ const _REGISTRY = preload("res://data/trait_registry.tres")
 @export var required_items: Array[ItemData] = []
 ## Ordered story beats, walked top to bottom during the playout.
 @export var narrative: Array[NarrativeEvent] = []
+## Opens the playout log. Resolved the same way as `narrative`'s beats (first
+## matching variant wins), so a quest can read the packed bag differently
+## depending on what's in it. Null or an all-failing variant list means no
+## departure line at all — see NarrativeEngine.build_log.
+@export var departure: NarrativeEvent = null
+## Closes the playout log, resolved the same way. Author its variants against
+## this quest's own targets (get_targets()) to key the ending to how well this
+## quest specifically went.
+@export var homecoming: NarrativeEvent = null
 
 @export_group("Stat targets")
 ## Soft thresholds: they color the bars and weight the narrative. They are not a

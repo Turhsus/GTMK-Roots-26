@@ -4,6 +4,8 @@
 [ext_resource type="Script" uid="uid://du5drbi85ateb" path="res://resources/item_data.gd" id="1_tcgay"]
 [ext_resource type="Script" uid="uid://45ajj2ptcv0d" path="res://resources/narrative_event.gd" id="3_event"]
 [ext_resource type="Resource" uid="uid://b5cuj5rp6sql1" path="res://data/items/package.tres" id="3_tcgay"]
+[ext_resource type="Resource" path="res://data/narrative_events/tutorial_beat.tres" id="4_beat"]
+[ext_resource type="Resource" path="res://data/narrative_events/tutorial_supplies_beat.tres" id="5_beat"]
 
 [resource]
 script = ExtResource("1_script")
@@ -15,6 +17,7 @@ gold_reward = 5
 traits = Array[String](["warmth", "cutting"])
 quest_items = Array[ExtResource("1_tcgay")]([ExtResource("3_tcgay")])
 required_items = Array[ExtResource("1_tcgay")]([ExtResource("3_tcgay")])
+narrative = Array[ExtResource("3_event")]([ExtResource("4_beat"), ExtResource("5_beat")])
 target_food = 2
 target_health = 0
 target_combat = 0
