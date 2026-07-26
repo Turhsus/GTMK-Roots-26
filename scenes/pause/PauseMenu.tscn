@@ -166,6 +166,22 @@ custom_minimum_size = Vector2(280, 44)
 layout_mode = 2
 text = "Add 100 gold"
 
+[node name="AddItemPanel" type="HBoxContainer" parent="Center/DebugPanel" unique_id=1206572040]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="AddItemOption" type="OptionButton" parent="Center/DebugPanel/AddItemPanel" unique_id=1206572041]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(200, 44)
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="AddItemButton" type="Button" parent="Center/DebugPanel/AddItemPanel" unique_id=1206572042]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(72, 44)
+layout_mode = 2
+text = "Add"
+
 [node name="DebugBackButton" type="Button" parent="Center/DebugPanel" unique_id=2124044644]
 unique_name_in_owner = true
 custom_minimum_size = Vector2(280, 44)

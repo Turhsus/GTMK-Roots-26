@@ -9,6 +9,11 @@ signal resume_requested
 signal home_requested
 signal quit_requested
 signal debug_phase_requested(phase: String)
+signal debug_item_requested(item: ItemData)
+
+## Where authored items live, so the debug "add item" dropdown can list every
+## id without a hand-maintained registry.
+const ITEMS_DIR := "res://data/items/"
 
 @onready var main_panel: VBoxContainer = %MainPanel
 @onready var debug_panel: VBoxContainer = %DebugPanel
@@ -19,6 +24,8 @@ signal debug_phase_requested(phase: String)
 @onready var debug_button: Button = %DebugButton
 @onready var debug_back_button: Button = %DebugBackButton
 @onready var add_gold_button: Button = %AddGoldButton
+@onready var add_item_option: OptionButton = %AddItemOption
+@onready var add_item_button: Button = %AddItemButton
 @onready var music_slider: HSlider = %MusicSlider
 @onready var sfx_slider: HSlider = %SfxSlider
 
@@ -33,6 +40,7 @@ func _ready() -> void:
 	debug_button.pressed.connect(_show_debug)
 	debug_back_button.pressed.connect(_show_main)
 	add_gold_button.pressed.connect(_on_add_gold)
+	add_item_button.pressed.connect(_on_add_item)
 
 	quit_button.visible = not OS.has_feature("web")
 	debug_button.visible = DebugFlags.is_on("debug_menu")
@@ -49,6 +57,7 @@ func _ready() -> void:
 				child.pressed.connect(_on_debug_phase.bind(phase))
 
 	_build_debug_toggles()
+	_build_item_options()
 	_show_main()
 
 
@@ -64,6 +73,30 @@ func _build_debug_toggles() -> void:
 		toggle.button_pressed = DebugFlags.is_on(key)
 		toggle.toggled.connect(func(on: bool) -> void: DebugFlags.set_flag(key, on))
 		debug_toggles.add_child(toggle)
+
+
+## Every item id under data/items/, sorted, one entry per dropdown slot (the
+## item itself rides along as item metadata so _on_add_item never re-parses
+## the label). Read once at _ready; the authored list doesn't change mid-run.
+func _build_item_options() -> void:
+	var ids: Array[String] = []
+	var dir := DirAccess.open(ITEMS_DIR)
+	if dir == null:
+		return
+	dir.list_dir_begin()
+	var file_name := dir.get_next()
+	while file_name != "":
+		if file_name.ends_with(".tres"):
+			ids.append(file_name.trim_suffix(".tres"))
+		file_name = dir.get_next()
+	dir.list_dir_end()
+	ids.sort()
+	for id in ids:
+		var item := load(ITEMS_DIR + id + ".tres") as ItemData
+		if item == null:
+			continue
+		add_item_option.add_item(item.display_name if not item.display_name.is_empty() else id)
+		add_item_option.set_item_metadata(add_item_option.item_count - 1, item)
 
 
 func open() -> void:
@@ -105,3 +138,12 @@ func _on_debug_phase(phase: String) -> void:
 
 func _on_add_gold() -> void:
 	RunState.add_gold(100)
+
+
+func _on_add_item() -> void:
+	var index := add_item_option.selected
+	if index < 0:
+		return
+	var item := add_item_option.get_item_metadata(index) as ItemData
+	if item != null:
+		debug_item_requested.emit(item)

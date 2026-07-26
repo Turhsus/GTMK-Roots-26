@@ -39,7 +39,7 @@ const MAX_DIFFICULTY := 4
 ## How many quests to lay out for the player to choose between.
 const CHOICE_COUNT := 3
 ## Gold in the purse at the very start of a run.
-const STARTING_GOLD := 50
+const STARTING_GOLD := 25
 ## The whole run's length: a global day clock that counts down across town visits.
 ## When it runs out the game is wrapping up — one last quest, then the end screen.
 const TOTAL_DAYS := 10
@@ -77,27 +77,11 @@ const BAG_UPGRADE_COSTS: Array[int] = [15, 25, 40]
 ## spent on send-off and does not come back this pass.
 const STARTER_INVENTORY: Array[ItemData] = [
 	preload("res://data/items/apple.tres"),
-	preload("res://data/items/sword.tres"),
 	preload("res://data/items/cheese_wedge.tres"),
 	preload("res://data/items/knife.tres"),
-	preload("res://data/items/wine.tres"),
-	preload("res://data/items/torch.tres"),
-	preload("res://data/items/shield.tres"),
-	preload("res://data/items/rope.tres"),
-	preload("res://data/items/axe.tres"),
-	preload("res://data/items/helmet.tres"),
-	preload("res://data/items/flint_and_steel.tres"),
-	preload("res://data/items/health_potion.tres"),
-	preload("res://data/items/flail.tres"),
 	preload("res://data/items/boots.tres"),
-	preload("res://data/items/crowbar.tres"),
-	preload("res://data/items/meat.tres"),
-	preload("res://data/items/bread.tres"),
 	preload("res://data/items/berries.tres"),
-	preload("res://data/items/package.tres"),
-	preload("res://data/items/herbs.tres"),
 	preload("res://data/items/blanket.tres"),
-	preload("res://data/items/bandages.tres"),
 ]
 
 ## Quests cleared so far. Difficulty is derived from this: one clear per tier.

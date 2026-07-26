@@ -76,6 +76,7 @@ func _ready() -> void:
 	pause_menu.home_requested.connect(_on_pause_home)
 	pause_menu.quit_requested.connect(_on_pause_quit)
 	pause_menu.debug_phase_requested.connect(_on_debug_phase)
+	pause_menu.debug_item_requested.connect(_on_debug_item)
 
 	# A run continued from the menu resumes at its saved phase; anything else is a
 	# fresh run and starts on the tutorial.
@@ -116,6 +117,16 @@ func _on_pause_home() -> void:
 func _on_pause_quit() -> void:
 	_close_pause()
 	get_tree().quit()
+
+
+## Debug-only: grants an owned copy of the chosen item straight into the tray.
+## Mirrors a town purchase (RunState.gain), then refreshes the packing tray
+## directly — it doesn't rebuild on inventory_changed by design (see ItemTray),
+## and a debug grant is exactly the case that design doesn't cover.
+func _on_debug_item(item: ItemData) -> void:
+	RunState.gain(item)
+	if packing_scene.visible:
+		packing_scene.refresh_tray()
 
 
 ## Debug-only: jump straight to a loop screen with whatever state we can salvage.

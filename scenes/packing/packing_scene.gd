@@ -79,6 +79,14 @@ func load_quest(quest: QuestData) -> void:
 	_refresh_layout_feedback()
 
 
+## Rebuilds the tray from the current inventory without touching the board —
+## for the debug "add item" menu, which grows RunState.inventory outside the
+## usual quest-changed boundary (see ItemTray's note on why it doesn't listen
+## to inventory_changed itself).
+func refresh_tray() -> void:
+	item_tray.populate(RunState.inventory)
+
+
 ## Matches the board to RunState's backpack and re-sizes any tray items already
 ## on screen so their cell boxes match the new shared cell size.
 func _apply_bag_size() -> void:
