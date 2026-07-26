@@ -2,15 +2,14 @@ class_name ShopScene
 extends Control
 
 ## One town shop, opened from the road (RoadScene) for the day's visit. This
-## scene is presentation only: its own background art per shop, three trade tabs
-## (Buy / Sell / Buy back), and the leave button. All the state — gold, inventory,
-## shelf stock, and what was sold this visit — lives with the road / RunState; the
-## road listens to the signals below, applies the trade, and calls open() again to
-## refresh the rows.
+## scene is presentation only: its own background art per shop, four trade tabs
+## (Buy / Sell / Buy back / Return), and the leave button. All the state — gold,
+## inventory, shelf stock, and what was bought or sold this visit — lives with the
+## road / RunState; the road listens to the signals below, applies the trade, and
+## calls open() again to refresh the rows.
 ##
-## Buy back lists items sold during *this* shop visit only (handed in by the road).
-## Buying one back costs the sell price that was paid out, and restores that same
-## copy (durability included).
+## Buy back lists items sold during *this* shop visit only. Return lists items
+## bought during this visit — refunds the buy price and puts one back on the shelf.
 ##
 ## Background art is by convention: res://assets/shops/shop_<shop id>.png
 ## (1280x720). Drop real art at that path and it shows — until then the flat
@@ -19,7 +18,7 @@ extends Control
 ## Like the road, the trade list is built in code — the .tscn is just the frame
 ## (background + header + a scrolling Body).
 
-enum Tab { BUY, SELL, BUYBACK }
+enum Tab { BUY, SELL, BUYBACK, RETURN }
 
 ## A buy button was pressed. The road does the actual spend/gain and reopens the
 ## shop to refresh prices and stock.
@@ -28,11 +27,22 @@ signal buy_pressed(item: ItemData)
 signal sell_pressed(item: ItemData)
 ## Buy back a copy sold earlier in this visit (road restores it for the sell price).
 signal buyback_pressed(item: ItemData)
+## Return a copy bought earlier in this visit (road refunds buy price + restocks).
+signal return_pressed(item: ItemData)
 ## "Leave — that's the day": the road ends the day and closes this scene.
 signal leave_pressed
 
 const BACKGROUND_PATTERN := "res://assets/shops/shop_%s.png"
-const TAB_LABELS := ["Buy", "Sell", "Buy back"]
+const TAB_LABELS := ["Buy", "Sell", "Buy back", "Return"]
+## Pixels per shape cell for shop thumbnails — same idea as the packing tray
+## (art sized to the item's footprint), kept smaller so rows stay readable.
+const SHOP_CELL := 48.0
+## Fixed icon column so every row's art lines up on the left (fits up to 3×3 cells).
+const ICON_SLOT := Vector2(SHOP_CELL * 3.0, SHOP_CELL * 3.0)
+## Fixed text column so Buy / Sell / Buy back buttons share one vertical edge.
+const TEXT_COLUMN_WIDTH := 200.0
+## Shared size for Buy / Sell / Buy back so every row's action button lines up.
+const TRADE_BUTTON_SIZE := Vector2(140, 40)
 
 @onready var background_art: TextureRect = %BackgroundArt
 @onready var title_label: Label = %TitleLabel
@@ -44,6 +54,8 @@ const TAB_LABELS := ["Buy", "Sell", "Buy back"]
 var _shop: ShopData = null
 ## Copies sold during this visit, newest last — shown on the Buy back tab.
 var _sold_this_visit: Array[ItemData] = []
+## Copies bought during this visit — shown on the Return tab.
+var _bought_this_visit: Array[ItemData] = []
 ## Which trade tab is open. Kept across open() refreshes so a buy doesn't yank
 ## the player back to Buy.
 var _tab: Tab = Tab.BUY
@@ -54,12 +66,12 @@ func _ready() -> void:
 
 
 ## Shows `shop`. `day_text` is the road's day line ("Day 2 of 3 in town"), repeated
-## here since this scene covers the road's header. `sold_this_visit` is the road's
-## list of copies sold so far in this visit (Buy back tab). Calling open() again
-## on the same shop refreshes it in place without resetting the active tab —
-## pass `reset_tab` when opening a *new* visit so Buy is always first.
+## here since this scene covers the road's header. `sold_this_visit` / `bought_this_visit`
+## are the road's same-visit trade lists. Calling open() again on the same shop
+## refreshes it in place without resetting the active tab — pass `reset_tab` when
+## opening a *new* visit so Buy is always first.
 func open(shop: ShopData, day_text: String = "", sold_this_visit: Array = [],
-		reset_tab: bool = false) -> void:
+		bought_this_visit: Array = [], reset_tab: bool = false) -> void:
 	_shop = shop
 	if reset_tab:
 		_tab = Tab.BUY
@@ -67,6 +79,10 @@ func open(shop: ShopData, day_text: String = "", sold_this_visit: Array = [],
 	for entry in sold_this_visit:
 		if entry is ItemData:
 			_sold_this_visit.append(entry)
+	_bought_this_visit.clear()
+	for entry in bought_this_visit:
+		if entry is ItemData:
+			_bought_this_visit.append(entry)
 	title_label.text = shop.display_name
 	day_label.text = day_text
 	gold_label.text = "%d gold" % RunState.gold
@@ -97,6 +113,8 @@ func _rebuild() -> void:
 			_rebuild_sell()
 		Tab.BUYBACK:
 			_rebuild_buyback()
+		Tab.RETURN:
+			_rebuild_return()
 
 	body.add_child(_spacer(12))
 	var leave := Button.new()
@@ -158,18 +176,27 @@ func _rebuild_buyback() -> void:
 	if _sold_this_visit.is_empty():
 		body.add_child(_muted("Nothing sold yet — sales from this visit show up here."))
 		return
-	var grouped := _dedup_sold()
+	var grouped := _dedup_list(_sold_this_visit)
 	for entry in grouped:
 		body.add_child(_build_buyback_row(entry["item"], entry["count"]))
+
+
+func _rebuild_return() -> void:
+	body.add_child(_subheading("Bought this visit"))
+	if _bought_this_visit.is_empty():
+		body.add_child(_muted("Nothing bought yet — purchases from this visit show up here."))
+		return
+	var grouped := _dedup_list(_bought_this_visit)
+	for entry in grouped:
+		body.add_child(_build_return_row(entry["item"], entry["count"]))
 
 
 ## One shelf row: the item, how many are left of it, and the buy button. Buying is
 ## limited only by that count and the purse — as many as the player can afford.
 func _build_buy_row(item: ItemData) -> Control:
 	var left := RunState.shop_stock(_shop, item)
-	var row := _trade_row("%s  x%d" % [item.display_name, left], _stat_summary(item))
-	var buy := Button.new()
-	buy.text = "Sold out" if left <= 0 else "Buy   %dg" % item.buy_price
+	var row := _trade_row(item, "%s  x%d" % [item.display_name, left], _stat_summary(item))
+	var buy := _trade_button("Sold out" if left <= 0 else "Buy   %dg" % item.buy_price)
 	buy.disabled = left <= 0 or RunState.gold < item.buy_price
 	buy.pressed.connect(buy_pressed.emit.bind(item))
 	row.add_child(buy)
@@ -188,9 +215,8 @@ func _build_sell_row(item: ItemData, count: int) -> Control:
 	var name_text := item.display_name
 	if count > 1:
 		name_text += "  x%d" % count
-	var row := _trade_row(name_text, _stat_summary(item))
-	var sell := Button.new()
-	sell.text = "Sell   %dg" % item.sell_price()
+	var row := _trade_row(item, name_text, _stat_summary(item))
+	var sell := _trade_button("Sell   %dg" % item.sell_price())
 	sell.pressed.connect(sell_pressed.emit.bind(item))
 	row.add_child(sell)
 	return row
@@ -201,35 +227,80 @@ func _build_buyback_row(item: ItemData, count: int) -> Control:
 	var name_text := item.display_name
 	if count > 1:
 		name_text += "  x%d" % count
-	var row := _trade_row(name_text, _stat_summary(item))
-	var buyback := Button.new()
-	buyback.text = "Buy back   %dg" % price
+	var row := _trade_row(item, name_text, _stat_summary(item))
+	var buyback := _trade_button("Buy back   %dg" % price)
 	buyback.disabled = RunState.gold < price
 	buyback.pressed.connect(buyback_pressed.emit.bind(item))
 	row.add_child(buyback)
 	return row
 
 
+func _build_return_row(item: ItemData, count: int) -> Control:
+	var name_text := item.display_name
+	if count > 1:
+		name_text += "  x%d" % count
+	var row := _trade_row(item, name_text, _stat_summary(item))
+	var ret := _trade_button("Return   %dg" % item.buy_price)
+	ret.pressed.connect(return_pressed.emit.bind(item))
+	row.add_child(ret)
+	return row
+
+
 # --- small builders -----------------------------------------------------------
 
-## A name + description row with room for a trade button on the right. The caller
-## adds the button.
-func _trade_row(name_text: String, desc_text: String) -> HBoxContainer:
+func _trade_button(text: String) -> Button:
+	var button := Button.new()
+	button.text = text
+	button.custom_minimum_size = TRADE_BUTTON_SIZE
+	return button
+
+## Left-aligned row: fixed icon slot, fixed text column, then the trade button.
+## Fixed widths keep every Buy / Sell / Buy back button on the same vertical line.
+func _trade_row(item: ItemData, name_text: String, desc_text: String) -> HBoxContainer:
 	var row := HBoxContainer.new()
 	row.add_theme_constant_override("separation", 12)
+	row.alignment = BoxContainer.ALIGNMENT_BEGIN
+
+	row.add_child(_build_item_icon(item))
+
+	var text_col := VBoxContainer.new()
+	text_col.custom_minimum_size = Vector2(TEXT_COLUMN_WIDTH, 0)
+	text_col.add_theme_constant_override("separation", 2)
+	text_col.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 
 	var name_label := Label.new()
 	name_label.text = name_text
-	name_label.custom_minimum_size = Vector2(180, 0)
-	row.add_child(name_label)
+	name_label.add_theme_font_size_override("font_size", 16)
+	text_col.add_child(name_label)
 
-	var desc := Label.new()
-	desc.text = desc_text
-	desc.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	desc.add_theme_font_size_override("font_size", 14)
-	row.add_child(desc)
+	if desc_text != "":
+		var desc := Label.new()
+		desc.text = desc_text
+		desc.add_theme_font_size_override("font_size", 14)
+		text_col.add_child(desc)
 
+	row.add_child(text_col)
 	return row
+
+
+## Thumbnail centered in a fixed ICON_SLOT so differently shaped items don't
+## shove the text/button columns around.
+func _build_item_icon(item: ItemData) -> Control:
+	var slot := Control.new()
+	slot.custom_minimum_size = ICON_SLOT
+	slot.mouse_filter = Control.MOUSE_FILTER_IGNORE
+
+	var shape_cells := Vector2(item.get_size())
+	var art_size := shape_cells * SHOP_CELL
+	var icon := TextureRect.new()
+	icon.texture = item.icon
+	icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	icon.size = art_size
+	icon.position = (ICON_SLOT - art_size) * 0.5
+	slot.add_child(icon)
+	return slot
 
 
 func _subheading(text: String) -> Label:
@@ -292,11 +363,10 @@ func _dedup_inventory() -> Array:
 	return result
 
 
-## Sold-this-visit copies folded the same way as inventory, so the Buy back tab
-## shows one row per item id with a count.
-func _dedup_sold() -> Array:
+## Fold an item list into {item, count} rows by id (first-seen order).
+func _dedup_list(items: Array[ItemData]) -> Array:
 	var result: Array = []
-	for item in _sold_this_visit:
+	for item in items:
 		var found := false
 		for entry in result:
 			if entry["item"].id == item.id:
