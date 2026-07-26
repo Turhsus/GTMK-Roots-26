@@ -20,6 +20,7 @@ func _ready() -> void:
 	_test_persists_across_gathers()
 	_test_save_round_trip()
 	await _test_road_buys()
+	await _test_buyback()
 
 	RunState.reset()
 
@@ -235,6 +236,43 @@ func _test_road_buys() -> void:
 	# a still-queued node is what leaves "resources still in use at exit" behind.
 	remove_child(road)
 	road.free()
+
+
+## Sell then Buy back in one visit: gold nets zero and the same copy returns.
+func _test_buyback() -> void:
+	RunState.reset()
+	var road: RoadScene = ROAD.instantiate()
+	add_child(road)
+	await get_tree().process_frame
+
+	var grocer := RunState.find_shop("grocer")
+	road.begin(1, [])
+	road._enter_shop(grocer)
+
+	var apple := _owned("apple")
+	check(apple != null, "starter pack has an apple to sell")
+	var gold_before := RunState.gold
+	var durability_before := apple.durability
+	road._on_sell(apple)
+	check(not RunState.inventory.has(apple), "selling removes the copy from the pack")
+	check(RunState.gold == gold_before + apple.sell_price(), "selling pays the sell price")
+	check(road._sold_this_visit.has(apple), "the sale is remembered for buy back")
+
+	road._on_buyback(apple)
+	check(RunState.inventory.has(apple), "buy back restores the same copy")
+	check(apple.durability == durability_before, "buy back keeps the copy's durability")
+	check(RunState.gold == gold_before, "buy back costs exactly what the sale paid")
+	check(road._sold_this_visit.is_empty(), "buy back clears that sale from the visit list")
+
+	remove_child(road)
+	road.free()
+
+
+func _owned(id: String) -> ItemData:
+	for item in RunState.inventory:
+		if item != null and item.id == id:
+			return item
+	return null
 
 
 func check(condition: bool, label: String) -> void:
