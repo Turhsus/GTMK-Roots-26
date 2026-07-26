@@ -6,4 +6,15 @@
 
 [resource]
 script = ExtResource("3_dqj2g")
+id = "racoons"
+title = "Thieving Racoons"
+brief = "A pack of racoons are pillaging a neighboring village and you've been tasked to politely ask them to leave and if they refuse... Well Ma always says \"stay strapped!\""
+difficulty = 2
+days = 4
+gold_reward = 30
+traits = Array[String](["movement", "weapon"])
+target_food = 5
+target_health = 3
+target_combat = 5
+target_utility = 2
 metadata/_custom_type_script = "uid://b8mpss75xj6nx"
