@@ -11,4 +11,8 @@ script = ExtResource("1_script")
 id = "apothecary"
 display_name = "The Apothecary"
 blurb = "Remedies, warm blankets, and a little light for the dark stretches of road."
-stock = Array[ExtResource("2_item")]([ExtResource("3_potion"), ExtResource("4_torch"), ExtResource("5_flint")])
+stock = Dictionary[ExtResource("2_item"), int]({
+ExtResource("3_potion"): 1,
+ExtResource("4_torch"): 1,
+ExtResource("5_flint"): 1
+})

@@ -298,8 +298,8 @@ func _on_gather_done() -> void:
 
 ## Autosaves at a phase boundary. Everything about the *run* comes from RunState;
 ## what this adds is where in the loop the player stands, so a load can rebuild the
-## screen they were on. `gather_day` and `shop_purchases` only mean anything for
-## PHASE_GATHER.
+## screen they were on. `gather_day` only means anything for PHASE_GATHER (what the
+## shops have left is run state, so RunState saves it, not this half).
 func _save_checkpoint(phase: String, gather_day: int = 1) -> void:
 	var quest_id := ""
 	if GameState.current_quest != null:
@@ -310,7 +310,6 @@ func _save_checkpoint(phase: String, gather_day: int = 1) -> void:
 		"upcoming_ids": _upcoming_ids(),
 		"gather_days": _gather_days,
 		"gather_day": gather_day,
-		"shop_purchases": road_scene.get_purchases(),
 		"is_final_quest": _is_final_quest,
 	})
 
@@ -325,9 +324,7 @@ func _resume(loop: Dictionary) -> void:
 
 	match String(loop.get("phase", "")):
 		PHASE_GATHER:
-			var purchases: Variant = loop.get("shop_purchases", {})
-			road_scene.begin(_gather_days, _upcoming, int(loop.get("gather_day", 1)),
-					purchases if purchases is Dictionary else {})
+			road_scene.begin(_gather_days, _upcoming, int(loop.get("gather_day", 1)))
 			_show(road_scene)
 		PHASE_SELECT:
 			# A save whose quests have since been removed from the pool would leave

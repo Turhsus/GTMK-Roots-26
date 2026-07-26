@@ -1,0 +1,13 @@
+[gd_resource type="Resource" script_class="ItemData" format=3 uid="uid://c1gnoh2jm74qm"]
+
+[ext_resource type="Script" uid="uid://dw0c3j0carikx" path="res://resources/effects/item_effect.gd" id="1_sgqse"]
+[ext_resource type="Script" uid="uid://du5drbi85ateb" path="res://resources/item_data.gd" id="2_g1pu4"]
+[ext_resource type="Texture2D" uid="uid://c70aws088333l" path="res://assets/items/meat.png" id="2_qcguf"]
+
+[resource]
+script = ExtResource("2_g1pu4")
+id = "meat"
+display_name = "Meat"
+shape = Array[Vector2i]([Vector2i(0, 0), Vector2i(1, 0), Vector2i(0, 1), Vector2i(1, 1), Vector2i(0, 2)])
+icon = ExtResource("2_qcguf")
+metadata/_custom_type_script = "uid://du5drbi85ateb"

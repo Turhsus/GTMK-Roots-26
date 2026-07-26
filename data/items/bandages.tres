@@ -1,0 +1,13 @@
+[gd_resource type="Resource" script_class="ItemData" format=3 uid="uid://bl87vlncuwoju"]
+
+[ext_resource type="Script" uid="uid://dw0c3j0carikx" path="res://resources/effects/item_effect.gd" id="1_rpw3f"]
+[ext_resource type="Texture2D" uid="uid://cnac5wrhxsdrn" path="res://assets/items/bandages.png" id="2_4h7fi"]
+[ext_resource type="Script" uid="uid://du5drbi85ateb" path="res://resources/item_data.gd" id="2_qldrb"]
+
+[resource]
+script = ExtResource("2_qldrb")
+id = "bandages"
+display_name = "Bandages"
+shape = Array[Vector2i]([Vector2i(0, 0), Vector2i(0, 1), Vector2i(1, 1)])
+icon = ExtResource("2_4h7fi")
+metadata/_custom_type_script = "uid://du5drbi85ateb"

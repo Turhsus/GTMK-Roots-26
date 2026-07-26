@@ -1,0 +1,12 @@
+[gd_resource type="Resource" script_class="ItemData" format=3 uid="uid://chc6y73gyxi2t"]
+
+[ext_resource type="Script" uid="uid://dw0c3j0carikx" path="res://resources/effects/item_effect.gd" id="1_l8f7k"]
+[ext_resource type="Texture2D" uid="uid://b1uexg85rmwb0" path="res://assets/items/herbs.png" id="2_i6d4o"]
+[ext_resource type="Script" uid="uid://du5drbi85ateb" path="res://resources/item_data.gd" id="2_us18e"]
+
+[resource]
+script = ExtResource("2_us18e")
+id = "herbs"
+display_name = "Herbs"
+icon = ExtResource("2_i6d4o")
+metadata/_custom_type_script = "uid://du5drbi85ateb"

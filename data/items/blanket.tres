@@ -4,6 +4,7 @@
 [ext_resource type="Script" uid="uid://du5drbi85ateb" path="res://resources/item_data.gd" id="1_lb34j"]
 [ext_resource type="Script" uid="uid://d2pihb358f0k8" path="res://resources/effects/no_adjacent_trait_effect.gd" id="2_1iaxr"]
 [ext_resource type="Script" uid="uid://df1nmh6xdj5gd" path="res://resources/effects/protect_adjacent_item_effect.gd" id="3_difak"]
+[ext_resource type="Texture2D" uid="uid://b7hwkd5vyfskq" path="res://assets/items/blanket.png" id="4_1iaxr"]
 
 [sub_resource type="Resource" id="Resource_2smjr"]
 script = ExtResource("2_1iaxr")
@@ -18,7 +19,8 @@ metadata/_custom_type_script = "uid://df1nmh6xdj5gd"
 script = ExtResource("1_lb34j")
 id = "blanket"
 display_name = "Wooly Blanket"
-shape = Array[Vector2i]([Vector2i(0, 0), Vector2i(1, 0), Vector2i(2, 0), Vector2i(0, 1), Vector2i(1, 1), Vector2i(2, 1)])
+shape = Array[Vector2i]([Vector2i(0, 0), Vector2i(1, 0), Vector2i(0, 1)])
+icon = ExtResource("4_1iaxr")
 utility = 8
 flavor = "Hand stitched by you. He loves this blanket, but its on its last legs."
 max_durability = 2

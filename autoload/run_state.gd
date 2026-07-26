@@ -43,6 +43,20 @@ const STARTING_GOLD := 50
 ## The whole run's length: a global day clock that counts down across town visits.
 ## When it runs out the game is wrapping up — one last quest, then the end screen.
 const TOTAL_DAYS := 10
+## The shops in town. Held here rather than on the road because a shop's shelves are
+## *run* state now: they deplete as the player buys and refill on the run's day clock,
+## which has to keep ticking with no shop — and no road — on screen. RoadScene reads
+## this list to lay the shops out.
+const SHOPS: Array[ShopData] = [
+	preload("res://data/shops/grocer.tres"),
+	preload("res://data/shops/apothecary.tres"),
+	preload("res://data/shops/blacksmith.tres"),
+]
+## Town days between restocks. Every this many days spent, every shop puts one more
+## of each depleted item back on the shelf, up to that item's max QTY — so a shop
+## bought out early in the run comes back slowly rather than all at once. Change this
+## to move the whole cadence (see spend_day / _restock_shops).
+const RESTOCK_INTERVAL_DAYS := 3
 ## Backpack size ladder: tier index -> side length (square bags). Starts at 4×4
 ## and upgrades in town up to 6×6 (see upgrade_bag).
 const BAG_SIZES: Array[int] = [3, 4, 5, 6]
@@ -101,6 +115,14 @@ var days_remaining: int = TOTAL_DAYS
 ## How big the player's backpack is this run. Index into BAG_SIZES; upgraded in
 ## town with gold (see upgrade_bag). Packing reads bag_cols/bag_rows from this.
 var bag_tier: int = 0
+## What the shops have left: shop id -> { item id -> how many are on the shelf }.
+## Only *depleted* entries are held. An item with no entry is fully stocked, which
+## keeps the save small, means an untouched shop costs nothing, and lets a retuned
+## max QTY take effect on shelves the player never touched (see shop_stock).
+var _shop_stock: Dictionary = {}
+## Town days spent since the last restock. At RESTOCK_INTERVAL_DAYS the shelves
+## refill by one and this returns to zero.
+var _days_since_restock: int = 0
 ## The inventory copies on loan from the current quest (its `quest_items`), added
 ## when the quest is selected and taken back when it completes — see
 ## lend_quest_items / reclaim_quest_items. Tracked by identity so reclaiming
@@ -202,6 +224,10 @@ func register_result(quest: QuestData, success: bool) -> void:
 ## even if this crosses zero partway through (main.gd waits until the gather ends).
 func spend_day() -> void:
 	days_remaining -= 1
+	_days_since_restock += 1
+	if _days_since_restock >= RESTOCK_INTERVAL_DAYS:
+		_days_since_restock = 0
+		_restock_shops()
 	days_changed.emit(days_remaining)
 
 
@@ -209,6 +235,77 @@ func spend_day() -> void:
 ## wrap the run up (checked once a gather phase finishes; see main.gd).
 func days_are_up() -> bool:
 	return days_remaining <= 0
+
+
+# --- shop shelves ---------------------------------------------------------------
+#
+# A shop sells each of its items up to that item's max QTY (authored on the ShopData),
+# and the player may buy as many as they can afford until the shelf is bare. Nothing
+# resets between gathers: the only way stock comes back is the restock tick below,
+# one unit per depleted item every RESTOCK_INTERVAL_DAYS town days. Selling an item
+# back does *not* return it to the shelves — the shop's supply is its own.
+
+## How many of `item` `shop` still has. An item never bought is at its authored max.
+func shop_stock(shop: ShopData, item: ItemData) -> int:
+	if shop == null or item == null:
+		return 0
+	var shelf: Dictionary = _shop_stock.get(shop.id, {})
+	if not shelf.has(item.id):
+		return shop.max_qty(item)
+	return clampi(int(shelf[item.id]), 0, shop.max_qty(item))
+
+
+## Takes one `item` off `shop`'s shelf, reporting whether there was one to take, so a
+## caller can gate a purchase on it (see RoadScene._on_buy). Gold is a separate step:
+## this only moves stock.
+func take_shop_stock(shop: ShopData, item: ItemData) -> bool:
+	var left := shop_stock(shop, item)
+	if left <= 0:
+		return false
+	if not _shop_stock.has(shop.id):
+		_shop_stock[shop.id] = {}
+	_shop_stock[shop.id][item.id] = left - 1
+	return true
+
+
+## Town days until the next restock — what the shop screen tells the player.
+func days_until_restock() -> int:
+	return maxi(RESTOCK_INTERVAL_DAYS - _days_since_restock, 0)
+
+
+## One restock tick: every shop puts a single unit of each depleted item back, capped
+## at that item's max QTY. Only depleted shelves are tracked at all, so this walks
+## just those; an item back at full drops its entry entirely, and an entry for an item
+## the shop no longer sells is pruned on the way past.
+func _restock_shops() -> void:
+	for shop in SHOPS:
+		if not _shop_stock.has(shop.id):
+			continue
+		var shelf: Dictionary = _shop_stock[shop.id]
+		# keys() is a copy, so entries can be dropped while walking it.
+		for item_id in shelf.keys():
+			# Annotated, not inferred: a preloaded .tres reaches the parser as its
+			# script-path type, so find()'s return needs naming here (same reason
+			# find_quest defers its search to QuestPool).
+			var item: ItemData = shop.find(String(item_id))
+			if item == null:
+				shelf.erase(item_id)
+				continue
+			var restocked := int(shelf[item_id]) + 1
+			if restocked >= shop.max_qty(item):
+				shelf.erase(item_id)
+			else:
+				shelf[item_id] = restocked
+		if shelf.is_empty():
+			_shop_stock.erase(shop.id)
+
+
+## The authored ShopData for an id, or null. Three shops, so this just walks them.
+func find_shop(id: String) -> ShopData:
+	for shop in SHOPS:
+		if shop.id == id:
+			return shop
+	return null
 
 
 ## Current backpack width in cells (from bag_tier).
@@ -396,6 +493,8 @@ func reset() -> void:
 	perks_changed.emit(owned_perks)
 	days_remaining = TOTAL_DAYS
 	days_changed.emit(days_remaining)
+	_shop_stock.clear()
+	_days_since_restock = 0
 	bag_tier = 0
 	bag_changed.emit(bag_cols(), bag_rows())
 	progress_changed.emit(completed_count, current_difficulty())
@@ -423,6 +522,11 @@ func to_dict() -> Dictionary:
 	var perk_ids: Array = []
 	for perk in owned_perks:
 		perk_ids.append(perk.id)
+	# Depleted shelves only, named by shop id and item id like everything else here,
+	# so a shop whose stock or max QTY is retuned still loads.
+	var shelves: Dictionary = {}
+	for shop_id in _shop_stock:
+		shelves[shop_id] = (_shop_stock[shop_id] as Dictionary).duplicate()
 	return {
 		"completed_count": completed_count,
 		"cleared_ids": _cleared_ids.duplicate(),
@@ -431,6 +535,8 @@ func to_dict() -> Dictionary:
 		"bag_tier": bag_tier,
 		"inventory": items,
 		"perks": perk_ids,
+		"shop_stock": shelves,
+		"days_since_restock": _days_since_restock,
 	}
 
 
@@ -469,12 +575,41 @@ func from_dict(data: Dictionary) -> void:
 		if perk != null:
 			owned_perks.append(perk)
 
+	_restore_shop_stock(data.get("shop_stock", {}))
+	_days_since_restock = clampi(int(data.get("days_since_restock", 0)), 0, RESTOCK_INTERVAL_DAYS - 1)
+
 	inventory_changed.emit(inventory)
 	gold_changed.emit(gold)
 	perks_changed.emit(owned_perks)
 	days_changed.emit(days_remaining)
 	bag_changed.emit(bag_cols(), bag_rows())
 	progress_changed.emit(completed_count, current_difficulty())
+
+
+## Rebuilds the depleted shelves from a save. A shop or item that no longer exists is
+## dropped, and a count is clamped to the item's *current* max QTY — a shelf saved at
+## 3 must not come back over-stocked after the max was tuned down to 2. A shelf that
+## clamps back up to full keeps no entry at all, matching how to_dict writes them.
+func _restore_shop_stock(saved: Variant) -> void:
+	_shop_stock.clear()
+	if not (saved is Dictionary):
+		return
+	for shop_id in saved as Dictionary:
+		var shop := find_shop(String(shop_id))
+		var shelf: Variant = (saved as Dictionary)[shop_id]
+		if shop == null or not (shelf is Dictionary):
+			continue
+		var restored: Dictionary = {}
+		for item_id in shelf as Dictionary:
+			var item: ItemData = shop.find(String(item_id))
+			if item == null:
+				continue
+			# int-cast: a JSON round trip turns the counts into floats.
+			var left := clampi(int((shelf as Dictionary)[item_id]), 0, shop.max_qty(item))
+			if left < shop.max_qty(item):
+				restored[String(item_id)] = left
+		if not restored.is_empty():
+			_shop_stock[String(shop_id)] = restored
 
 
 ## The authored ItemData for an id, or null if nothing owns that id any more.

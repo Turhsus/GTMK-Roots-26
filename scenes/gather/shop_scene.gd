@@ -3,10 +3,14 @@ extends Control
 
 ## One town shop, opened from the road (RoadScene) for the day's visit. This
 ## scene is presentation only: its own background art per shop, the buy/sell
-## rows, and the leave button. All the state — gold, inventory, the per-gather
-## purchase counts that limit stock — lives with RunState and the RoadScene;
-## the road listens to the signals below, applies the trade, and calls open()
-## again to refresh the rows.
+## rows, and the leave button. All the state — gold, inventory, and how many of
+## each item are left on the shelf — lives with RunState; the road listens to the
+## signals below, applies the trade, and calls open() again to refresh the rows.
+##
+## The player may buy as many of an item as they can afford until its shelf runs
+## dry (each item's QTY is authored on the ShopData); shelves refill a unit at a
+## time on the run's day clock, so the count shown here is read live from
+## RunState.shop_stock rather than handed in.
 ##
 ## Background art is by convention: res://assets/backgrounds/shop_<shop id>.png
 ## (1280x720). Drop real art at that path and it shows — until then the flat
@@ -15,8 +19,8 @@ extends Control
 ## Like the road, the trade list is built in code — the .tscn is just the frame
 ## (background + header + a scrolling Body).
 
-## A buy button was pressed. The road does the actual spend/gain (it owns the
-## purchase counts) and reopens the shop to refresh prices and stock.
+## A buy button was pressed. The road does the actual spend/gain and reopens the
+## shop to refresh prices and stock.
 signal buy_pressed(item: ItemData)
 ## A sell button was pressed; same contract as buy_pressed.
 signal sell_pressed(item: ItemData)
@@ -31,22 +35,19 @@ const BACKGROUND_PATTERN := "res://assets/shops/shop_%s.png"
 @onready var gold_label: Label = %GoldLabel
 @onready var body: VBoxContainer = %Body
 
-## The shop on display and how many more items it can sell this gather — both
-## handed in by open(); this scene never computes them.
+## The shop on display, handed in by open(); this scene never picks it.
 var _shop: ShopData = null
-var _remaining: int = 0
 
 
 func _ready() -> void:
 	RunState.gold_changed.connect(_on_gold_changed)
 
 
-## Shows `shop` with `remaining` purchases left this gather. `day_text` is the
-## road's day line ("Day 2 of 3 in town"), repeated here since this scene covers
-## the road's header. Calling open() again on the same shop refreshes it in place.
-func open(shop: ShopData, remaining: int, day_text: String = "") -> void:
+## Shows `shop`. `day_text` is the road's day line ("Day 2 of 3 in town"), repeated
+## here since this scene covers the road's header. Calling open() again on the same
+## shop refreshes it in place.
+func open(shop: ShopData, day_text: String = "") -> void:
 	_shop = shop
-	_remaining = remaining
 	title_label.text = shop.display_name
 	day_label.text = day_text
 	gold_label.text = "%d gold" % RunState.gold
@@ -67,12 +68,13 @@ func _rebuild() -> void:
 	blurb.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	body.add_child(blurb)
 
-	if _remaining > 0:
-		body.add_child(_subheading("On the shelves — %d in stock" % _remaining))
-	else:
-		body.add_child(_subheading("On the shelves — sold out"))
-	for item in _shop.stock:
+	body.add_child(_subheading("On the shelves"))
+	var items: Array[ItemData] = _shop.items()
+	for item in items:
 		body.add_child(_build_buy_row(item))
+	if _is_sold_out(items):
+		body.add_child(_muted("Bare shelves. \"Cart's due in %d %s, love.\""
+			% [RunState.days_until_restock(), "day" if RunState.days_until_restock() == 1 else "days"]))
 
 	body.add_child(_spacer(8))
 	body.add_child(_subheading("Sell from your pack"))
@@ -92,14 +94,25 @@ func _rebuild() -> void:
 	body.add_child(leave)
 
 
+## One shelf row: the item, how many are left of it, and the buy button. Buying is
+## limited only by that count and the purse — as many as the player can afford.
 func _build_buy_row(item: ItemData) -> Control:
-	var row := _trade_row(item.display_name, _stat_summary(item))
+	var left := RunState.shop_stock(_shop, item)
+	var row := _trade_row("%s  x%d" % [item.display_name, left], _stat_summary(item))
 	var buy := Button.new()
-	buy.text = "Buy   %dg" % item.buy_price
-	buy.disabled = RunState.gold < item.buy_price or _remaining <= 0
+	buy.text = "Sold out" if left <= 0 else "Buy   %dg" % item.buy_price
+	buy.disabled = left <= 0 or RunState.gold < item.buy_price
 	buy.pressed.connect(buy_pressed.emit.bind(item))
 	row.add_child(buy)
 	return row
+
+
+## True when every item here is at zero — the cue for the restock line.
+func _is_sold_out(items: Array[ItemData]) -> bool:
+	for item in items:
+		if RunState.shop_stock(_shop, item) > 0:
+			return false
+	return true
 
 
 func _build_sell_row(item: ItemData, count: int) -> Control:

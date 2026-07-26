@@ -17,4 +17,14 @@ script = ExtResource("1_script")
 id = "blacksmith"
 display_name = "The Blacksmith"
 blurb = "Steel and stout boots and good rope. \"Best you can do is send them prepared.\""
-stock = Array[ExtResource("2_item")]([ExtResource("3_sword"), ExtResource("4_knife"), ExtResource("5_axe"), ExtResource("6_flail"), ExtResource("7_shield"), ExtResource("8_helmet"), ExtResource("9_boots"), ExtResource("10_rope"), ExtResource("11_crowbar")])
+stock = Dictionary[ExtResource("2_item"), int]({
+ExtResource("3_sword"): 1,
+ExtResource("4_knife"): 1,
+ExtResource("5_axe"): 1,
+ExtResource("6_flail"): 1,
+ExtResource("7_shield"): 1,
+ExtResource("8_helmet"): 1,
+ExtResource("9_boots"): 1,
+ExtResource("10_rope"): 1,
+ExtResource("11_crowbar"): 1
+})

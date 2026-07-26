@@ -26,7 +26,7 @@ extends Node
 const SAVE_PATH := "user://save.json"
 ## Bumped whenever the shape of the file changes. A save written by an older
 ## version is discarded rather than half-read into a broken run.
-const SAVE_VERSION := 1
+const SAVE_VERSION := 2
 
 ## The loop half of a save the player chose to continue, held between the menu's
 ## scene change and Main picking it up (see consume_loop).

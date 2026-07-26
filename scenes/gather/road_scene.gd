@@ -17,9 +17,10 @@ extends Control
 ##
 ## Rules (all chosen by the user): one shop visit per day; every day must be spent
 ## before the loop moves on (no early exit); buying is limited to a shop's own
-## themed stock; a shop only supplies `stock_limit` items per gather (sold out
-## after that, restocked next gather); selling is allowed at any shop for the
-## item's sell_price (half).
+## themed stock; each item on a shelf has its own QTY and the player may buy as many
+## as they can afford until it runs out; a bare shelf stays bare across gathers and
+## only refills on the run's restock clock (RunState.RESTOCK_INTERVAL_DAYS); selling
+## is allowed at any shop for the item's sell_price (half).
 ##
 ## Like QuestSelect, the layout is built in code — the .tscn is just the frame
 ## (header + a scrolling Body the views are rebuilt into).
@@ -33,12 +34,6 @@ signal day_started(day: int)
 ## DEBUG: shows a "Skip gather" button on the road that ends the whole phase at
 ## once, no matter how many days are left. Flip to false to remove it.
 const DEBUG_SKIP_GATHER: bool = true
-
-const SHOPS: Array[ShopData] = [
-	preload("res://data/shops/grocer.tres"),
-	preload("res://data/shops/apothecary.tres"),
-	preload("res://data/shops/blacksmith.tres"),
-]
 
 ## Travel vignettes that can fire when the road loads at the start of a gather —
 ## at most one per gather, rolled in begin(). A resumed save (start_day > 1) is
@@ -70,10 +65,6 @@ var _upcoming: Array[QuestData] = []
 ## The shop currently open (ShopScene showing), or null while the road is showing.
 ## Held so a buy or sell can rebuild the open shop in place with refreshed prices.
 var _open_shop: ShopData = null
-## Items bought from each shop this gather, keyed by shop id. Each shop supplies
-## at most its `stock_limit` purchases per gather; the counts reset in begin() —
-## the shops restock between quests.
-var _purchases: Dictionary = {}
 ## True while the road fade is playing, so nothing can stack another roll / fade.
 var _travel_transitioning: bool = false
 
@@ -93,17 +84,12 @@ func _ready() -> void:
 ## `start_day` is for resuming a saved gather: a load reopens the phase partway
 ## through, on the day the save was written. The days already spent are not
 ## re-billed to the global clock — they were billed when they were first spent.
-## `purchases` likewise restores the per-shop buy counts from a mid-gather save,
-## so a reload doesn't restock the shops.
-func begin(days: int, upcoming: Array[QuestData], start_day: int = 1,
-		purchases: Dictionary = {}) -> void:
+## What the shops have left needs no restoring here: it lives in RunState, which the
+## save has already brought back by the time this runs.
+func begin(days: int, upcoming: Array[QuestData], start_day: int = 1) -> void:
 	_total_days = maxi(days, 1)
 	_current_day = clampi(start_day, 1, _total_days)
 	_upcoming = upcoming
-	_purchases = {}
-	for shop_id in purchases:
-		# int-cast: a JSON round trip turns the counts into floats.
-		_purchases[shop_id] = int(purchases[shop_id])
 	_refresh_header()
 	# The once-per-gather travel event, rolled the moment the road loads. Only on
 	# day one: a mid-gather resume already had its chance. (A save written *on*
@@ -114,12 +100,6 @@ func begin(days: int, upcoming: Array[QuestData], start_day: int = 1,
 			_run_travel_event(event)
 			return
 	_show_road()
-
-
-## The per-shop buy counts, for the mid-gather autosave. Main stores this in the
-## save's loop half and hands it back to begin() on resume.
-func get_purchases() -> Dictionary:
-	return _purchases.duplicate()
 
 
 # --- days ---------------------------------------------------------------------
@@ -171,7 +151,7 @@ func _show_road() -> void:
 	body.add_child(_subheading("Where to today?"))
 	var shops_row := HBoxContainer.new()
 	shops_row.add_theme_constant_override("separation", 16)
-	for shop in SHOPS:
+	for shop in RunState.SHOPS:
 		shops_row.add_child(_build_shop_button(shop))
 	body.add_child(shops_row)
 
@@ -340,19 +320,17 @@ func _build_preview_card(quest: QuestData) -> Control:
 ## where the gold, inventory, and purchase counts actually move.
 func _enter_shop(shop: ShopData) -> void:
 	_open_shop = shop
-	shop_scene.open(shop, _remaining_stock(shop), day_label.text)
+	shop_scene.open(shop, day_label.text)
 	shop_scene.visible = true
 
 
-## How many more items the shop can sell this gather.
-func _remaining_stock(shop: ShopData) -> int:
-	return maxi(shop.stock_limit - int(_purchases.get(shop.id, 0)), 0)
-
-
+## Buys one of `item`: the shelf must have one and the purse must cover it, and only
+## then does either move. How many are left is RunState's to track, so a purchase
+## outlives the gather it was made in.
 func _on_buy(item: ItemData) -> void:
-	if _remaining_stock(_open_shop) > 0 and RunState.spend_gold(item.buy_price):
+	if RunState.shop_stock(_open_shop, item) > 0 and RunState.spend_gold(item.buy_price):
+		RunState.take_shop_stock(_open_shop, item)
 		RunState.gain(item)
-		_purchases[_open_shop.id] = int(_purchases.get(_open_shop.id, 0)) + 1
 		AudioManager.play("place")
 	# Rebuild in place: affordability, stock and the sell list have all moved.
 	_enter_shop(_open_shop)
