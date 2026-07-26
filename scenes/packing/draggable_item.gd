@@ -246,12 +246,22 @@ func _refresh() -> void:
 ## The "what would this add" panel: the item's name, every stat it contributes,
 ## and its flavor line. Static so PackingScene can raise the very same panel on
 ## hover or click without redoing the layout.
+## Extra breathing room inside the textbox frame's own content margin — the
+## frame's margins are sized to keep the *art* unstretched, not to clear text,
+## so lettering can still sit right against the drawn border without this.
+const INFO_PANEL_PADDING := 8
+
 static func build_info_panel(source: ItemData) -> Control:
 	var panel := Ui.card()
 
+	var pad := MarginContainer.new()
+	for side in ["left", "top", "right", "bottom"]:
+		pad.add_theme_constant_override("margin_%s" % side, INFO_PANEL_PADDING)
+	panel.add_child(pad)
+
 	var box := VBoxContainer.new()
 	box.add_theme_constant_override("separation", 4)
-	panel.add_child(box)
+	pad.add_child(box)
 
 	var name_label := Label.new()
 	name_label.text = source.display_name
