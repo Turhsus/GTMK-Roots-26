@@ -21,7 +21,8 @@ func _init() -> void:
 	trigger_stat = "combat"
 
 
-func modify_item(item: ItemData) -> ItemData:
+func modify_item(item: ItemData, _layout: PackLayout = null) -> String:
 	if item != null and item.combat > 0 and randf() < SKIP_CHANCE:
 		item.durability += 1  # undo this trip's wear — it comes home untouched
-	return item
+		return "%s: %s went unused and came home as good as it left." % [title, ItemEffect.name_of(item)]
+	return ""

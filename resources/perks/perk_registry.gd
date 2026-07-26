@@ -13,4 +13,5 @@ class_name PerkRegistry
 static var TYPES: Array = [
 	ForagePerk,
 	CraftyPerk,
+	SelfSufficiencyPerk,
 ]

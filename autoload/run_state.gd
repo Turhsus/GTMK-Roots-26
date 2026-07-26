@@ -188,12 +188,24 @@ func resolve_item_effects(items: Array[ItemData], layout: PackLayout) -> Array[S
 
 
 ## Each owned perk gets to change every packed item via its modify_item hook (the
-## crafty perk repairs a combat item now and then). Only changes durability/state;
-## never deletes. Runs after effects so a perk gets the last, kindest word.
-func apply_perks_to_items(items: Array[ItemData]) -> void:
+## crafty perk repairs a combat item now and then; self-sufficiency undoes a placement
+## mistake). Only changes durability/state; never deletes. Runs after effects so a perk
+## gets the last, kindest word — which is why a perk can hand back durability an effect
+## just docked. `layout` is the send-off board snapshot, passed through for the perks
+## that read how the bag was packed; null skips nothing, it just leaves those perks
+## with nothing to react to.
+##
+## Returns the lines the perks that actually fired handed back, in the order they
+## fired, for the perk-activation modal (see main._show_perk_activations). This stays
+## a plain string collection on purpose: no perk is named or special-cased here.
+func apply_perks_to_items(items: Array[ItemData], layout: PackLayout = null) -> Array[String]:
+	var activations: Array[String] = []
 	for item in items:
 		for perk in owned_perks:
-			perk.modify_item(item)
+			var line: String = perk.modify_item(item, layout)
+			if line != "":
+				activations.append(line)
+	return activations
 
 
 ## The trip's flat cost: every packed item loses one point of durability. Nothing

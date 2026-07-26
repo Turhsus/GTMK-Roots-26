@@ -264,10 +264,13 @@ func _test_perks() -> void:
 	var on_combat := RunState.offer_perks(["combat"])
 	check(_has_id(on_combat, "crafty") and not _has_id(on_combat, "forage"),
 		"a combat shortfall offers the crafty perk, not the forage one")
-	check(RunState.offer_perks(["health"]).is_empty(),
-		"a shortfall with no matching perk offers nothing")
-	check(RunState.offer_perks(["food", "combat"]).size() == 2,
-		"failing both surfaces both perks")
+	# Self-sufficiency has no trigger_stat, so it rides along with every shortfall —
+	# a bad pack costs durability rather than any one stat.
+	var on_health := RunState.offer_perks(["health"])
+	check(on_health.size() == 1 and _has_id(on_health, "self_sufficiency"),
+		"a shortfall no perk targets still offers the always-eligible one")
+	check(RunState.offer_perks(["food", "combat"]).size() == 3,
+		"failing both surfaces both targeted perks plus the always-eligible one")
 
 	# Earning the forage perk: its food folds into the current packing, and it's no
 	# longer offered (perks are unique).
@@ -296,6 +299,50 @@ func _test_perks() -> void:
 	var rate := float(repaired) / float(trials)
 	check(abs(rate - 0.1) < 0.02,
 		"crafty repairs a combat item's wear ~10%% of the time, got %.3f" % rate)
+
+	# Self-sufficiency forgives a *packing mistake*: the item's effect docks it at
+	# send-off, then the perk hands that durability back ~10% of the time and returns
+	# the line the activation modal shows. Built from a bare item and a two-cell board
+	# so this doesn't ride on which authored item happens to carry which effect.
+	var self_suff: PerkData = RunState.find_perk("self_sufficiency")
+	check(self_suff != null, "the self-sufficiency perk is built")
+	var crush := ClearAboveEffect.new()
+	crush.penalty = 2
+	crush.rows = 1
+	var forgiven := 0
+	var lines := 0
+	for _i in trials:
+		var fragile := ItemData.new()
+		fragile.id = "egg"
+		fragile.display_name = "Egg"
+		fragile.effects = [crush] as Array[ItemEffect]
+		fragile.durability = 5
+		var board := PackLayout.new()
+		board.add(fragile, Vector2i(1, 3), 0, [Vector2i(1, 3)] as Array[Vector2i])
+		board.add(ItemData.new(), Vector2i(1, 2), 0, [Vector2i(1, 2)] as Array[Vector2i])
+		crush.resolve_send_off(fragile, board)  # the mistake lands first, as send-off runs it
+		if self_suff.modify_item(fragile, board) != "":
+			lines += 1
+		if fragile.durability == 5:  # the dock was handed back
+			forgiven += 1
+	var forgive_rate := float(forgiven) / float(trials)
+	check(abs(forgive_rate - 0.1) < 0.02,
+		"self-sufficiency forgives a mistake ~10%% of the time, got %.3f" % forgive_rate)
+	check(lines == forgiven, "every forgiven mistake reports an activation line, and only those")
+
+	# A clean pack has no mistake to forgive, and neither does a call with no board —
+	# the perk must stay silent rather than refunding wear it didn't cause.
+	var tidy := PackLayout.new()
+	var lone := ItemData.new()
+	lone.effects = [crush] as Array[ItemEffect]
+	lone.durability = 5
+	tidy.add(lone, Vector2i(1, 3), 0, [Vector2i(1, 3)] as Array[Vector2i])
+	var quiet := true
+	for _i in 200:
+		if self_suff.modify_item(lone, tidy) != "" or self_suff.modify_item(lone, null) != "":
+			quiet = false
+	check(quiet and lone.durability == 5,
+		"with nothing packed above it there is no mistake to forgive")
 
 	# A fresh run drops every earned perk.
 	RunState.reset()
@@ -419,6 +466,7 @@ func _test_flow() -> void:
 	var packing: PackingScene = main.get_node("%PackingScene")
 	var playout: PlayoutScene = main.get_node("%PlayoutScene")
 	var town: RoadScene = main.get_node("%RoadScene")
+	var lesson: PerkSelect = main.get_node("%PerkSelect")
 	var tutorial := RunState.TUTORIAL
 
 	# The forced tutorial is packed first — no picker, no gather before it.
@@ -486,9 +534,20 @@ func _test_flow() -> void:
 	check(not playout.is_playing(), "skipping ends the playout")
 	check(playout.pack_again_button.visible, "the continue button appears when the log is done")
 
-	# Finishing the log now opens the gather phase (town), not the picker.
+	# The tutorial wasn't cleared, so finishing the log offers a lesson before town.
+	# Self-sufficiency has no trigger_stat, so *any* failure now surfaces at least one
+	# perk — the lesson screen is no longer skippable on a shortfall no perk targets.
 	playout.pack_again_requested.emit()
-	check(town.visible and not playout.visible, "finishing the log opens the gather phase")
+	check(lesson.visible and not playout.visible, "a failed quest offers a lesson before town")
+	# The very offers the loop just made: main captured the shortfall at send-off.
+	var offered := RunState.offer_perks(main._last_missed_stats)
+	check(_has_id(offered, "self_sufficiency"),
+		"the always-eligible perk is among the lesson's offers")
+
+	# Taking the lesson banks it and carries on into the gather phase.
+	lesson.perk_chosen.emit(offered[0])
+	check(RunState.has_perk(offered[0].id), "the chosen lesson is banked")
+	check(town.visible and not lesson.visible, "choosing a lesson opens the gather phase")
 	check(town._total_days == tutorial.days, "the gather budget is the finished quest's length")
 	check(town._current_day == 1, "the gather phase starts on day one")
 

@@ -199,8 +199,10 @@ func _on_sent_off() -> void:
 	# 1. Placement effects dock durability for a bad pack (packed upside down, next to
 	#    the wrong thing) ...
 	var violations := RunState.resolve_item_effects(GameState.packed_items, layout)
-	# 2. ... then perks get the last, kindest word (crafty can repair a combat item) ...
-	RunState.apply_perks_to_items(GameState.packed_items)
+	# 2. ... then perks get the last, kindest word (crafty can repair a combat item;
+	#    self-sufficiency can hand back what a mistake just cost). They read the same
+	#    board snapshot, and report back whatever they did for the activation modal ...
+	var activations := RunState.apply_perks_to_items(GameState.packed_items, layout)
 	# 3. ... and a copy the pack itself destroyed is gone *before* the quest is judged:
 	#    it broke in the bag, so it neither helps the quest nor comes home.
 	_discard_worn_out()
@@ -235,25 +237,40 @@ func _on_sent_off() -> void:
 	# Debug: hold the flow on a durability + quest-outcome readout until it's dismissed,
 	# then carry on exactly as an undebugged send-off would.
 	if DebugFlags.is_on("durability_report"):
-		_show_durability_debug(report, outcome, violations, _proceed_after_send.bind(lines, violations))
+		_show_durability_debug(report, outcome, violations, _proceed_after_send.bind(lines, violations, activations))
 		return
-	_proceed_after_send(lines, violations)
+	_proceed_after_send(lines, violations, activations)
 
 
 ## What a finished send-off does next: skip straight past the log (debug) or play it.
-## If any packing violations occurred, show them first so the player understands the
-## consequences of their choices.
-func _proceed_after_send(lines: Array[String], violations: Array[String]) -> void:
+## Up to two modals come first, in the order the send-off resolved them — what the pack
+## cost, then what a perk saved — so the player reads the consequences of their choices
+## before the log narrates around them. Each hands off to the next when dismissed, and
+## an empty list simply falls through.
+func _proceed_after_send(lines: Array[String], violations: Array[String], activations: Array[String]) -> void:
 	if DebugFlags.is_on("skip_playout"):
 		# Skip showing the log; go straight to what the "continue" button would do.
 		_on_playout_done()
 		return
-	
-	# If any violations occurred, show them first before the playout
+
 	if not violations.is_empty():
-		_show_violations(violations, _on_violations_closed.bind(lines))
+		_show_violations(violations, _proceed_to_activations.bind(lines, activations))
 		return
-	
+
+	_proceed_to_activations(lines, activations)
+
+
+## The second pre-playout modal: what the perks did about it. Skipped when no perk
+## fired, which is the common case.
+func _proceed_to_activations(lines: Array[String], activations: Array[String]) -> void:
+	if not activations.is_empty():
+		_show_perk_activations(activations, _play_log.bind(lines))
+		return
+	_play_log(lines)
+
+
+## Hand the adventure log to the playout screen — where every path above ends up.
+func _play_log(lines: Array[String]) -> void:
 	_show(playout_scene)
 	playout_scene.play(lines)
 
@@ -553,8 +570,24 @@ func _show_durability_debug(report: Array, outcome: Dictionary, violations: Arra
 
 ## Modal overlay showing what packing mistakes were made: which items were damaged
 ## by being packed upside down, crushed, or placed next to incompatible items.
-## Sits on its own CanvasLayer above every screen; `on_continue` is called when dismissed.
 func _show_violations(violations: Array[String], on_continue: Callable) -> void:
+	_show_lines_modal("Packing Mistakes", violations, "⚠ ", Color("d08b52"), on_continue)
+
+
+## Modal overlay showing which perks earned their keep this send-off — the lines the
+## perks themselves handed back (see RunState.apply_perks_to_items). Shown after the
+## mistakes modal, so a mistake self-sufficiency undid reads as the answer to the
+## warning right above it rather than a contradiction of it.
+func _show_perk_activations(activations: Array[String], on_continue: Callable) -> void:
+	_show_lines_modal("Lessons Applied", activations, "✿ ", Color("8fbf6a"), on_continue)
+
+
+## The shared body of both post-send-off modals: a dimmed backdrop, a framed panel, a
+## titled list of `entries` each in `colour` behind `prefix`, and a Continue button.
+## Sits on its own CanvasLayer above every screen; `on_continue` is called when
+## dismissed. Builds its own dark StyleBoxFlat rather than going through Ui.card(),
+## which is why the light theme labels inside stay readable.
+func _show_lines_modal(heading: String, entries: Array[String], prefix: String, colour: Color, on_continue: Callable) -> void:
 	var layer := CanvasLayer.new()
 	layer.layer = 100
 	add_child(layer)
@@ -583,17 +616,17 @@ func _show_violations(violations: Array[String], on_continue: Callable) -> void:
 	panel.add_child(box)
 
 	var title := Label.new()
-	title.text = "Packing Mistakes"
+	title.text = heading
 	title.add_theme_font_size_override("font_size", 20)
 	box.add_child(title)
 
 	var divider := HSeparator.new()
 	box.add_child(divider)
 
-	for violation in violations:
+	for entry in entries:
 		var label := Label.new()
-		label.text = "⚠ " + violation
-		label.add_theme_color_override("font_color", Color("d08b52"))
+		label.text = prefix + entry
+		label.add_theme_color_override("font_color", colour)
 		label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 		label.custom_minimum_size.x = 300
 		box.add_child(label)
@@ -604,9 +637,3 @@ func _show_violations(violations: Array[String], on_continue: Callable) -> void:
 	button.pressed.connect(func() -> void:
 		layer.queue_free()
 		on_continue.call())
-
-
-## Called after the violations modal is closed — proceed to show the playout.
-func _on_violations_closed(lines: Array[String]) -> void:
-	_show(playout_scene)
-	playout_scene.play(lines)
