@@ -28,6 +28,7 @@ const DRAG_THRESHOLD := 6.0
 ## UI, so these are picked to read against the tan fill (#F3DAB8) — the older
 ## brighter set was chosen back when the panel drew its own dark box.
 const STAT_COLOR := Color("3f6b23")
+const NEG_STAT_COLOR := Color("9a3a2a")
 const WARN_COLOR := Color("9a4f14")
 const MUTED_COLOR := Color("6b5d4c")
 
@@ -281,7 +282,7 @@ static func build_info_panel(source: ItemData) -> Control:
 		stat_added = true
 		var row := Label.new()
 		row.text = "%s %+d" % [key.capitalize(), value]
-		row.add_theme_color_override("font_color", STAT_COLOR)
+		row.add_theme_color_override("font_color", NEG_STAT_COLOR if value < 0 else STAT_COLOR)
 		box.add_child(row)
 	if not stat_added:
 		var none_label := Label.new()
