@@ -2,11 +2,11 @@ class_name RoadScene
 extends Control
 
 ## The gather phase. Between one quest's playout and the next quest's selection,
-## the child's parent spends a run of days in town — one shop visit per day —
-## buying supplies with gold and selling off whatever won't be needed. The day
-## budget is set by the quest just completed (main.gd passes it in); the three
-## quests the player will choose from next are drawn up front and previewed here,
-## so the shopping has a plan behind it.
+## the child's parent spends a run of days in town — one day action per day
+## (shop visit or work a shift) — buying supplies with gold and selling off
+## whatever won't be needed. The day budget is set by the quest just completed
+## (main.gd passes it in); the three quests the player will choose from next are
+## drawn up front and previewed here, so the shopping has a plan behind it.
 ##
 ## This scene is the *road*: its own background art, the day/quest preview, and
 ## the "where to today?" shop prompt. A shop itself is a separate full-screen
@@ -15,12 +15,13 @@ extends Control
 ## When a fresh gather begins (day one, not a resume) one travel event may fire
 ## before anything else — a short road vignette — then the shop prompt shows.
 ##
-## Rules (all chosen by the user): one shop visit per day; every day must be spent
-## before the loop moves on (no early exit); buying is limited to a shop's own
-## themed stock; each item on a shelf has its own QTY and the player may buy as many
-## as they can afford until it runs out; a bare shelf stays bare across gathers and
-## only refills on the run's restock clock (RunState.RESTOCK_INTERVAL_DAYS); selling
-## is allowed at any shop for the item's sell_price (half).
+## Rules (all chosen by the user): one day action per day (shop visit or work a
+## shift); every day must be spent before the loop moves on (no early exit);
+## buying is limited to a shop's own themed stock; each item on a shelf has its
+## own QTY and the player may buy as many as they can afford until it runs out;
+## a bare shelf stays bare across gathers and only refills on the run's restock
+## clock (RunState.RESTOCK_INTERVAL_DAYS); selling is allowed at any shop for the
+## item's sell_price (half).
 ##
 ## Like QuestSelect, the layout is built in code — the .tscn is just the frame
 ## (header + a scrolling Body the views are rebuilt into).
@@ -34,6 +35,9 @@ signal day_started(day: int)
 ## DEBUG: shows a "Skip gather" button on the road that ends the whole phase at
 ## once, no matter how many days are left. Flip to false to remove it.
 const DEBUG_SKIP_GATHER: bool = true
+
+## Gold earned by skipping shopping to work a shift at the cheese shop for the day.
+const WORK_SHIFT_GOLD: int = 5
 
 ## Travel vignettes that can fire when the road loads at the start of a gather —
 ## at most one per gather, rolled in begin(). A resumed save (start_day > 1) is
@@ -164,9 +168,13 @@ func _show_road() -> void:
 		shops_row.add_child(_build_shop_button(shop))
 	body.add_child(shops_row)
 
+	body.add_child(_spacer(12))
+	var alt_row := HBoxContainer.new()
+	alt_row.add_theme_constant_override("separation", 16)
+	alt_row.add_child(_build_work_shift_button())
 	if RunState.can_upgrade_bag():
-		body.add_child(_spacer(12))
-		body.add_child(_build_bag_upgrade_button())
+		alt_row.add_child(_build_bag_upgrade_button())
+	body.add_child(alt_row)
 
 	body.add_child(_spacer(16))
 	body.add_child(_subheading("Coming up — you'll choose one when you set out:"))
@@ -188,8 +196,8 @@ func _build_bag_upgrade_button() -> Button:
 	var cost := RunState.bag_upgrade_cost()
 	var button := Button.new()
 	button.text = "Buy a larger bag  %d×%d → %d×%d   %dg" % [current, current, next, next, cost]
-	button.custom_minimum_size = Vector2(0, 48)
-	button.add_theme_font_size_override("font_size", 18)
+	button.custom_minimum_size = Vector2(200, 56)
+	button.add_theme_font_size_override("font_size", 20)
 	button.disabled = RunState.gold < cost
 	button.pressed.connect(_on_upgrade_bag)
 	return button
@@ -200,6 +208,22 @@ func _on_upgrade_bag() -> void:
 		AudioManager.play("place")
 		_refresh_header()
 		_show_road()
+
+
+## Alternate day action: earn a fixed wage and spend the day, same as leaving a shop.
+func _build_work_shift_button() -> Button:
+	var button := Button.new()
+	button.text = "Skip shopping for today and work a shift at the cheese shop  (+%dg)" % WORK_SHIFT_GOLD
+	button.custom_minimum_size = Vector2(200, 56)
+	button.add_theme_font_size_override("font_size", 20)
+	button.pressed.connect(_on_work_shift)
+	return button
+
+
+func _on_work_shift() -> void:
+	RunState.add_gold(WORK_SHIFT_GOLD)
+	AudioManager.play("place")
+	_end_day()
 
 
 ## DEBUG: ends the gather phase immediately, whatever day it is. Still bills the
