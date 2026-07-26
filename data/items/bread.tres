@@ -1,7 +1,15 @@
 [gd_resource type="Resource" script_class="ItemData" format=3 uid="uid://0svfd6i1o7e8"]
 
+[ext_resource type="Script" uid="uid://dw0c3j0carikx" path="res://resources/effects/item_effect.gd" id="1_meqyy"]
 [ext_resource type="Script" uid="uid://du5drbi85ateb" path="res://resources/item_data.gd" id="1_script"]
-[ext_resource type="Texture2D" uid="uid://cgtnduedlufgv" path="res://assets/items/bread.png" id="2_icon"]
+[ext_resource type="Texture2D" uid="uid://da5cgambnfs5b" path="res://assets/items/bread.png" id="2_icon"]
+[ext_resource type="Script" uid="uid://d2pihb358f0k8" path="res://resources/effects/no_adjacent_trait_effect.gd" id="2_kobdj"]
+
+[sub_resource type="Resource" id="Resource_5vq1d"]
+script = ExtResource("2_kobdj")
+trait_names = Array[String](["heavy"])
+direction = "up"
+metadata/_custom_type_script = "uid://d2pihb358f0k8"
 
 [resource]
 script = ExtResource("1_script")
@@ -12,5 +20,6 @@ icon = ExtResource("2_icon")
 food = 3
 traits = Array[String](["food"])
 flavor = "A loaf of bread."
+effects = Array[ExtResource("1_meqyy")]([SubResource("Resource_5vq1d")])
 buy_price = 5
 metadata/_custom_type_script = "uid://du5drbi85ateb"
