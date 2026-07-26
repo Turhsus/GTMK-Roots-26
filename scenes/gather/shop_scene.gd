@@ -56,9 +56,13 @@ func _ready() -> void:
 ## Shows `shop`. `day_text` is the road's day line ("Day 2 of 3 in town"), repeated
 ## here since this scene covers the road's header. `sold_this_visit` is the road's
 ## list of copies sold so far in this visit (Buy back tab). Calling open() again
-## on the same shop refreshes it in place without resetting the active tab.
-func open(shop: ShopData, day_text: String = "", sold_this_visit: Array = []) -> void:
+## on the same shop refreshes it in place without resetting the active tab —
+## pass `reset_tab` when opening a *new* visit so Buy is always first.
+func open(shop: ShopData, day_text: String = "", sold_this_visit: Array = [],
+		reset_tab: bool = false) -> void:
 	_shop = shop
+	if reset_tab:
+		_tab = Tab.BUY
 	_sold_this_visit.clear()
 	for entry in sold_this_visit:
 		if entry is ItemData:
