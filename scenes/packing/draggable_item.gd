@@ -13,6 +13,8 @@ signal clicked(view: DraggableItem)
 ## Right-click while the item is at rest (tray or bag). PackingScene rotates it
 ## in place — no drag required.
 signal rotate_requested(view: DraggableItem)
+## Shift+left-click while at rest. PackingScene returns a bagged item to the tray.
+signal return_requested(view: DraggableItem)
 ## Hover enter/exit while at rest. PackingScene shows the item description tip.
 signal hover_started(view: DraggableItem)
 signal hover_ended(view: DraggableItem)
@@ -203,6 +205,11 @@ func _gui_input(event: InputEvent) -> void:
 	if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT:
 		if event.pressed:
 			accept_event()
+			# Shift+click returns a bagged item to the tray — don't start a drag.
+			if event.shift_pressed:
+				_press_active = false
+				return_requested.emit(self)
+				return
 			_press_active = true
 			_press_position = event.position
 		elif _press_active:

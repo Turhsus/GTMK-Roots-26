@@ -164,6 +164,8 @@ func _on_item_ready(view: DraggableItem) -> void:
 		view.grabbed.connect(_on_item_grabbed)
 	if not view.rotate_requested.is_connected(_on_item_rotate_requested):
 		view.rotate_requested.connect(_on_item_rotate_requested)
+	if not view.return_requested.is_connected(_on_item_return_requested):
+		view.return_requested.connect(_on_item_return_requested)
 	if not view.hover_started.is_connected(_on_item_hover_started):
 		view.hover_started.connect(_on_item_hover_started)
 	if not view.hover_ended.is_connected(_on_item_hover_ended):
@@ -239,6 +241,20 @@ func _on_item_rotate_requested(view: DraggableItem) -> void:
 		bag_grid.place(view, origin)
 		AudioManager.play("invalid")
 		view.play_shake()
+
+
+## Shift+left-click: send a bagged item straight back to the tray. Tray items
+## are already inventory, so the gesture is a no-op there.
+func _on_item_return_requested(view: DraggableItem) -> void:
+	if _dragging != null:
+		return
+	if not bag_grid.remove(view):
+		return
+	_close_hover_tip()
+	GameState.remove_item(view.item)
+	_refresh_live_bonus()
+	item_tray.adopt(view)
+	AudioManager.play("place")
 
 
 func _on_item_grabbed(view: DraggableItem, grab_offset: Vector2) -> void:
