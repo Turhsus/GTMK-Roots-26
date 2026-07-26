@@ -144,6 +144,9 @@ regenerated, previewed, or tested headless.
   `RunState.bag_upgrade_available()`: one per town day, and one per quest — his bench
   refills in `register_result`, not on the `RESTOCK_INTERVAL_DAYS` clock the item
   shops use. Costs are `BAG_UPGRADE_COSTS` = 15 / 25 / 40 for the 4×4 / 5×5 / 6×6.
+- The **cheese shop** (`ShopData.offers_cheese_shift`) has no shelf and no trade
+  tabs — only a pick-2-of-3 work shift (sell cheese / make cheese / repair blanket).
+  Confirm applies the rewards and ends the day.
 
 ## File map
 
@@ -195,8 +198,8 @@ be precise.
 | `packing/stats_panel.gd` | 85 | Four live bars; reads `GameState` and nothing else. |
 | `packing/grid_highlight.gd` | 36 | Green/red placement preview, above the item layer. |
 | `playout/playout_scene.gd` | 120 | Reveals the log line by line; click/space dumps the rest. |
-| `gather/road_scene.gd` | 419 | The gather phase: day budget, one shop per day, next-quest preview, travel events. |
-| `gather/shop_scene.gd` | 196 | Presentation-only buy/sell rows; the road applies the trade. |
+| `gather/road_scene.gd` | 483 | The gather phase: day budget, shops (incl. cheese shift), travel events. |
+| `gather/shop_scene.gd` | 560 | Presentation-only buy/sell rows; bag upgrade + cheese shift Buy tabs. |
 | `select/quest_select.gd` | 138 | Quest picker cards. |
 | `perk/perk_select.gd` | 76 | The lesson screen after a failed quest; shared info-card builder. |
 | `pause/pause_menu.gd` | 87 | Overlay, `PROCESS_MODE_WHEN_PAUSED`, emits requests to `Main`. |
@@ -212,12 +215,12 @@ Also `scenes/gather/TownScreen.tscn` (no paired script).
   `homecoming` fields point at. Only `tutorial` has any today: `tutorial_beat.tres` (food
   check) and `tutorial_supplies_beat.tres` (the log-crossing check, silent if the food beat
   already failed).
-- `shops/` — grocer, blacksmith, apothecary, leatherworker.
+- `shops/` — grocer, blacksmith, apothecary, leatherworker, cheese.
 - `travel_events/` — found_coin, found_coin_pouch.
 - `trait_registry.tres` — the trait vocabulary.
 
 ### assets/
-`items/` (18 png), `shops/` (3), `backgrounds/road.png`, `ui/` (textbox, textbox_small,
+`items/` (18 png), `shops/` (4), `backgrounds/road.png`, `ui/` (textbox, textbox_small,
 finalpacking_bg, tray, tray_side, rat_hand cursor), `sfx/` (place, rotate, invalid, send).
 
 `ui/tray_side.png` is `tray.png` rotated 90° CCW and cropped to its opaque bounds, so

@@ -20,6 +20,7 @@ func _ready() -> void:
 	_test_persists_across_gathers()
 	_test_save_round_trip()
 	_test_leatherworker()
+	_test_cheese_shop()
 	await _test_road_buys()
 	await _test_buyback()
 	await _test_road_bag_upgrade()
@@ -42,10 +43,9 @@ func _test_authored_quantities() -> void:
 	RunState.reset()
 	for shop in RunState.SHOPS:
 		var items: Array[ItemData] = shop.items()
-		# The leatherworker sells no items at all — his one trade is the bag upgrade,
-		# which isn't an ItemData and has its own tests below.
-		if shop.sells_bag_upgrade:
-			check(items.is_empty(), "%s sells the bag upgrade and no items" % shop.id)
+		# Special shops with no ItemData stock — bag upgrade / cheese shift.
+		if shop.sells_bag_upgrade or shop.offers_cheese_shift:
+			check(items.is_empty(), "%s sells a special trade and no items" % shop.id)
 			continue
 		check(not items.is_empty(), "%s has stock authored" % shop.id)
 		for item in items:
@@ -245,6 +245,68 @@ func _test_leatherworker() -> void:
 	check(not RunState.bag_upgrade_available(), "the bare bench survived the save")
 	RunState.register_result(null, false)
 	check(RunState.bag_upgrade_available(), "and a quest after the load restocks it")
+
+
+# --- the cheese shop ------------------------------------------------------------
+
+## Flagged like the leatherworker: no ItemData stock, Buy tab is a special trade.
+## Applying the two jobs mutates gold / inventory / durability the way the road does.
+func _test_cheese_shop() -> void:
+	RunState.reset()
+	var cheese_shop := RunState.find_shop("cheese")
+	check(cheese_shop != null, "the cheese shop is in town")
+	check(cheese_shop.offers_cheese_shift, "and it is the shop flagged for the work shift")
+	check(cheese_shop.items().is_empty(), "it stocks no ItemData shelves")
+	for shop in RunState.SHOPS:
+		if shop != cheese_shop:
+			check(not shop.offers_cheese_shift, "%s does not offer the cheese shift" % shop.id)
+
+	var before_gold := RunState.gold
+	var before_cheese := 0
+	for item in RunState.inventory:
+		if item != null and item.id == "cheese_wedge":
+			before_cheese += 1
+
+	# Apply sell + make without going through _end_day — call the reward bits via a
+	# throwaway road only for the handler, then ignore the day-end side effect.
+	var road: RoadScene = ROAD.instantiate()
+	add_child(road)
+	await get_tree().process_frame
+	road.begin(3, [])
+	road._enter_shop(cheese_shop)
+	var day_before := road._current_day
+	road._on_cheese_shift({
+		ShopScene.CHEESE_OPTION_SELL: true,
+		ShopScene.CHEESE_OPTION_MAKE: true,
+		ShopScene.CHEESE_OPTION_REPAIR: false,
+	})
+	check(RunState.gold == before_gold + ShopScene.CHEESE_SELL_GOLD,
+		"sell job paid %dg" % ShopScene.CHEESE_SELL_GOLD)
+	var after_cheese := 0
+	for item in RunState.inventory:
+		if item != null and item.id == "cheese_wedge":
+			after_cheese += 1
+	check(after_cheese == before_cheese + 1, "make job granted a cheese wedge")
+	check(road._current_day == day_before + 1, "finishing the shift spent the day")
+
+	# Repair on a fresh run with a worn blanket.
+	RunState.reset()
+	var blanket: ItemData = null
+	for item in RunState.inventory:
+		if item != null and item.id == "blanket":
+			item.durability = 1
+			blanket = item
+			break
+	check(blanket != null, "starter inventory still has the blanket")
+	road.begin(2, [])
+	road._enter_shop(cheese_shop)
+	road._on_cheese_shift({
+		ShopScene.CHEESE_OPTION_SELL: false,
+		ShopScene.CHEESE_OPTION_MAKE: false,
+		ShopScene.CHEESE_OPTION_REPAIR: true,
+	})
+	check(blanket.durability == 2, "repair job restored one durability point")
+	road.queue_free()
 
 
 # --- the road's buy path --------------------------------------------------------

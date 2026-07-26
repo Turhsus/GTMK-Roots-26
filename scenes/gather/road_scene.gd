@@ -2,11 +2,11 @@ class_name RoadScene
 extends Control
 
 ## The gather phase. Between one quest's playout and the next quest's selection,
-## the child's parent spends a run of days in town — one day action per day
-## (shop visit or work a shift) — buying supplies with gold and selling off
-## whatever won't be needed. The day budget is set by the quest just completed
-## (main.gd passes it in); the three quests the player will choose from next are
-## drawn up front and previewed here, so the shopping has a plan behind it.
+## the child's parent spends a run of days in town — one shop visit per day —
+## buying supplies with gold and selling off whatever won't be needed. The day
+## budget is set by the quest just completed (main.gd passes it in); the three
+## quests the player will choose from next are drawn up front and previewed here,
+## so the shopping has a plan behind it.
 ##
 ## This scene is the *road*: its own background art, the day/quest preview, and
 ## the "where to today?" shop prompt. A shop itself is a separate full-screen
@@ -23,7 +23,8 @@ extends Control
 ## is allowed at any shop for the item's sell_price (half). The backpack upgrade is
 ## sold at the leatherworker and nowhere else — at most one per town day and one per
 ## quest, since his bench refills when a quest is registered rather than on the day
-## clock (see RunState.bag_upgrade_available).
+## clock (see RunState.bag_upgrade_available). The cheese shop skips the trade tabs
+## and shows only a pick-2-of-3 work shift (`offers_cheese_shift`).
 ##
 ## Like QuestSelect, the layout is built in code — the .tscn is just the frame
 ## (header + a scrolling Body the views are rebuilt into).
@@ -37,9 +38,6 @@ signal day_started(day: int)
 ## DEBUG: shows a "Skip gather" button on the road that ends the whole phase at
 ## once, no matter how many days are left. Flip to false to remove it.
 const DEBUG_SKIP_GATHER: bool = true
-
-## Gold earned by skipping shopping to work a shift at the cheese shop for the day.
-const WORK_SHIFT_GOLD: int = 5
 
 ## Travel vignettes that can fire when the road loads at the start of a gather —
 ## at most one per gather, rolled in begin(). A resumed save (start_day > 1) is
@@ -87,6 +85,7 @@ func _ready() -> void:
 	shop_scene.buyback_pressed.connect(_on_buyback)
 	shop_scene.return_pressed.connect(_on_return)
 	shop_scene.bag_upgrade_pressed.connect(_on_upgrade_bag)
+	shop_scene.cheese_shift_pressed.connect(_on_cheese_shift)
 	shop_scene.leave_pressed.connect(_end_day)
 	if ResourceLoader.exists(BACKGROUND_PATH):
 		background_art.texture = load(BACKGROUND_PATH)
@@ -167,12 +166,20 @@ func _show_road() -> void:
 	body.add_child(_subheading("Where to today?"))
 	var shops_row := HBoxContainer.new()
 	shops_row.add_theme_constant_override("separation", 16)
+	var cheese_shop: ShopData = null
 	for shop in RunState.SHOPS:
+		if shop.offers_cheese_shift:
+			cheese_shop = shop
+			continue
 		shops_row.add_child(_build_shop_button(shop))
 	body.add_child(shops_row)
 
-	body.add_child(_spacer(12))
-	body.add_child(_build_work_shift_button())
+	# Cheese shop sits under the item shops — same day action, different layout.
+	if cheese_shop != null:
+		body.add_child(_spacer(12))
+		var cheese_btn := _build_shop_button(cheese_shop)
+		cheese_btn.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
+		body.add_child(cheese_btn)
 
 	body.add_child(_spacer(16))
 	body.add_child(_subheading("Coming up — you'll choose one when you set out:"))
@@ -185,24 +192,6 @@ func _show_road() -> void:
 		skip.custom_minimum_size = Vector2(0, 40)
 		skip.pressed.connect(_skip_gather)
 		body.add_child(skip)
-
-
-## Alternate day action: earn a fixed wage and spend the day, same as leaving a shop.
-## Same height/font as shop buttons; width hugs the label (does not stretch with the row).
-func _build_work_shift_button() -> Button:
-	var button := Button.new()
-	button.text = "Not in a shopping mood, work a shift at the cheese shop  (+%dg, ends the day)" % WORK_SHIFT_GOLD
-	button.custom_minimum_size = Vector2(0, 56)
-	button.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
-	button.add_theme_font_size_override("font_size", 20)
-	button.pressed.connect(_on_work_shift)
-	return button
-
-
-func _on_work_shift() -> void:
-	RunState.add_gold(WORK_SHIFT_GOLD)
-	AudioManager.play("place")
-	_end_day()
 
 
 ## DEBUG: ends the gather phase immediately, whatever day it is. Still bills the
@@ -400,6 +389,25 @@ func _on_upgrade_bag() -> void:
 		AudioManager.play("place")
 		_refresh_header()
 	_enter_shop(_open_shop)
+
+
+## Cheese-shop work shift: apply the two chosen jobs, then end the day. Sell adds
+## gold, make grants a cheese wedge, repair bumps the owned blanket's durability
+## (no-op if it's already gone — ShopScene also gates that toggle).
+func _on_cheese_shift(selected: Dictionary) -> void:
+	if selected.get(ShopScene.CHEESE_OPTION_SELL, false):
+		RunState.add_gold(ShopScene.CHEESE_SELL_GOLD)
+	if selected.get(ShopScene.CHEESE_OPTION_MAKE, false):
+		var cheese := RunState.find_item("cheese_wedge")
+		if cheese != null:
+			RunState.gain(cheese)
+	if selected.get(ShopScene.CHEESE_OPTION_REPAIR, false):
+		for item in RunState.inventory:
+			if item != null and item.id == "blanket":
+				item.durability = mini(item.durability + 1, item.max_durability)
+				break
+	AudioManager.play("place")
+	_end_day()
 
 
 ## Returns one copy bought earlier in this visit: refunds the buy price, puts the

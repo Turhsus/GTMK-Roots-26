@@ -52,12 +52,16 @@ const SHOPS: Array[ShopData] = [
 	preload("res://data/shops/apothecary.tres"),
 	preload("res://data/shops/blacksmith.tres"),
 	preload("res://data/shops/leatherworker.tres"),
+	preload("res://data/shops/cheese_shop.tres"),
 ]
 ## The one shop that sells backpack upgrades — the only place bag_tier can move.
 ## It carries no ItemData stock at all (see its `sells_bag_upgrade` flag); the
 ## "shelf" it has is a single upgrade that refills once per quest, not on the
 ## RESTOCK_INTERVAL_DAYS clock the item shops run on.
 const LEATHERWORKER: ShopData = preload("res://data/shops/leatherworker.tres")
+## The cheese shop's Buy tab is a pick-2-of-3 work shift (see `offers_cheese_shift`),
+## not a shelf — same pattern as the leatherworker.
+const CHEESE_SHOP: ShopData = preload("res://data/shops/cheese_shop.tres")
 ## Town days between restocks. Every this many days spent, every shop puts one more
 ## of each depleted item back on the shelf, up to that item's max QTY — so a shop
 ## bought out early in the run comes back slowly rather than all at once. Change this
@@ -350,7 +354,7 @@ func _restock_shops() -> void:
 			_shop_stock.erase(shop.id)
 
 
-## The authored ShopData for an id, or null. Three shops, so this just walks them.
+## The authored ShopData for an id, or null. Walks the town list.
 func find_shop(id: String) -> ShopData:
 	for shop in SHOPS:
 		if shop.id == id:
