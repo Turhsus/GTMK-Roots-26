@@ -8,8 +8,7 @@ extends Control
 
 signal grabbed(view: DraggableItem, grab_offset: Vector2)
 ## Emitted on a plain click — a press and release that never turns into a drag.
-## PackingScene answers it with the stats menu so the player can pin an inspect
-## panel without picking the item up.
+## Unused by PackingScene today (descriptions are hover-only); kept for callers.
 signal clicked(view: DraggableItem)
 ## Right-click while the item is at rest (tray or bag). PackingScene rotates it
 ## in place — no drag required.
@@ -208,7 +207,7 @@ func _gui_input(event: InputEvent) -> void:
 			_press_position = event.position
 		elif _press_active:
 			# Let go without ever crossing the drag threshold: treat it as a
-			# click and open the stats menu instead of moving the item.
+			# click rather than a drag.
 			accept_event()
 			_press_active = false
 			clicked.emit(self)
@@ -243,7 +242,7 @@ func _refresh() -> void:
 
 ## The "what would this add" panel: the item's name, every stat it contributes,
 ## and its flavor line. Static so PackingScene can raise the very same panel on
-## hover or click without redoing the layout.
+## hover without redoing the layout.
 static func build_info_panel(source: ItemData) -> Control:
 	var panel := Ui.card()
 
