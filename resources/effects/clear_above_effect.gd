@@ -19,3 +19,10 @@ func resolve_send_off(item: ItemData, layout: PackLayout) -> void:
 func describe() -> String:
 	var plural := "" if rows == 1 else "s"
 	return "Keep %d square%s above it clear, otherwise the item will be crushed! (−%d durability)." % [rows, plural, penalty]
+
+
+func get_violation_message(item: ItemData, layout: PackLayout) -> String:
+	for cell in layout.cells_above(item, rows):
+		if layout.is_filled(cell):
+			return "%s was crushed by items above it!" % item.display_name
+	return ""
