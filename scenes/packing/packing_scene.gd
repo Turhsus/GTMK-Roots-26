@@ -158,6 +158,12 @@ func _input(event: InputEvent) -> void:
 			get_viewport().set_input_as_handled()
 			return
 	if _dragging == null:
+		# Hovering an item (tray or bag) and pressing R rotates it in place —
+		# a keyboard alternative to picking it up just to turn it.
+		if _hover_view != null and event is InputEventKey and event.pressed \
+				and not event.echo and event.keycode == KEY_R:
+			_rotate_item_in_place(_hover_view)
+			get_viewport().set_input_as_handled()
 		return
 	if event is InputEventKey and event.pressed and not event.echo and event.keycode == KEY_R:
 		_rotate_dragged()
@@ -181,8 +187,8 @@ func _on_item_ready(view: DraggableItem) -> void:
 		view.grabbed.connect(_on_item_grabbed)
 	if not view.clicked.is_connected(_on_item_clicked):
 		view.clicked.connect(_on_item_clicked)
-	if not view.rotate_requested.is_connected(_on_item_rotate_requested):
-		view.rotate_requested.connect(_on_item_rotate_requested)
+	if not view.right_clicked.is_connected(_on_item_right_clicked):
+		view.right_clicked.connect(_on_item_right_clicked)
 	if not view.hover_started.is_connected(_on_item_hover_started):
 		view.hover_started.connect(_on_item_hover_started)
 	if not view.hover_ended.is_connected(_on_item_hover_ended):
@@ -248,13 +254,32 @@ func _place_info_panel(panel: Control, preferred: Vector2) -> void:
 	panel.global_position = preferred.min(max_pos).max(Vector2(8, 8))
 
 
-## Right-click rotate while the item sits in the tray or bag (no drag). In the
-## bag, the new footprint must still fit at the same origin or the turn is refused.
-func _on_item_rotate_requested(view: DraggableItem) -> void:
+## Right-click while the item sits in the tray or bag (no drag). A tray item
+## rotates in place; a bagged item is sent straight back to the tray instead —
+## rotating a bagged item without a drag is done by hovering it and pressing R
+## (see _input and _rotate_item_in_place).
+func _on_item_right_clicked(view: DraggableItem) -> void:
 	if _dragging != null:
 		return
 	_close_hover_tip()
 	_close_info_menu()
+	var origin := bag_grid.get_origin(view)
+	if origin.x < 0:
+		view.rotate_once()
+		AudioManager.play("rotate")
+		return
+	bag_grid.remove(view)
+	GameState.remove_item(view.item)
+	_refresh_live_bonus()
+	item_tray.adopt(view)
+	AudioManager.play("place")
+
+
+## Rotates `view` where it stands — a tray item always turns; a bagged item
+## only turns if the new footprint still fits at its current origin, else it
+## shakes and stays put. Shared by hover+R (see _input) and, for tray items,
+## by right-click.
+func _rotate_item_in_place(view: DraggableItem) -> void:
 	var origin := bag_grid.get_origin(view)
 	if origin.x < 0:
 		view.rotate_once()

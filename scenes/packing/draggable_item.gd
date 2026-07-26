@@ -11,9 +11,11 @@ signal grabbed(view: DraggableItem, grab_offset: Vector2)
 ## PackingScene answers it with the stats menu so the player can pin an inspect
 ## panel without picking the item up.
 signal clicked(view: DraggableItem)
-## Right-click while the item is at rest (tray or bag). PackingScene rotates it
-## in place — no drag required.
-signal rotate_requested(view: DraggableItem)
+## Right-click while the item is at rest (tray or bag). PackingScene rotates a
+## tray item in place, or sends a bagged item back to the tray — no drag
+## required either way. Rotating a bagged item without a drag is instead done
+## by hovering it and pressing R (see PackingScene._input).
+signal right_clicked(view: DraggableItem)
 ## Hover enter/exit while at rest. PackingScene shows the item description tip.
 signal hover_started(view: DraggableItem)
 signal hover_ended(view: DraggableItem)
@@ -199,7 +201,7 @@ func _gui_input(event: InputEvent) -> void:
 	if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_RIGHT and event.pressed:
 		accept_event()
 		_press_active = false
-		rotate_requested.emit(self)
+		right_clicked.emit(self)
 		return
 	if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT:
 		if event.pressed:
