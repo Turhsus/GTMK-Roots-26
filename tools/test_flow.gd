@@ -304,7 +304,11 @@ func _test_perks() -> void:
 	# Self-sufficiency has no trigger_stat, so it rides along with every shortfall —
 	# a bad pack costs durability rather than any one stat.
 	var on_health := RunState.offer_perks(["health"])
-	check(on_health.size() == 1 and _has_id(on_health, "self_sufficiency"),
+	check(_has_id(on_health, "hardy") and not _has_id(on_health, "forage"),
+		"a health shortfall offers the hardy perk, not the forage one")
+	# Utility is the one stat no perk targets today, so it isolates the always-eligible case.
+	var on_utility := RunState.offer_perks(["utility"])
+	check(on_utility.size() == 1 and _has_id(on_utility, "self_sufficiency"),
 		"a shortfall no perk targets still offers the always-eligible one")
 	check(RunState.offer_perks(["food", "combat"]).size() == 3,
 		"failing both surfaces both targeted perks plus the always-eligible one")

@@ -14,4 +14,5 @@ static var TYPES: Array = [
 	ForagePerk,
 	CraftyPerk,
 	SelfSufficiencyPerk,
+	HardyPerk,
 ]
