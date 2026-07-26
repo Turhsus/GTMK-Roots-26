@@ -6,8 +6,8 @@
 
 [resource]
 script = ExtResource("1_script")
-id = "Apple"
-display_name = "apple"
+id = "apple"
+display_name = "Apple"
 icon = ExtResource("2_icon")
 food = 1
 traits = Array[String](["food"])

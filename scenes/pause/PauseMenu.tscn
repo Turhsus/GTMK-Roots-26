@@ -47,6 +47,36 @@ layout_mode = 2
 theme_override_font_sizes/font_size = 20
 text = "Resume"
 
+[node name="VolumeSpacer" type="Control" parent="Center/MainPanel" unique_id=1206572031]
+custom_minimum_size = Vector2(0, 12)
+layout_mode = 2
+
+[node name="VolumePanel" type="VBoxContainer" parent="Center/MainPanel" unique_id=1206572032]
+layout_mode = 2
+theme_override_constants/separation = 4
+
+[node name="MusicLabel" type="Label" parent="Center/MainPanel/VolumePanel" unique_id=1206572033]
+text = "Music"
+
+[node name="MusicSlider" type="HSlider" parent="Center/MainPanel/VolumePanel" unique_id=1206572034]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(260, 24)
+layout_mode = 2
+max_value = 1.0
+step = 0.01
+value = 1.0
+
+[node name="SfxLabel" type="Label" parent="Center/MainPanel/VolumePanel" unique_id=1206572035]
+text = "Sound Effects"
+
+[node name="SfxSlider" type="HSlider" parent="Center/MainPanel/VolumePanel" unique_id=1206572036]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(260, 24)
+layout_mode = 2
+max_value = 1.0
+step = 0.01
+value = 1.0
+
 [node name="HomeButton" type="Button" parent="Center/MainPanel" unique_id=1147642809]
 unique_name_in_owner = true
 custom_minimum_size = Vector2(260, 48)
