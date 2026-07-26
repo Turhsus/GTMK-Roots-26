@@ -1,0 +1,9 @@
+[gd_resource type="Resource" script_class="QuestData" format=3 uid="uid://dod1mnigv21wc"]
+
+[ext_resource type="Script" uid="uid://45ajj2ptcv0d" path="res://resources/narrative_event.gd" id="1_oarga"]
+[ext_resource type="Script" uid="uid://du5drbi85ateb" path="res://resources/item_data.gd" id="2_4sfpj"]
+[ext_resource type="Script" uid="uid://b8mpss75xj6nx" path="res://resources/quest_data.gd" id="3_lifxc"]
+
+[resource]
+script = ExtResource("3_lifxc")
+metadata/_custom_type_script = "uid://b8mpss75xj6nx"
