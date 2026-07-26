@@ -18,7 +18,8 @@ func _ready() -> void:
 	var bag: BagGrid = scene.get_node("%BagGrid")
 	var tray = scene.get_node("%ItemTray")
 	var drag_layer: Control = scene.get_node("%DragLayer")
-	var views: Array = tray.item_container.get_children()
+	# item_views(), not get_children(): the container also holds the sort divider.
+	var views: Array = tray.item_views()
 
 	var stock_size: int = RunState.inventory.size()
 	check(views.size() == stock_size, "tray spawned the whole inventory, got %d of %d" % [views.size(), stock_size])
@@ -73,8 +74,15 @@ func _ready() -> void:
 	# This used to rotate a bread, which is no longer in STARTER_INVENTORY.
 	var knife: DraggableItem = _find(views, "knife")
 	check(knife != null, "the knife is in the tray for rotation tests")
+	# Two boxes, not one. A tray view draws at ItemTray.TRAY_SCALE, and grabbing it
+	# snaps display_scale back to 1.0 so what you drag is what you drop. This block
+	# used to measure the tray box and then assert board-scale facts against it,
+	# which only passed while TRAY_SCALE was 1.0.
+	var board_box := Vector2(2, 1) * cell
+	var tray_box := board_box * ItemTray.TRAY_SCALE
 	var before := knife.custom_minimum_size
-	check(before == Vector2(2, 1) * cell, "the knife is a 2x1 box, got %s" % before)
+	check(before.is_equal_approx(tray_box),
+		"the knife is a 2x1 box at tray scale, got %s want %s" % [before, tray_box])
 	knife.rotate_once()
 	check(knife.custom_minimum_size == Vector2(before.y, before.x),
 		"rotating swaps the bounding box: %s -> %s" % [before, knife.custom_minimum_size])
@@ -87,8 +95,9 @@ func _ready() -> void:
 
 	# A drag must leave the tray at true shape size, not the stretched one.
 	scene._on_item_grabbed(knife, Vector2(150, 150))
-	check(knife.size == before, "dragged item is its shape box, got %s" % knife.size)
-	check(scene._grab_offset.x <= before.x and scene._grab_offset.y <= before.y,
+	check(knife.size.is_equal_approx(board_box),
+		"dragged item is its shape box, got %s want %s" % [knife.size, board_box])
+	check(scene._grab_offset.x <= board_box.x and scene._grab_offset.y <= board_box.y,
 		"grab offset clamped into the item, got %s" % scene._grab_offset)
 	scene._end_drag(false)
 
