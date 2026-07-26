@@ -27,14 +27,10 @@ extends Control
 ## final quest is packed and played, and the run ends on the thank-you screen —
 ## no perk, no further gather (see _on_gather_done / _on_playout_done).
 
-## DEBUG: skip the adventure-log playout entirely — send-off jumps straight to
-## what follows it (perk offer / gather). Flip back to false to restore the log.
-const DEBUG_SKIP_PLAYOUT: bool = true
-
-## DEBUG: after send-off, pop a modal listing each packed item's durability before
-## and after the trip's wear — the quickest way to see placement effects bite (pack
-## the wine upside down and watch it drop an extra point). Flip to false to disable.
-const DEBUG_SHOW_DURABILITY: bool = true
+## Two debug switches shape what a send-off does — skipping the adventure log, and
+## popping the durability readout. Both live on the DebugFlags autoload now
+## ("skip_playout" / "durability_report") so they can be toggled from the pause
+## menu mid-run and are off in an exported build.
 
 ## The phases a save can drop the player back into — the three points where the
 ## run is a clean snapshot. Written into the save's "loop" half (see SaveManager).
@@ -227,7 +223,7 @@ func _on_sent_off() -> void:
 	_gather_days = quest.days
 	# Debug: hold the flow on a durability + quest-outcome readout until it's dismissed,
 	# then carry on exactly as an undebugged send-off would.
-	if DEBUG_SHOW_DURABILITY:
+	if DebugFlags.is_on("durability_report"):
 		_show_durability_debug(report, outcome, _proceed_after_send.bind(lines))
 		return
 	_proceed_after_send(lines)
@@ -235,7 +231,7 @@ func _on_sent_off() -> void:
 
 ## What a finished send-off does next: skip straight past the log (debug) or play it.
 func _proceed_after_send(lines: Array[String]) -> void:
-	if DEBUG_SKIP_PLAYOUT:
+	if DebugFlags.is_on("skip_playout"):
 		# Skip showing the log; go straight to what the "continue" button would do.
 		_on_playout_done()
 		return
