@@ -249,6 +249,26 @@ func snapshot() -> PackLayout:
 	return layout
 
 
+## Sums every placed item's ItemEffect.live_bonus against the current board — the
+## packing-time counterpart to snapshot(), which effects read at send-off instead.
+## Called after every placement change (see PackingScene) so a neighbour-dependent
+## bonus updates the moment an item moves; nothing here mutates the items or board.
+func compute_live_bonus() -> Dictionary:
+	var bonus: Dictionary = {}
+	var layout := snapshot()
+	for view in _cells_by_view.keys():
+		var item: ItemData = (view as DraggableItem).item
+		if item == null:
+			continue
+		for effect in item.effects:
+			if effect == null:
+				continue
+			var delta: Dictionary = effect.live_bonus(item, layout)
+			for key in delta:
+				bonus[key] = int(bonus.get(key, 0)) + int(delta[key])
+	return bonus
+
+
 func show_preview(shape: Array[Vector2i], origin: Vector2i, valid: bool) -> void:
 	highlight.show_cells(cells_for(shape, origin), valid)
 

@@ -108,6 +108,14 @@ func snapshot_board() -> PackLayout:
 	return bag_grid.snapshot()
 
 
+## Re-derives the live, neighbour-dependent stat bonus from the board and hands it to
+## GameState. Called after every placement change (place, remove, rotate-in-bag) so
+## NeighborStatBoostEffect-style rules track the pack as it's built, not just at
+## send-off. See BagGrid.compute_live_bonus.
+func _refresh_live_bonus() -> void:
+	GameState.set_layout_bonus(bag_grid.compute_live_bonus())
+
+
 func _on_send_pressed() -> void:
 	_close_hover_tip()
 	_close_info_menu()
@@ -244,6 +252,7 @@ func _on_item_rotate_requested(view: DraggableItem) -> void:
 		view.rotate_once()
 		bag_grid.place(view, origin)
 		AudioManager.play("rotate")
+		_refresh_live_bonus()
 	else:
 		bag_grid.place(view, origin)
 		AudioManager.play("invalid")
@@ -267,6 +276,7 @@ func _on_item_grabbed(view: DraggableItem, grab_offset: Vector2) -> void:
 	# re-adds it. A move across the bag is just those two halves.
 	if bag_grid.remove(view):
 		GameState.remove_item(view.item)
+		_refresh_live_bonus()
 	_dragging = view
 	view.set_dragging(true)
 	# set_dragging() may have shrunk the item back to its shape box, so the grab
@@ -313,6 +323,7 @@ func _end_drag(attempt_drop: bool) -> void:
 		var released_at := view.global_position
 		bag_grid.place(view, _preview_origin)
 		GameState.add_item(view.item)
+		_refresh_live_bonus()
 		view.play_snap_from(released_at)
 		AudioManager.play("place")
 		return

@@ -65,9 +65,12 @@ never learns about stats.
   `modify_item` (at send-off). `resources/perks/perk_registry.gd` is *the one place* to
   register a perk: write the subclass, add its class name to `TYPES`. No `.tres` needed.
 - **Item effects** (`resources/effects/item_effect.gd`) — per-item placement rules,
-  composed onto an `ItemData` via its `effects` array. They resolve at **send-off** against
-  a `PackLayout` snapshot and dock durability. A bad pack is a *consequence*, never a
-  blocked placement.
+  composed onto an `ItemData` via its `effects` array. Most resolve at **send-off** against
+  a `PackLayout` snapshot and dock durability — a bad pack is a *consequence*, never a
+  blocked placement. A separate `live_bonus` hook resolves continuously *while packing*
+  (BagGrid.compute_live_bonus -> GameState.set_layout_bonus) for temporary,
+  neighbour-dependent stat bonuses that never touch durability and don't survive send-off
+  (see `neighbor_stat_boost_effect.gd`).
 
 `systems/` is deliberately free of scene-tree and autoload access — `NarrativeEngine` is a
 pure `(quest, packed_items, stats) -> Array[String]`, which is why the playout can be
@@ -127,7 +130,7 @@ be precise.
 | `narrative_event.gd` / `narrative_line.gd` | 18 / 31 | A beat and its conditional variants — first passing variant wins, so authored order is priority. |
 | `perk_data.gd` | 45 | Perk base class. |
 | `perks/` | | `perk_registry.gd` (the `TYPES` list), `forage_perk.gd`, `crafty_perk.gd`. |
-| `effects/` | | `item_effect.gd` (base), `clear_above_effect.gd`, `no_adjacent_trait_effect.gd`, `no_rotation_effect.gd`, `protect_adjacent_item_effect.gd`. |
+| `effects/` | | `item_effect.gd` (base: `resolve_send_off` + `live_bonus`), `clear_above_effect.gd`, `no_adjacent_trait_effect.gd`, `no_rotation_effect.gd`, `protect_adjacent_item_effect.gd`, `neighbor_stat_boost_effect.gd` (live-only neighbour stat bonus, no `.tres` registry needed — effects are picked straight off `class_name` in the inspector). |
 | `ui/*.tres` | | `roots_theme.tres`, `panel_content_theme.tres`, `panel_frame.tres`, `button_{normal,hover,pressed,focus,disabled}.tres`. |
 
 ### scenes/

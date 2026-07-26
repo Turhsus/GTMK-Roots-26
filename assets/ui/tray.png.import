@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://bfm16m1fhgidv"
-path="res://.godot/imported/sheild.png-c3bf271c88dab185c33f3bbdbb6f7c76.ctex"
+uid="uid://chbp0rbrgqry3"
+path="res://.godot/imported/tray.png-45fd98e3512d0688353e50af92799bc0.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/items/sheild.png"
-dest_files=["res://.godot/imported/sheild.png-c3bf271c88dab185c33f3bbdbb6f7c76.ctex"]
+source_file="res://assets/ui/tray.png"
+dest_files=["res://.godot/imported/tray.png-45fd98e3512d0688353e50af92799bc0.ctex"]
 
 [params]
 
@@ -23,7 +23,7 @@ compress/rdo_quality_loss=0.0
 compress/hdr_compression=1
 compress/normal_map=0
 compress/channel_pack=0
-mipmaps/generate=true
+mipmaps/generate=false
 mipmaps/limit=-1
 roughness/mode=0
 roughness/src_normal=""

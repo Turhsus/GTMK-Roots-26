@@ -14,6 +14,7 @@ func _ready() -> void:
 	_test_no_upside_down()
 	_test_clear_above()
 	_test_no_adjacent_trait()
+	_test_neighbor_stat_boost()
 	_test_describe()
 
 	if failures == 0:
@@ -119,6 +120,78 @@ func _test_no_adjacent_trait() -> void:
 	victim.durability = 5
 	effect.resolve_send_off(victim, many)
 	check(victim.durability == 4, "two bad neighbours still dock only once")
+
+
+# --- NeighborStatBoostEffect -----------------------------------------------------
+
+func _test_neighbor_stat_boost() -> void:
+	# "Warmed by a heat source": +4 food, +1 health while packed next to fire.
+	var effect := NeighborStatBoostEffect.new()
+	effect.trait_names = ["fire"] as Array[String]
+	effect.food_bonus = 4
+	effect.health_bonus = 1
+
+	var bread := _item("bread", ["food"])
+	var torch := _item("torch", ["fire", "warmth"])
+	var layout := PackLayout.new()
+	layout.add(bread, Vector2i(2, 2), 0, [Vector2i(2, 2)] as Array[Vector2i])
+	layout.add(torch, Vector2i(3, 2), 0, [Vector2i(3, 2)] as Array[Vector2i])
+
+	var warmed := effect.live_bonus(bread, layout)
+	check(warmed.get("food", 0) == 4, "next to a heat source grants +4 food")
+	check(warmed.get("health", 0) == 1, "next to a heat source grants +1 health")
+	check(not warmed.has("combat") and not warmed.has("utility"),
+		"stats left at zero aren't included in the bonus")
+
+	# Same item, no heat source neighbour — nothing.
+	var cold := PackLayout.new()
+	cold.add(bread, Vector2i(2, 2), 0, [Vector2i(2, 2)] as Array[Vector2i])
+	cold.add(_item("cloth", ["clothing"]), Vector2i(3, 2), 0, [Vector2i(3, 2)] as Array[Vector2i])
+	check(effect.live_bonus(bread, cold).is_empty(), "no heat source neighbour means no bonus")
+
+	# Moved away entirely — an unplaced item has no neighbours, so no bonus either.
+	var alone := PackLayout.new()
+	check(effect.live_bonus(bread, alone).is_empty(), "an unplaced item gets no bonus")
+
+	# Durability is never touched by a live bonus.
+	bread.durability = 3
+	effect.live_bonus(bread, layout)
+	check(bread.durability == 3, "live_bonus never mutates the item")
+
+	# BagGrid.compute_live_bonus sums live_bonus across the whole board the same way
+	# resolve_item_effects sums send-off wear — this is the entry point PackingScene
+	# calls after every drag. Instantiate the real scenes (not .new()) so the
+	# @onready children (ItemLayer/Highlight, Icon) exist.
+	var bag := (preload("res://scenes/packing/BagGrid.tscn") as PackedScene).instantiate() as BagGrid
+	add_child(bag)
+	bag.resize_board(6, 6)
+
+	var bread_item := ItemData.new()
+	bread_item.id = "bread"
+	bread_item.shape = [Vector2i.ZERO] as Array[Vector2i]
+	bread_item.effects = [effect] as Array[ItemEffect]
+	var bread_view := (preload("res://scenes/packing/DraggableItem.tscn") as PackedScene).instantiate() as DraggableItem
+	add_child(bread_view)
+	bread_view.setup(bread_item.make_owned_copy())
+	bag.place(bread_view, Vector2i(1, 1))
+
+	var torch_item := ItemData.new()
+	torch_item.id = "torch"
+	torch_item.shape = [Vector2i.ZERO] as Array[Vector2i]
+	torch_item.traits = ["fire"] as Array[String]
+	var torch_view := (preload("res://scenes/packing/DraggableItem.tscn") as PackedScene).instantiate() as DraggableItem
+	add_child(torch_view)
+	torch_view.setup(torch_item.make_owned_copy())
+	bag.place(torch_view, Vector2i(2, 1))
+
+	var live := bag.compute_live_bonus()
+	check(live.get("food", 0) == 4 and live.get("health", 0) == 1,
+		"BagGrid.compute_live_bonus sums the live bonus across the board")
+
+	bag.remove(torch_view)
+	var after_removal := bag.compute_live_bonus()
+	check(after_removal.is_empty(), "moving the heat source away drops the bonus")
+	bag.queue_free()
 
 
 # --- describe() -----------------------------------------------------------------
