@@ -57,6 +57,10 @@ var _cells_by_view: Dictionary = {}
 ## press re-hit-tests. See _gui_input().
 var _input_owner: DraggableItem = null
 
+## Placed view under the cursor (opaque pixel). Bag items use mouse_filter IGNORE,
+## so Godot never fires mouse_entered on them — we synthesize hover here.
+var _hover_view: DraggableItem = null
+
 
 # Seed the shared cell size from the node's rect before anything reads it — this
 # runs top-down as the scene enters the tree, ahead of the tray's _ready.
@@ -71,6 +75,7 @@ func _ready() -> void:
 	# The editor only needs the live grid preview; the rest is runtime wiring.
 	if Engine.is_editor_hint():
 		return
+	mouse_exited.connect(_clear_hover)
 	GameState.quest_changed.connect(_on_quest_changed)
 	if GameState.current_quest != null:
 		_on_quest_changed(GameState.current_quest)
@@ -131,8 +136,29 @@ func _gui_input(event: InputEvent) -> void:
 			var gesture_owner := _input_owner
 			_input_owner = null
 			_dispatch_to_view(gesture_owner, event)
-	elif event is InputEventMouseMotion and _input_owner != null:
-		_dispatch_to_view(_input_owner, event)
+	elif event is InputEventMouseMotion:
+		if _input_owner != null:
+			_dispatch_to_view(_input_owner, event)
+		_update_hover(event.global_position)
+
+
+## Keep a synthetic hover on the topmost opaque placed item so tips/juice still
+## work while views ignore the mouse for overlap hit-testing.
+func _update_hover(global_pos: Vector2) -> void:
+	var next := _topmost_opaque_view(global_pos)
+	if next == _hover_view:
+		return
+	if _hover_view != null and is_instance_valid(_hover_view):
+		_hover_view.set_hovered(false)
+	_hover_view = next
+	if _hover_view != null:
+		_hover_view.set_hovered(true)
+
+
+func _clear_hover() -> void:
+	if _hover_view != null and is_instance_valid(_hover_view):
+		_hover_view.set_hovered(false)
+	_hover_view = null
 
 
 ## Placed views, front-to-back (later placements draw on top and get first
@@ -210,6 +236,8 @@ func place(view: DraggableItem, origin: Vector2i) -> void:
 func remove(view: DraggableItem) -> bool:
 	if not _cells_by_view.has(view):
 		return false
+	if _hover_view == view:
+		_clear_hover()
 	for cell in _cells_by_view[view]:
 		_occupancy.erase(cell)
 	_cells_by_view.erase(view)
@@ -227,6 +255,7 @@ func get_origin(view: DraggableItem) -> Vector2i:
 
 
 func clear_board() -> void:
+	_clear_hover()
 	_occupancy.clear()
 	_cells_by_view.clear()
 	_input_owner = null
