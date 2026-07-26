@@ -65,6 +65,9 @@ var _upcoming: Array[QuestData] = []
 ## The shop currently open (ShopScene showing), or null while the road is showing.
 ## Held so a buy or sell can rebuild the open shop in place with refreshed prices.
 var _open_shop: ShopData = null
+## Copies sold during the current shop visit — shown on ShopScene's Buy back tab
+## and cleared when leaving or opening a different shop.
+var _sold_this_visit: Array[ItemData] = []
 ## True while the road fade is playing, so nothing can stack another roll / fade.
 var _travel_transitioning: bool = false
 
@@ -73,6 +76,7 @@ func _ready() -> void:
 	RunState.gold_changed.connect(_on_gold_changed)
 	shop_scene.buy_pressed.connect(_on_buy)
 	shop_scene.sell_pressed.connect(_on_sell)
+	shop_scene.buyback_pressed.connect(_on_buyback)
 	shop_scene.leave_pressed.connect(_end_day)
 	if ResourceLoader.exists(BACKGROUND_PATH):
 		background_art.texture = load(BACKGROUND_PATH)
@@ -110,6 +114,7 @@ func begin(days: int, upcoming: Array[QuestData], start_day: int = 1) -> void:
 func _end_day() -> void:
 	shop_scene.visible = false
 	_open_shop = null
+	_sold_this_visit.clear()
 	RunState.spend_day()
 	_current_day += 1
 	if _current_day > _total_days:
@@ -317,10 +322,13 @@ func _build_preview_card(quest: QuestData) -> Control:
 
 ## Opens (or refreshes) the day's shop. The ShopScene is presentation only — it
 ## covers the road full-screen with its own art and signals trades back here,
-## where the gold, inventory, and purchase counts actually move.
+## where the gold, inventory, and purchase counts actually move. Switching shops
+## (or opening one from the road) clears the Buy back list for a fresh visit.
 func _enter_shop(shop: ShopData) -> void:
+	if _open_shop != shop:
+		_sold_this_visit.clear()
 	_open_shop = shop
-	shop_scene.open(shop, day_label.text)
+	shop_scene.open(shop, day_label.text, _sold_this_visit)
 	shop_scene.visible = true
 
 
@@ -337,9 +345,29 @@ func _on_buy(item: ItemData) -> void:
 
 
 func _on_sell(item: ItemData) -> void:
-	if RunState.release(item):
-		RunState.add_gold(item.sell_price())
+	var sold := RunState.release(item)
+	if sold != null:
+		RunState.add_gold(sold.sell_price())
+		_sold_this_visit.append(sold)
 		AudioManager.play("send")
+	_enter_shop(_open_shop)
+
+
+## Buys back one copy sold earlier in this visit for the sell price that was paid
+## out, restoring that same instance (durability included).
+func _on_buyback(item: ItemData) -> void:
+	var sold: ItemData = null
+	for copy in _sold_this_visit:
+		if copy.id == item.id:
+			sold = copy
+			break
+	if sold == null:
+		return
+	if not RunState.spend_gold(sold.sell_price()):
+		return
+	_sold_this_visit.erase(sold)
+	RunState.restore(sold)
+	AudioManager.play("place")
 	_enter_shop(_open_shop)
 
 
