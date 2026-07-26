@@ -13,14 +13,18 @@ extends Control
 ##
 ## The leatherworker (any shop with `sells_bag_upgrade`) swaps its Buy tab for the
 ## bench: one row offering the next backpack size, or the reason it isn't on offer.
-## The other three tabs are unchanged — selling is allowed at every shop.
+## That shop also omits Return — a fitted pack can't be undone, and he has no
+## ItemData purchases to refund. The cheese shop (`offers_cheese_shift`) skips the
+## trade tabs entirely and shows only the pick-2-of-3 work shift. Elsewhere the
+## four tabs are unchanged.
 ##
 ## Background art is by convention: res://assets/shops/shop_<shop id>.png
 ## (1280x720). Drop real art at that path and it shows — until then the flat
 ## backdrop color stands in.
 ##
 ## Like the road, the trade list is built in code — the .tscn is just the frame
-## (background + header + a scrolling Body).
+## (background + header + a scrolling Body). Leave sits under the scroll so it
+## stays pinned to the bottom of the screen.
 
 enum Tab { BUY, SELL, BUYBACK, RETURN }
 
@@ -36,8 +40,18 @@ signal return_pressed(item: ItemData)
 ## The leatherworker's one trade: buy the next backpack size. Carries no ItemData —
 ## the road calls RunState.upgrade_bag() and reopens the shop.
 signal bag_upgrade_pressed
+## The cheese shop's work shift: the player picked exactly two jobs. `selected` maps
+## option id ("sell" / "make" / "repair") -> bool. The road applies the rewards and
+## ends the day — same as leaving after a normal shop visit.
+signal cheese_shift_pressed(selected: Dictionary)
 ## "Leave — that's the day": the road ends the day and closes this scene.
 signal leave_pressed
+
+## Gold from the cheese shop's "Sell some cheese" job.
+const CHEESE_SELL_GOLD: int = 5
+const CHEESE_OPTION_SELL := "sell"
+const CHEESE_OPTION_MAKE := "make"
+const CHEESE_OPTION_REPAIR := "repair"
 
 const BACKGROUND_PATTERN := "res://assets/shops/shop_%s.png"
 const TAB_LABELS := ["Buy", "Sell", "Buy back", "Return"]
@@ -56,6 +70,8 @@ const TRADE_BUTTON_SIZE := Vector2(140, 40)
 @onready var day_label: Label = %DayLabel
 @onready var gold_label: Label = %GoldLabel
 @onready var body: VBoxContainer = %Body
+@onready var leave_button: Button = %LeaveButton
+
 
 ## The shop on display, handed in by open(); this scene never picks it.
 var _shop: ShopData = null
@@ -66,10 +82,18 @@ var _bought_this_visit: Array[ItemData] = []
 ## Which trade tab is open. Kept across open() refreshes so a buy doesn't yank
 ## the player back to Buy.
 var _tab: Tab = Tab.BUY
+## Cheese-shop pick state, kept across tab switches within one visit. Reset when
+## open() starts a new visit (reset_tab).
+var _cheese_picks: Dictionary = {
+	CHEESE_OPTION_SELL: false,
+	CHEESE_OPTION_MAKE: false,
+	CHEESE_OPTION_REPAIR: false,
+}
 
 
 func _ready() -> void:
 	RunState.gold_changed.connect(_on_gold_changed)
+	leave_button.pressed.connect(leave_pressed.emit)
 
 
 ## Shows `shop`. `day_text` is the road's day line ("Day 2 of 3 in town"), repeated
@@ -82,6 +106,11 @@ func open(shop: ShopData, day_text: String = "", sold_this_visit: Array = [],
 	_shop = shop
 	if reset_tab:
 		_tab = Tab.BUY
+		_cheese_picks = {
+			CHEESE_OPTION_SELL: false,
+			CHEESE_OPTION_MAKE: false,
+			CHEESE_OPTION_REPAIR: false,
+		}
 	_sold_this_visit.clear()
 	for entry in sold_this_visit:
 		if entry is ItemData:
@@ -110,6 +139,18 @@ func _rebuild() -> void:
 	blurb.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	body.add_child(blurb)
 
+	# Cheese shop is shift-only — no Buy/Sell tabs and no Leave. Pick two jobs
+	# and "Get to work" applies the rewards and ends the day.
+	if _shop.offers_cheese_shift:
+		leave_button.visible = false
+		body.add_child(_spacer(8))
+		_rebuild_cheese_shift()
+		return
+
+	leave_button.visible = true
+	# Bag upgrades aren't inventory purchases — no Return tab at the leatherworker.
+	if _shop.sells_bag_upgrade and _tab == Tab.RETURN:
+		_tab = Tab.BUY
 	body.add_child(_build_tabs())
 	body.add_child(_spacer(8))
 
@@ -123,19 +164,13 @@ func _rebuild() -> void:
 		Tab.RETURN:
 			_rebuild_return()
 
-	body.add_child(_spacer(12))
-	var leave := Button.new()
-	leave.text = "Leave — that's the day"
-	leave.custom_minimum_size = Vector2(0, 48)
-	leave.add_theme_font_size_override("font_size", 18)
-	leave.pressed.connect(leave_pressed.emit)
-	body.add_child(leave)
-
 
 func _build_tabs() -> HBoxContainer:
 	var row := HBoxContainer.new()
 	row.add_theme_constant_override("separation", 8)
 	for i in TAB_LABELS.size():
+		if i == Tab.RETURN and _shop.sells_bag_upgrade:
+			continue
 		var button := Button.new()
 		button.text = TAB_LABELS[i]
 		button.toggle_mode = true
@@ -211,6 +246,114 @@ func _build_buy_row(item: ItemData) -> Control:
 	buy.pressed.connect(buy_pressed.emit.bind(item))
 	row.add_child(buy)
 	return row
+
+
+## The cheese shop's Buy tab: pick exactly two jobs. Toggle buttons highlight when
+## selected; Confirm emits cheese_shift_pressed for the road to apply and end the day.
+## Repair is disabled when no blanket remains in the inventory.
+func _rebuild_cheese_shift() -> void:
+	body.add_child(_subheading("Behind the counter — pick two:"))
+
+	var options: Array = [
+		{
+			"id": CHEESE_OPTION_SELL,
+			"label": "Sell some cheese, earn %d gold." % CHEESE_SELL_GOLD,
+			"enabled": true,
+			"hint": "",
+		},
+		{
+			"id": CHEESE_OPTION_MAKE,
+			"label": "Make some cheese, +1 cheese.",
+			"enabled": true,
+			"hint": "",
+		},
+		{
+			"id": CHEESE_OPTION_REPAIR,
+			"label": "Repair the blanket, +1 durability to blanket.",
+			"enabled": _find_owned("blanket") != null,
+			"hint": "",
+		},
+	]
+	if not options[2]["enabled"]:
+		options[2]["hint"] = "The blanket is gone — nothing left to mend."
+
+	var confirm := Button.new()
+	confirm.text = "Get to work"
+	confirm.custom_minimum_size = Vector2(0, 48)
+	confirm.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
+	confirm.add_theme_font_size_override("font_size", 18)
+	confirm.disabled = _cheese_pick_count() != 2
+	confirm.pressed.connect(func() -> void:
+		cheese_shift_pressed.emit(_cheese_picks.duplicate()))
+
+	var font := ThemeDB.fallback_font
+	var font_size := 16
+	var option_width := 0
+	for option in options:
+		var text_w := int(font.get_string_size(String(option["label"]), HORIZONTAL_ALIGNMENT_LEFT, -1, font_size).x)
+		option_width = maxi(option_width, text_w + 48)
+
+	var col := VBoxContainer.new()
+	col.add_theme_constant_override("separation", 8)
+	col.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
+	body.add_child(col)
+
+	var toggles: Dictionary = {}
+	for option in options:
+		var toggle := Button.new()
+		toggle.toggle_mode = true
+		toggle.text = option["label"]
+		toggle.disabled = not option["enabled"]
+		toggle.alignment = HORIZONTAL_ALIGNMENT_LEFT
+		toggle.custom_minimum_size = Vector2(option_width, 48)
+		toggle.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
+		toggle.add_theme_font_size_override("font_size", font_size)
+		var option_id: String = option["id"]
+		# Disabled options can't stay selected (e.g. blanket broke mid-visit).
+		if not option["enabled"]:
+			_cheese_picks[option_id] = false
+		toggle.button_pressed = bool(_cheese_picks.get(option_id, false))
+		toggles[option_id] = toggle
+		toggle.toggled.connect(func(on: bool) -> void:
+			_on_cheese_option_toggled(option_id, on, toggles, confirm))
+		col.add_child(toggle)
+		var hint: String = option["hint"]
+		if not hint.is_empty():
+			col.add_child(_muted(hint))
+
+	body.add_child(_spacer(12))
+	body.add_child(confirm)
+
+
+func _cheese_pick_count() -> int:
+	var count := 0
+	for value in _cheese_picks.values():
+		if value:
+			count += 1
+	return count
+
+
+## Caps the pick at two: a third press is refused, and Confirm only lights at exactly two.
+func _on_cheese_option_toggled(
+	option_id: String,
+	on: bool,
+	toggles: Dictionary,
+	confirm: Button,
+) -> void:
+	_cheese_picks[option_id] = on
+	if _cheese_pick_count() > 2:
+		_cheese_picks[option_id] = false
+		var toggle: Button = toggles[option_id]
+		toggle.set_pressed_no_signal(false)
+	confirm.disabled = _cheese_pick_count() != 2
+
+
+## First owned inventory copy matching `id`, or null. Gates the blanket repair.
+func _find_owned(id: String) -> ItemData:
+	for item in RunState.inventory:
+		if item != null and item.id == id:
+			return item
+	return null
 
 
 ## The leatherworker's Buy tab: one row for the next bag size, or the reason there

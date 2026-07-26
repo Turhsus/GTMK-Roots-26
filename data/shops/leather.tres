@@ -1,0 +1,11 @@
+[gd_resource type="Resource" script_class="ShopData" format=3 uid="uid://bq7hn2lwtr4x0"]
+
+[ext_resource type="Script" uid="uid://cs53qfm8focrq" path="res://resources/shop_data.gd" id="1_x34d3"]
+[ext_resource type="Script" uid="uid://du5drbi85ateb" path="res://resources/item_data.gd" id="2_bx3q4"]
+
+[resource]
+script = ExtResource("1_x34d3")
+id = "leather"
+display_name = "The Leatherworker"
+blurb = "Makes the most fabulous bags. Bring your bag here for an upgrade!"
+sells_bag_upgrade = true

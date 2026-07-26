@@ -5,6 +5,8 @@
 [ext_resource type="Resource" uid="uid://8oowd2bp2sqy" path="res://data/items/health_potion.tres" id="3_potion"]
 [ext_resource type="Resource" uid="uid://rbobnqy5ghxl" path="res://data/items/torch.tres" id="4_torch"]
 [ext_resource type="Resource" uid="uid://cttm4h6nmddw5" path="res://data/items/flint_and_steel.tres" id="5_flint"]
+[ext_resource type="Resource" uid="uid://bl87vlncuwoju" path="res://data/items/bandages.tres" id="6_bandages"]
+[ext_resource type="Resource" uid="uid://chc6y73gyxi2t" path="res://data/items/herbs.tres" id="7_herbs"]
 
 [resource]
 script = ExtResource("1_script")
@@ -14,5 +16,7 @@ blurb = "Remedies, warm blankets, and a little light for the dark stretches of r
 stock = Dictionary[ExtResource("2_item"), int]({
 ExtResource("3_potion"): 1,
 ExtResource("4_torch"): 1,
-ExtResource("5_flint"): 1
+ExtResource("5_flint"): 1,
+ExtResource("6_bandages"): 1,
+ExtResource("7_herbs"): 1
 })

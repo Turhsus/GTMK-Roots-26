@@ -2,11 +2,22 @@
 
 [ext_resource type="Script" uid="uid://dw0c3j0carikx" path="res://resources/effects/item_effect.gd" id="1_l8f7k"]
 [ext_resource type="Texture2D" uid="uid://b1uexg85rmwb0" path="res://assets/items/herbs.png" id="2_i6d4o"]
+[ext_resource type="Script" uid="uid://ihnb4kqoqc4b" path="res://resources/effects/no_rotation_effect.gd" id="2_lim2b"]
 [ext_resource type="Script" uid="uid://du5drbi85ateb" path="res://resources/item_data.gd" id="2_us18e"]
+
+[sub_resource type="Resource" id="Resource_us18e"]
+script = ExtResource("2_lim2b")
+rotate = 2
+metadata/_custom_type_script = "uid://ihnb4kqoqc4b"
 
 [resource]
 script = ExtResource("2_us18e")
 id = "herbs"
 display_name = "Herbs"
 icon = ExtResource("2_i6d4o")
+food = 1
+health = 1
+flavor = "A herb mix thats used in a variety of salves, or a variety of spice mixes."
+effects = Array[ExtResource("1_l8f7k")]([SubResource("Resource_us18e")])
+buy_price = 7
 metadata/_custom_type_script = "uid://du5drbi85ateb"

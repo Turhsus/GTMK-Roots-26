@@ -27,6 +27,7 @@ const QUEST: QuestData = preload("res://data/quests/tutorial.tres")
 @onready var drag_layer: Control = %DragLayer
 @onready var send_button: Button = %SendButton
 @onready var empty_bag_button: Button = %EmptyBagButton
+@onready var perks_button: Button = %PerksButton
 
 var _dragging: DraggableItem = null
 ## Where inside the item the player grabbed it, so it doesn't jump to a corner.
@@ -41,6 +42,8 @@ var _hover_view: DraggableItem = null
 ## rather than recomputed per hover so opening a tip is free, and so the warning tint
 ## and its explanation are guaranteed to be reading the same evaluation.
 var _outcomes: Dictionary = {}
+## Lessons overlay — owned perks + descriptions. Null while closed.
+var _perks_overlay: Control = null
 
 
 func _ready() -> void:
@@ -54,6 +57,9 @@ func _ready() -> void:
 	GameState.quest_changed.connect(_on_quest_changed)
 	send_button.pressed.connect(_on_send_pressed)
 	empty_bag_button.pressed.connect(_on_empty_bag_pressed)
+	perks_button.pressed.connect(_on_perks_pressed)
+	RunState.perks_changed.connect(_refresh_perks_button)
+	_refresh_perks_button(RunState.owned_perks)
 	# Apply the run's backpack size even when Main hasn't called load_quest yet
 	# (standalone PackingScene / tests). Refresh tray views — they spawned under
 	# the default cell size before this resize.
@@ -70,6 +76,7 @@ func _ready() -> void:
 ## sweep them — they're freed here. Tray views are freed by populate() itself.
 func load_quest(quest: QuestData) -> void:
 	_close_hover_tip()
+	_close_perks_panel()
 	for view in bag_grid.get_placed_views():
 		view.queue_free()
 	bag_grid.clear_board()
@@ -121,6 +128,91 @@ func reset_packing() -> void:
 func _on_empty_bag_pressed() -> void:
 	reset_packing()
 	AudioManager.play("send")
+
+
+## Button label mirrors ownership so an empty run still shows "Lessons" (opens
+## the empty-state panel) and a taught child gets a count without opening first.
+func _refresh_perks_button(_perks: Array[PerkData]) -> void:
+	var n := RunState.owned_perks.size()
+	perks_button.text = "Lessons" if n == 0 else "Lessons (%d)" % n
+
+
+func _on_perks_pressed() -> void:
+	if _dragging != null or _perks_overlay != null:
+		return
+	_close_hover_tip()
+	_show_perks_panel()
+
+
+## Dimmed overlay listing every owned perk's title and description — the same
+## cards PerkSelect uses, without a choose button. Close via the button, the dim,
+## or Escape.
+func _show_perks_panel() -> void:
+	var overlay := Control.new()
+	overlay.set_anchors_preset(Control.PRESET_FULL_RECT)
+	overlay.mouse_filter = Control.MOUSE_FILTER_STOP
+	add_child(overlay)
+	_perks_overlay = overlay
+
+	var dim := ColorRect.new()
+	dim.color = Color(0, 0, 0, 0.6)
+	dim.set_anchors_preset(Control.PRESET_FULL_RECT)
+	dim.gui_input.connect(func(event: InputEvent) -> void:
+		if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
+			_close_perks_panel())
+	overlay.add_child(dim)
+
+	var center := CenterContainer.new()
+	center.set_anchors_preset(Control.PRESET_FULL_RECT)
+	center.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	overlay.add_child(center)
+
+	var shell := Ui.card()
+	shell.custom_minimum_size = Vector2(720, 0)
+	shell.mouse_filter = Control.MOUSE_FILTER_STOP
+	center.add_child(shell)
+
+	var margin := MarginContainer.new()
+	for side in ["left", "top", "right", "bottom"]:
+		margin.add_theme_constant_override("margin_" + side, 24)
+	shell.add_child(margin)
+
+	var box := VBoxContainer.new()
+	box.add_theme_constant_override("separation", 16)
+	margin.add_child(box)
+
+	var heading := Label.new()
+	heading.text = "Lessons learned"
+	heading.add_theme_font_size_override("font_size", 24)
+	heading.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	box.add_child(heading)
+
+	if RunState.owned_perks.is_empty():
+		var empty := Label.new()
+		empty.text = "No lessons learned yet. They do say failure is the best teacher"
+		empty.add_theme_font_size_override("font_size", 15)
+		empty.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		empty.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		box.add_child(empty)
+	else:
+		var row := HBoxContainer.new()
+		row.add_theme_constant_override("separation", 16)
+		row.alignment = BoxContainer.ALIGNMENT_CENTER
+		box.add_child(row)
+		for perk in RunState.owned_perks:
+			row.add_child(PerkSelect.build_info_card(perk))
+
+	var close := Button.new()
+	close.text = "Close"
+	close.custom_minimum_size = Vector2(0, 44)
+	close.pressed.connect(_close_perks_panel)
+	box.add_child(close)
+
+
+func _close_perks_panel() -> void:
+	if _perks_overlay != null and is_instance_valid(_perks_overlay):
+		_perks_overlay.queue_free()
+	_perks_overlay = null
 
 
 func _on_quest_changed(quest: QuestData) -> void:
@@ -182,6 +274,7 @@ func _firing_for(item: ItemData) -> Dictionary:
 
 func _on_send_pressed() -> void:
 	_close_hover_tip()
+	_close_perks_panel()
 	AudioManager.play("send")
 	sent_off.emit()
 
@@ -194,8 +287,15 @@ func _process(_delta: float) -> void:
 
 
 ## Runs ahead of the GUI so the drag owns the mouse: a Control under the cursor
-## would otherwise eat the release that ends it.
+## would otherwise eat the release that ends it. Also dismisses the lessons
+## overlay on Escape (before the drag branch, so a held item isn't cancelled
+## by closing the panel — the overlay blocks packing input while open).
 func _input(event: InputEvent) -> void:
+	if _perks_overlay != null:
+		if event is InputEventKey and event.pressed and event.keycode == KEY_ESCAPE:
+			_close_perks_panel()
+			get_viewport().set_input_as_handled()
+		return
 	if _dragging == null:
 		return
 	if event is InputEventKey and event.pressed and not event.echo and event.keycode == KEY_R:

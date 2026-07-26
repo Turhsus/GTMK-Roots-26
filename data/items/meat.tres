@@ -1,8 +1,15 @@
 [gd_resource type="Resource" script_class="ItemData" format=3 uid="uid://c1gnoh2jm74qm"]
 
 [ext_resource type="Script" uid="uid://dw0c3j0carikx" path="res://resources/effects/item_effect.gd" id="1_sgqse"]
+[ext_resource type="Script" uid="uid://dt4y6ohfsaa7d" path="res://resources/effects/neighbor_stat_boost_effect.gd" id="2_akac4"]
 [ext_resource type="Script" uid="uid://du5drbi85ateb" path="res://resources/item_data.gd" id="2_g1pu4"]
 [ext_resource type="Texture2D" uid="uid://c70aws088333l" path="res://assets/items/meat.png" id="2_qcguf"]
+
+[sub_resource type="Resource" id="Resource_projv"]
+script = ExtResource("2_akac4")
+food_bonus = 2
+health_bonus = 2
+metadata/_custom_type_script = "uid://dt4y6ohfsaa7d"
 
 [resource]
 script = ExtResource("2_g1pu4")
@@ -13,5 +20,6 @@ icon = ExtResource("2_qcguf")
 food = 2
 health = -1
 traits = Array[String](["food"])
+effects = Array[ExtResource("1_sgqse")]([SubResource("Resource_projv")])
 buy_price = 5
 metadata/_custom_type_script = "uid://du5drbi85ateb"

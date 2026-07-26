@@ -40,6 +40,11 @@ const DEFAULT_MAX_QTY := 1
 ## *and* stock items; today's leatherworker just doesn't.
 @export var sells_bag_upgrade: bool = false
 
+## Marks the cheese shop: instead of a shelf, the Buy tab offers a pick-2-of-3
+## work shift (sell cheese / make cheese / repair blanket). Same idea as the
+## leatherworker — not ItemData stock, so it can't live in `stock` above.
+@export var offers_cheese_shift: bool = false
+
 
 ## The items on the shelves, in authored order. Nulls (an entry cleared in the
 ## inspector) are skipped so callers never have to guard for them.

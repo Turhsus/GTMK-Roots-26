@@ -7,6 +7,7 @@
 [ext_resource type="Resource" uid="uid://0svfd6i1o7e8" path="res://data/items/bread.tres" id="5_bread"]
 [ext_resource type="Resource" uid="uid://cm0fwwpp4ia0j" path="res://data/items/cheese_wedge.tres" id="6_cheese"]
 [ext_resource type="Resource" uid="uid://de2u8bqn3wgoi" path="res://data/items/wine.tres" id="7_wine"]
+[ext_resource type="Resource" uid="uid://c1gnoh2jm74qm" path="res://data/items/meat.tres" id="8_meat"]
 
 [resource]
 script = ExtResource("1_script")
@@ -18,5 +19,6 @@ ExtResource("3_apple"): 1,
 ExtResource("4_berries"): 1,
 ExtResource("5_bread"): 1,
 ExtResource("6_cheese"): 1,
-ExtResource("7_wine"): 1
+ExtResource("7_wine"): 1,
+ExtResource("8_meat"): 1
 })
