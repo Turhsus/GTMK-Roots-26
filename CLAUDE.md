@@ -163,7 +163,7 @@ be precise.
 ### systems/ — pure logic, no scene tree
 | File | | |
 |---|---|---|
-| `narrative_engine.gd` | 102 | Packed bag -> adventure log. Departure line, authored beats, homecoming line. |
+| `narrative_engine.gd` | 52 | Packed bag -> adventure log: resolves a quest's `departure`, `narrative` beats, then `homecoming`, all authored per-quest data. |
 | `pack_layout.gd` | 97 | Immutable send-off snapshot of the board; what effects query. |
 | `ui.gd` | 25 | Runtime UI constructors (see the theme note above). |
 
@@ -171,7 +171,7 @@ be precise.
 | File | | |
 |---|---|---|
 | `item_data.gd` | 159 | One packable item: shape, stats, durability, traits, `effects`. `@tool`. |
-| `quest_data.gd` | 77 | Brief, offered items, stat targets, narrative beats. `@tool`. |
+| `quest_data.gd` | 86 | Brief, offered items, stat targets, `narrative` beats plus per-quest `departure`/`homecoming` events. `@tool`. |
 | `quest_pool.gd` | 27 | The authored list of all quests; `RunState` draws from it. |
 | `shop_data.gd` | 27 | A shop's themed stock. Selling is per-item, not per-shop. |
 | `trait_registry.gd` | 19 | Master lists of item traits and quest traits. |
@@ -207,6 +207,10 @@ Also `scenes/gather/TownScreen.tscn` (no paired script).
 - `items/` — 19: apple, axe, berries, blanket, boots, bread, cheese_wedge, crowbar, flail,
   flint_and_steel, health_potion, helmet, knife, package, rope, shield, sword, torch, wine.
 - `quests/` — **only 3**: `tutorial`, `rescue`, `scouting`. `quest_pool.tres` is the pool.
+- `narrative_events/` — authored `NarrativeEvent`s a quest's `narrative`/`departure`/
+  `homecoming` fields point at. Only `tutorial` has any today: `tutorial_beat.tres` (food
+  check) and `tutorial_supplies_beat.tres` (the log-crossing check, silent if the food beat
+  already failed).
 - `shops/` — grocer, blacksmith, apothecary, leatherworker.
 - `travel_events/` — found_coin, found_coin_pouch.
 - `trait_registry.tres` — the trait vocabulary.
@@ -228,11 +232,12 @@ Gitignored: `.godot/`, `/android/`, `/build/`, `.vscode/`, and the built `releas
 
 ## Known drift
 
-- **No quest has any authored `narrative` at all.** Every quest `.tres` has an empty beats
-  array, so every playout is just `NarrativeEngine`'s generated departure and homecoming
-  lines. `NarrativeEvent`/`NarrativeLine` and the first-match-wins variant system are fully
-  built and entirely unused — the conditional-variant tests in `test_flow.gd` report SKIP
-  until a quest gets beats.
+- `departure` and `homecoming` on `QuestData` are resolved exactly like `narrative` beats
+  (first matching variant wins) — `NarrativeEngine` no longer generates any text itself, it
+  only walks whatever the quest authored. Only `tutorial` has `narrative` beats authored
+  (food, then supplies); no quest yet has a `departure` or `homecoming` authored, so
+  `rescue` and `scouting`'s playouts currently open and close with nothing at all — that's
+  expected until they're written, not a bug.
 - `data/quest_pool.tres` holds only `rescue` (tier 1) and `scouting` (tier 2). `racoons`,
   `drowning_fish` and `jessica` exist but are not in the pool, so they are unreachable;
   and **no quest sits at tier 0**, so a fresh run relies on `RunState._nearest_tier()`

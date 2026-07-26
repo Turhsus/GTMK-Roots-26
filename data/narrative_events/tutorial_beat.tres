@@ -1,0 +1,20 @@
+[gd_resource type="Resource" script_class="NarrativeEvent" format=3 uid="uid://v1tnk7mfn88w"]
+
+[ext_resource type="Script" uid="uid://45ajj2ptcv0d" path="res://resources/narrative_event.gd" id="1_script"]
+[ext_resource type="Script" uid="uid://3jm4762kubo8" path="res://resources/narrative_line.gd" id="2_line"]
+
+[sub_resource type="Resource" id="Line_food_pass"]
+script = ExtResource("2_line")
+text = "The little one's first journey was long, but thankfully they were well fed enough to make the journey."
+require_stat = {
+"food": 2
+}
+
+[sub_resource type="Resource" id="Line_food_fail"]
+script = ExtResource("2_line")
+text = "There wasn't enough food to make the journey, so the little one had to turn back. They came back so hungry... don't let them go without rations again!"
+
+[resource]
+script = ExtResource("1_script")
+beat_id = "tutorial_food"
+variants = Array[ExtResource("2_line")]([SubResource("Line_food_pass"), SubResource("Line_food_fail")])

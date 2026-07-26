@@ -26,7 +26,7 @@ signal changed(key: String, value: bool)
 const FLAGS := {
 	"skip_playout": {
 		"label": "Skip adventure log",
-		"default": true,
+		"default": false,
 	},
 	"durability_report": {
 		"label": "Send-off report",
