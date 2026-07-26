@@ -8,14 +8,13 @@ extends Control
 
 signal grabbed(view: DraggableItem, grab_offset: Vector2)
 ## Emitted on a plain click — a press and release that never turns into a drag.
-## PackingScene answers it with the stats menu so the player can pin an inspect
-## panel without picking the item up.
+## Unused by PackingScene today (descriptions are hover-only); kept for callers.
 signal clicked(view: DraggableItem)
-## Right-click while the item is at rest (tray or bag). PackingScene rotates a
-## tray item in place, or sends a bagged item back to the tray — no drag
-## required either way. Rotating a bagged item without a drag is instead done
-## by hovering it and pressing R (see PackingScene._input).
-signal right_clicked(view: DraggableItem)
+## Right-click while the item is at rest (tray or bag). PackingScene rotates it
+## in place — no drag required.
+signal rotate_requested(view: DraggableItem)
+## Shift+left-click while at rest. PackingScene returns a bagged item to the tray.
+signal return_requested(view: DraggableItem)
 ## Hover enter/exit while at rest. PackingScene shows the item description tip.
 signal hover_started(view: DraggableItem)
 signal hover_ended(view: DraggableItem)
@@ -201,16 +200,21 @@ func _gui_input(event: InputEvent) -> void:
 	if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_RIGHT and event.pressed:
 		accept_event()
 		_press_active = false
-		right_clicked.emit(self)
+		rotate_requested.emit(self)
 		return
 	if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT:
 		if event.pressed:
 			accept_event()
+			# Shift+click returns a bagged item to the tray — don't start a drag.
+			if event.shift_pressed:
+				_press_active = false
+				return_requested.emit(self)
+				return
 			_press_active = true
 			_press_position = event.position
 		elif _press_active:
 			# Let go without ever crossing the drag threshold: treat it as a
-			# click and open the stats menu instead of moving the item.
+			# click rather than a drag.
 			accept_event()
 			_press_active = false
 			clicked.emit(self)
@@ -245,12 +249,7 @@ func _refresh() -> void:
 
 ## The "what would this add" panel: the item's name, every stat it contributes,
 ## and its flavor line. Static so PackingScene can raise the very same panel on
-## hover or click without redoing the layout.
-## Extra breathing room inside the textbox frame's own content margin — the
-## frame's margins are sized to keep the *art* unstretched, not to clear text,
-## so lettering can still sit right against the drawn border without this.
-const INFO_PANEL_PADDING := 8
-
+## hover without redoing the layout.
 static func build_info_panel(source: ItemData) -> Control:
 	var panel := Ui.card()
 
