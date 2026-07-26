@@ -1,21 +1,21 @@
-[gd_scene load_steps=5 format=3]
+[gd_scene format=3 uid="uid://bwl2h22dwtmd3"]
 
-[ext_resource type="Script" path="res://scenes/packing/item_tray.gd" id="1_tray"]
-[ext_resource type="Theme" path="res://resources/ui/panel_content_theme.tres" id="2_panel_content"]
+[ext_resource type="Script" uid="uid://bhr24bopxgrho" path="res://scenes/packing/item_tray.gd" id="1_tray"]
+[ext_resource type="Theme" uid="uid://p22npn8bfpp4" path="res://resources/ui/panel_content_theme.tres" id="2_panel_content"]
 [ext_resource type="Texture2D" uid="uid://dsydavp1bwhbb" path="res://assets/ui/tray_side.png" id="3_tray_bg"]
 
 [sub_resource type="StyleBoxTexture" id="StyleBoxTexture_tray"]
+content_margin_left = 164.0
+content_margin_top = 20.0
+content_margin_right = 128.0
+content_margin_bottom = 20.0
 texture = ExtResource("3_tray_bg")
 texture_margin_left = 12.0
 texture_margin_top = 12.0
 texture_margin_right = 117.0
 texture_margin_bottom = 12.0
-content_margin_left = 164.0
-content_margin_top = 20.0
-content_margin_right = 128.0
-content_margin_bottom = 20.0
 
-[node name="ItemTray" type="PanelContainer"]
+[node name="ItemTray" type="PanelContainer" unique_id=193744369]
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
@@ -25,44 +25,43 @@ theme = ExtResource("2_panel_content")
 theme_override_styles/panel = SubResource("StyleBoxTexture_tray")
 script = ExtResource("1_tray")
 
-[node name="Margin" type="MarginContainer" parent="."]
+[node name="Margin" type="MarginContainer" parent="." unique_id=47975628]
 layout_mode = 2
 theme_override_constants/margin_left = 4
 theme_override_constants/margin_top = 4
 theme_override_constants/margin_right = 4
 theme_override_constants/margin_bottom = 4
 
-[node name="Layout" type="VBoxContainer" parent="Margin"]
+[node name="Layout" type="VBoxContainer" parent="Margin" unique_id=1775601719]
 layout_mode = 2
 theme_override_constants/separation = 8
 
-[node name="Header" type="HBoxContainer" parent="Margin/Layout"]
+[node name="Header" type="HBoxContainer" parent="Margin/Layout" unique_id=1662587678]
 layout_mode = 2
 theme_override_constants/separation = 8
 
-[node name="Title" type="Label" parent="Margin/Layout/Header"]
+[node name="Title" type="Label" parent="Margin/Layout/Header" unique_id=1656313904]
 layout_mode = 2
 size_flags_horizontal = 3
 text = "Tray"
 
-[node name="LockButton" type="Button" parent="Margin/Layout/Header"]
+[node name="LockButton" type="Button" parent="Margin/Layout/Header" unique_id=2017450172]
 unique_name_in_owner = true
 layout_mode = 2
 toggle_mode = true
 text = "Lock: Off"
 
-[node name="SortButton" type="OptionButton" parent="Margin/Layout/Header"]
+[node name="SortButton" type="OptionButton" parent="Margin/Layout/Header" unique_id=878651986]
 unique_name_in_owner = true
 layout_mode = 2
-fit_to_longest_item = true
 
-[node name="Scroll" type="ScrollContainer" parent="Margin/Layout"]
+[node name="Scroll" type="ScrollContainer" parent="Margin/Layout" unique_id=1494495203]
 layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 3
 horizontal_scroll_mode = 0
 
-[node name="ItemContainer" type="HFlowContainer" parent="Margin/Layout/Scroll"]
+[node name="ItemContainer" type="HFlowContainer" parent="Margin/Layout/Scroll" unique_id=596416433]
 unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 3
@@ -70,11 +69,11 @@ size_flags_vertical = 3
 theme_override_constants/h_separation = 8
 theme_override_constants/v_separation = 8
 
-[node name="Divider" type="Label" parent="Margin/Layout/Scroll/ItemContainer"]
+[node name="Divider" type="Label" parent="Margin/Layout/Scroll/ItemContainer" unique_id=674472682]
 unique_name_in_owner = true
+visible = false
 custom_minimum_size = Vector2(0, 34)
 layout_mode = 2
-visible = false
 text = "Doesn't give"
 horizontal_alignment = 1
 vertical_alignment = 1

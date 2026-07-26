@@ -1,0 +1,27 @@
+[gd_resource type="Resource" script_class="NarrativeEvent" format=3 uid="uid://cw0ga1uh841py"]
+
+[ext_resource type="Script" uid="uid://45ajj2ptcv0d" path="res://resources/narrative_event.gd" id="1_script"]
+[ext_resource type="Script" uid="uid://3jm4762kubo8" path="res://resources/narrative_line.gd" id="2_line"]
+
+[sub_resource type="Resource" id="Line_supplies_pass"]
+script = ExtResource("2_line")
+text = "The little one ran into a fallen log while on their way through the woods. Thankfully they had rope to help them get across. They delivered the package successfully and were so delighted to succeed on their first ever quest!"
+require_stat = {
+"food": 2,
+"utility": 1
+}
+
+[sub_resource type="Resource" id="Line_supplies_fail"]
+script = ExtResource("2_line")
+text = "Unfortunately, the little one ran into a fallen log through the woods that he didn't have the right supplies to cross. They had to turn back... hopefully next time they'll have the right supplies to cross!"
+require_stat = {
+"food": 2
+}
+
+[sub_resource type="Resource" id="Line_supplies_silent"]
+script = ExtResource("2_line")
+
+[resource]
+script = ExtResource("1_script")
+beat_id = "tutorial_supplies"
+variants = Array[ExtResource("2_line")]([SubResource("Line_supplies_pass"), SubResource("Line_supplies_fail"), SubResource("Line_supplies_silent")])

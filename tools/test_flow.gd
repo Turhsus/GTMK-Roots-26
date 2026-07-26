@@ -307,37 +307,31 @@ func _test_perks() -> void:
 # --- NarrativeEngine, with no scene tree involved at all -----------------------
 
 func _test_engine() -> void:
-	var targets := QUEST.get_targets()
+	var quest := _make_narrative_test_quest()
 	var empty: Array[ItemData] = []
-	var lines := NarrativeEngine.build_log(QUEST, empty, _stats(0, 0, 0, 0))
+	var packed: Array[ItemData] = [_item("sword"), _item("bread")]
+	var empty_lines := NarrativeEngine.build_log(quest, empty, _stats(0, 0, 0, 0))
+	var packed_lines := NarrativeEngine.build_log(quest, packed, quest.get_targets())
 
-	# Departure + every beat + homecoming: with a fallback variant on each beat,
-	# nothing may be silently dropped. A quest with no beats yet still gets two lines.
-	check(lines.size() == QUEST.narrative.size() + 2,
-		"an empty bag still gets every beat, got %d lines" % lines.size())
-	check(lines[0].contains("empty"), "the empty bag gets its own departure line")
-	for i in lines.size():
-		check(not lines[i].strip_edges().is_empty(), "line %d is not blank" % i)
+	# Departure + every beat + homecoming + the closing verdict line: with a
+	# fallback variant on each beat, and the verdict always appended, nothing
+	# may be silently dropped.
+	check(empty_lines.size() == quest.narrative.size() + 3,
+		"an empty bag still gets every beat plus the verdict, got %d lines" % empty_lines.size())
+	for line in empty_lines:
+		check(not line.strip_edges().is_empty(), "no line is blank")
 
-	# The departure line reads the bag back, whatever is in it.
-	var packed := _log_for([_item("sword"), _item("bread")])
-	check(packed[0].contains("Sword") or packed[0].to_lower().contains("sword"),
-		"the departure line names a packed item, got '%s'" % packed[0])
-
-	# The homecoming line is keyed to targets met, and only to that. Both counts are
-	# derived from the quest's own targets rather than hardcoded, so retuning a quest
-	# doesn't silently invalidate this.
-	check(NarrativeEngine.count_targets_met(targets, targets) == 4,
-		"meeting every target counts as 4")
-	var free_targets := 0  # targets of 0 that an empty bag meets for nothing
-	for key in targets:
-		if int(targets[key]) <= 0:
-			free_targets += 1
-	check(NarrativeEngine.count_targets_met(_stats(0, 0, 0, 0), targets) == free_targets,
-		"an empty bag meets only the targets that ask for nothing, expected %d" % free_targets)
-	if free_targets < 4:
-		var best := NarrativeEngine.build_log(QUEST, empty, targets)
-		check(best[-1] != lines[-1], "a full pack and an empty one end differently")
+	# Departure and homecoming are authored per quest now (see QuestData.departure /
+	# .homecoming) and resolved the same conditional-variant way as the beats —
+	# there's no generic "read the bag back" or "N of 4 targets" text left in the
+	# engine itself. The verdict line (see NarrativeEngine._build_summary_line) is
+	# the one place that still reads targets vs. stats directly.
+	check(empty_lines[0].contains("empty"), "the empty bag matches the departure's fallback variant")
+	check(packed_lines[0].contains("heavy"), "a heavy-tagged pack matches the departure's tagged variant")
+	check(packed_lines[-2] != empty_lines[-2], "meeting the quest's targets changes the homecoming line")
+	check(packed_lines[-1] != empty_lines[-1], "meeting the quest's targets changes the verdict line")
+	check(packed_lines[-1].begins_with("Quest Succeeded"), "packed_lines meets every target, so the verdict succeeds")
+	check(empty_lines[-1].begins_with("Quest Failed"), "an empty bag misses every target, so the verdict fails")
 
 	# "heavy" is the trait the sword and the shield share, so it exercises both the
 	# gathering and the dedup in one pair.
@@ -347,35 +341,71 @@ func _test_engine() -> void:
 		"collect_tags deduplicates")
 	check(NarrativeEngine.build_log(null, empty, {}).is_empty(), "no quest, no log")
 
-	_test_authored_beats()
+	_test_authored_beats(quest)
 
 
 ## The conditional-variant machinery: tag matching, forbid rules, and authoring
-## order as priority. None of it can be exercised until a quest actually has beats
-## — every quest's `narrative` is empty today — so this reports as skipped rather
-## than failing on content that was never written. It starts covering the engine
-## the moment the first quest is authored.
-func _test_authored_beats() -> void:
-	if QUEST.narrative.is_empty():
-		print("  SKIP %s has no authored beats — variant priority and tag/stat" % QUEST.id)
-		print("       conditions are untested. Author narrative on it to cover them.")
-		return
-
+## order as priority. Run against a quest built in code (see
+## _make_narrative_test_quest) rather than any authored .tres, so this stays
+## meaningful no matter what the real quests currently have authored.
+func _test_authored_beats(quest: QuestData) -> void:
 	# A beat must never resolve to nothing: that drops the line silently, so every
 	# beat needs an unconditional variant authored last.
 	var no_stats := _stats(0, 0, 0, 0)
 	var no_tags: Array[String] = []
-	for event in QUEST.narrative:
-		if event == null:
-			continue
+	for event in quest.narrative:
 		check(not event.resolve(no_stats, no_tags).strip_edges().is_empty(),
 			"beat '%s' still resolves with nothing packed (needs a fallback variant last)" % event.beat_id)
 
 	# Two packings that differ only in tags must be able to read differently, or the
 	# conditions aren't doing anything.
-	var bare := NarrativeEngine.build_log(QUEST, [], no_stats)
-	var loaded := NarrativeEngine.build_log(QUEST, [], QUEST.get_targets())
+	var bare := NarrativeEngine.build_log(quest, [], no_stats)
+	var loaded := NarrativeEngine.build_log(quest, [], quest.get_targets())
 	check(bare != loaded, "meeting the targets changes at least one beat")
+
+
+## A throwaway quest with departure/narrative/homecoming authored right here,
+## so the engine's conditional resolution can be tested without depending on
+## whichever real quest happens to have content authored.
+func _make_narrative_test_quest() -> QuestData:
+	var quest := QuestData.new()
+	quest.id = "test_narrative_quest"
+	quest.target_food = 2
+	quest.target_health = 0
+	quest.target_combat = 0
+	quest.target_utility = 0
+
+	var departure_tagged := NarrativeLine.new()
+	departure_tagged.require_tags = ["heavy"]
+	departure_tagged.text = "They heave something heavy onto their back and go."
+	var departure_fallback := NarrativeLine.new()
+	departure_fallback.text = "They shoulder the empty bag and go."
+	var departure := NarrativeEvent.new()
+	departure.beat_id = "test_departure"
+	departure.variants = [departure_tagged, departure_fallback]
+	quest.departure = departure
+
+	var beat_pass := NarrativeLine.new()
+	beat_pass.require_stat = {"food": 2}
+	beat_pass.text = "The road was easy with a full belly."
+	var beat_fallback := NarrativeLine.new()
+	beat_fallback.text = "The road was hard on an empty stomach."
+	var beat := NarrativeEvent.new()
+	beat.beat_id = "test_beat"
+	beat.variants = [beat_pass, beat_fallback]
+	quest.narrative = [beat]
+
+	var home_pass := NarrativeLine.new()
+	home_pass.require_stat = {"food": 2}
+	home_pass.text = "They came home well fed."
+	var home_fallback := NarrativeLine.new()
+	home_fallback.text = "They came home hungry."
+	var homecoming := NarrativeEvent.new()
+	homecoming.beat_id = "test_homecoming"
+	homecoming.variants = [home_pass, home_fallback]
+	quest.homecoming = homecoming
+
+	return quest
 
 
 # --- The wired scene ----------------------------------------------------------
@@ -442,13 +472,17 @@ func _test_flow() -> void:
 	check(playout.is_playing(), "the playout starts partway through, not all at once")
 	check(playout.lines_box.get_child_count() == 1, "the first line lands immediately")
 	var first: Label = playout.lines_box.get_child(0)
-	check(first.text.contains(cheese.item.display_name) and first.text.contains(apple.item.display_name),
-		"the departure line names what was packed, got '%s'" % first.text)
+	# The tutorial has no `departure` authored yet, so the log opens on its first
+	# beat instead — the cheese + apple pack clears the food target (2 < 2+1).
+	check(first.text.contains("well fed"),
+		"the first line is the tutorial's food beat (no departure authored), got '%s'" % first.text)
 
 	playout.skip()
-	var expected := tutorial.narrative.size() + 2
+	# No departure/homecoming authored on the tutorial yet, so the log is exactly
+	# its beats — see NarrativeEngine.build_log / QuestData.departure/homecoming.
+	var expected := tutorial.narrative.size()
 	check(playout.lines_box.get_child_count() == expected,
-		"skipping reveals every line, got %d of %d" % [playout.lines_box.get_child_count(), expected])
+		"skipping reveals every authored beat, got %d of %d" % [playout.lines_box.get_child_count(), expected])
 	check(not playout.is_playing(), "skipping ends the playout")
 	check(playout.pack_again_button.visible, "the continue button appears when the log is done")
 
@@ -528,8 +562,11 @@ func _test_flow() -> void:
 	var sword_item: ItemData = sword_view.item
 	var sword_before: int = sword_item.durability
 	packing.sent_off.emit()
-	check(playout.visible and playout.lines_box.get_child_count() == 1,
-		"a second playout starts clean, got %d lines" % playout.lines_box.get_child_count())
+	# QUEST (rescue) has no departure, narrative, or homecoming authored at all,
+	# so its log is legitimately empty — the playout still has to handle that
+	# without hanging (see PlayoutScene.play()'s empty-log branch).
+	check(playout.visible and playout.lines_box.get_child_count() == 0 and not playout.is_playing(),
+		"a second playout for a quest with nothing authored ends with no lines, got %d lines" % playout.lines_box.get_child_count())
 	check(sword_item.durability == sword_before - 1,
 		"the second send-off wore the sword, %d -> %d" % [sword_before, sword_item.durability])
 	check(RunState.inventory.has(sword_item),
@@ -550,16 +587,6 @@ func _pack(packing: PackingScene, id: String, origin: Vector2i) -> DraggableItem
 	check(packing._preview_valid, "%s fits at %s" % [id, origin])
 	packing._end_drag(true)
 	return view
-
-
-func _log_for(items: Array[ItemData]) -> Array[String]:
-	var stats := {}
-	for key in GameState.STAT_KEYS:
-		stats[key] = 0
-	for item in items:
-		for key in GameState.STAT_KEYS:
-			stats[key] += int(item.get_stats().get(key, 0))
-	return NarrativeEngine.build_log(QUEST, items, stats)
 
 
 func _item(id: String) -> ItemData:

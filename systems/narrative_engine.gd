@@ -7,15 +7,11 @@ extends RefCounted
 ## it never reads GameState, so the playout can be regenerated, tested headless,
 ## or previewed for a hypothetical packing without touching the live game.
 ##
-## The log is three parts:
-##   1. a departure line naming what actually went in the bag,
-##   2. the quest's authored beats, each resolved to its first matching variant,
-##   3. a homecoming line keyed to how many stat targets the packing met.
-## Parts 1 and 3 are generated here so a quest with no beats yet still plays out;
-## everything in between is authored data.
-
-## How many item names the departure line spells out before it gives up counting.
-const NAMES_SHOWN := 3
+## The log is all authored data, walked top to bottom: the quest's `departure`,
+## then its `narrative` beats, then its `homecoming` — each resolved to its
+## first matching variant (see NarrativeEvent.resolve). Departure and homecoming
+## differ from every other quest, so they live on QuestData instead of being
+## generated here; a quest that hasn't authored one yet just has no line there.
 
 
 ## The whole log, in reading order. `stats` is a GameState-shaped stat dictionary.
@@ -24,18 +20,74 @@ static func build_log(quest: QuestData, packed_items: Array[ItemData], stats: Di
 	if quest == null:
 		return lines
 	var tags := collect_tags(packed_items)
-	lines.append(departure_line(packed_items))
+	_append_resolved(lines, quest.departure, stats, tags)
 	for event in quest.narrative:
-		if event == null:
-			continue
-		var text := event.resolve(stats, tags).strip_edges()
-		# A beat whose variants all failed has nothing to say — skipping it beats
-		# printing a blank line. Authoring an unconditional variant last avoids it.
-		if text.is_empty():
-			continue
-		lines.append(text)
-	lines.append(homecoming_line(count_targets_met(stats, quest.get_targets())))
+		_append_resolved(lines, event, stats, tags)
+	_append_resolved(lines, quest.homecoming, stats, tags)
+	lines.append(_build_summary_line(quest, packed_items, stats))
 	return lines
+
+
+## Closing verdict line. The pass/fail call mirrors GameState.count_targets_met()
+## exactly (every stat target met, nothing more) so this line never disagrees
+## with the reward the run actually paid out. Missing secretly-required items
+## are reported alongside as context, not as a separate failure cause — they
+## don't gate the verdict (see QuestData.required_items). Built here rather
+## than read off GameState so the engine stays a pure function of its inputs.
+static func _build_summary_line(quest: QuestData, packed_items: Array[ItemData], stats: Dictionary) -> String:
+	var targets := quest.get_targets()
+	var met_stats: Array[String] = []
+	var missed_stats: Array[String] = []
+	for key in targets:
+		var target := int(targets[key])
+		var actual := int(stats.get(key, 0))
+		var entry := "%s (%d/%d)" % [String(key).capitalize(), actual, target]
+		if actual >= target:
+			met_stats.append(entry)
+		else:
+			missed_stats.append(entry)
+
+	var missing_items: Array[String] = []
+	for required in quest.required_items:
+		if required == null:
+			continue
+		var packed := false
+		for item in packed_items:
+			if item != null and item.id == required.id:
+				packed = true
+				break
+		if not packed:
+			var label := required.display_name if not required.display_name.is_empty() else required.id
+			missing_items.append(label)
+
+	var cleared := missed_stats.is_empty()
+	var line := "Quest Succeeded: " if cleared else "Quest Failed: "
+	if cleared:
+		line += "every supply target was met (" + ", ".join(met_stats) + ")."
+	else:
+		line += "fell short on " + ", ".join(missed_stats)
+		if not met_stats.is_empty():
+			line += "; met " + ", ".join(met_stats)
+		line += "."
+
+	if not quest.required_items.is_empty():
+		if not missing_items.is_empty():
+			line += " Never packed the " + ", ".join(missing_items) + " this quest needed."
+		else:
+			line += " Everything the quest secretly needed made it into the bag."
+	return line
+
+
+## Resolves `event` and appends its text, unless it's null or every variant
+## failed to match — that beat has nothing to say, so it's skipped rather than
+## printing a blank line. Authoring an unconditional variant last avoids that.
+static func _append_resolved(lines: Array[String], event: NarrativeEvent, stats: Dictionary, tags: Array[String]) -> void:
+	if event == null:
+		return
+	var text := event.resolve(stats, tags).strip_edges()
+	if text.is_empty():
+		return
+	lines.append(text)
 
 
 ## Every tag across every packed item, deduplicated. The engine derives this
@@ -49,54 +101,3 @@ static func collect_tags(packed_items: Array[ItemData]) -> Array[String]:
 			if not tags.has(tag):
 				tags.append(tag)
 	return tags
-
-
-## How many of `targets` the packing meets. Drives the homecoming line, and is
-## the same rule GameState.count_targets_met() applies to the live bag.
-static func count_targets_met(stats: Dictionary, targets: Dictionary) -> int:
-	var met := 0
-	for key in targets:
-		if int(stats.get(key, 0)) >= int(targets[key]):
-			met += 1
-	return met
-
-
-## Opens the log by reading the bag back to the player, so the first line is
-## already about their choices.
-static func departure_line(packed_items: Array[ItemData]) -> String:
-	if packed_items.is_empty():
-		return "They shoulder the bag. It is empty, and it swings light on their back. \"I'll be fine,\" they say. Off they go."
-	var names: Array[String] = []
-	for item in packed_items:
-		if item != null:
-			names.append(item.display_name)
-	return "You buckle the bag shut — %s — and watch them go until the trees take them." % _join_names(names)
-
-
-## Closes the log. Four targets met is a clean rescue; none is a rough trip home.
-## The kitten always comes back: this is a cozy game, not a pass/fail gate.
-static func homecoming_line(targets_met: int) -> String:
-	match targets_met:
-		4:
-			return "They came home on the fourth evening, kitten asleep in the crook of one arm, bag light, boots muddy. \"I had everything I needed,\" they said, and meant it."
-		3:
-			return "They came home on the fourth evening with the kitten purring against their collar. One thing they'd wished for, packed next time. Mostly: they were ready."
-		2:
-			return "They came home a day late, kitten held tight, and ate three helpings without a word. Half of what they carried was right. The other half they had to make up as they went."
-		1:
-			return "They came home scratched and quiet, kitten safe in their jacket. \"It was harder than I thought,\" they said. You look at the bag and see what you left out."
-		_:
-			return "They came home. Kitten too — somehow. They fell asleep at the table before the soup came, and you sat there a while with the empty bag in your lap."
-
-
-## "bread", "bread and rope", "bread, rope and a sword", then "+ N more".
-static func _join_names(names: Array[String]) -> String:
-	if names.is_empty():
-		return ""
-	if names.size() == 1:
-		return names[0]
-	var shown := names.slice(0, mini(NAMES_SHOWN, names.size()))
-	var extra := names.size() - shown.size()
-	if extra > 0:
-		return "%s and %d more" % [", ".join(shown), extra]
-	return "%s and %s" % [", ".join(shown.slice(0, shown.size() - 1)), shown[-1]]

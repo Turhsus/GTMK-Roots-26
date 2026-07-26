@@ -390,6 +390,12 @@ func _discard_worn_out() -> void:
 func _show(screen: Control) -> void:
 	for candidate in [quest_select, packing_scene, playout_scene, road_scene, perk_select, thank_you_screen]:
 		(candidate as Control).visible = candidate == screen
+	if screen == packing_scene:
+		AudioManager.play_music("packing")
+	elif screen == road_scene:
+		AudioManager.play_music("gathering")
+	else:
+		AudioManager.stop_music()
 
 
 # --- debug: durability readout -------------------------------------------------
