@@ -2,8 +2,21 @@
 
 [ext_resource type="Script" uid="uid://45ajj2ptcv0d" path="res://resources/narrative_event.gd" id="1_oarga"]
 [ext_resource type="Script" uid="uid://du5drbi85ateb" path="res://resources/item_data.gd" id="2_4sfpj"]
+[ext_resource type="Resource" uid="uid://b5cuj5rp6sql1" path="res://data/items/package.tres" id="3_hytdl"]
 [ext_resource type="Script" uid="uid://b8mpss75xj6nx" path="res://resources/quest_data.gd" id="3_lifxc"]
+[ext_resource type="Resource" uid="uid://c6tokvk6rp5e4" path="res://data/items/axe.tres" id="4_j4df6"]
 
 [resource]
 script = ExtResource("3_lifxc")
+id = "jessica"
+title = "Jessica in Trouble"
+brief = "Jessica is being chased by the woeful Imposter Syndrome"
+difficulty = 2
+gold_reward = 10
+quest_items = Array[ExtResource("2_4sfpj")]([ExtResource("3_hytdl"), ExtResource("4_j4df6")])
+required_items = Array[ExtResource("2_4sfpj")]([ExtResource("4_j4df6")])
+target_food = 4
+target_health = 2
+target_combat = 1
+target_utility = 3
 metadata/_custom_type_script = "uid://b8mpss75xj6nx"

@@ -27,6 +27,16 @@ func resolve_send_off(_item: ItemData, _layout: PackLayout) -> void:
 	pass
 
 
+## Hook — a temporary stat bonus while packing, recomputed from the live board every
+## time an item moves (see BagGrid.compute_live_bonus / GameState.set_layout_bonus).
+## Return a partial STAT_KEYS -> int delta to add on top of the packed stats — e.g.
+## {"combat": 2} — or an empty dict for no effect. Unlike resolve_send_off this never
+## mutates the item and never survives past packing: move the item away from its
+## neighbour and the bonus is gone next recompute. The base rule contributes nothing.
+func live_bonus(_item: ItemData, _layout: PackLayout) -> Dictionary:
+	return {}
+
+
 ## Hook — a one-line, player-facing description of the rule, shown as a warning in the
 ## item info panel (see DraggableItem.build_info_panel) so the rule isn't invisible.
 ## The base rule has nothing to say; a blank line is skipped by the panel.

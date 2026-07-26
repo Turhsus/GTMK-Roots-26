@@ -14,12 +14,27 @@ var current_quest: QuestData
 var packed_items: Array[ItemData] = []
 var stats: Dictionary = _zero_stats()
 
+## Live, position-dependent stat delta from packed items' ItemEffect.live_bonus
+## (e.g. NeighborStatBoostEffect). BagGrid computes it from the board and hands it
+## in here — GameState still never learns positions itself, only the resulting
+## numbers. See set_layout_bonus.
+var _layout_bonus: Dictionary = _zero_stats()
+
 
 func set_quest(quest: QuestData) -> void:
 	current_quest = quest
 	packed_items.clear()
+	_layout_bonus = _zero_stats()
 	_recompute()
 	quest_changed.emit(current_quest)
+
+
+## Called by whoever owns the board (PackingScene, via BagGrid.compute_live_bonus)
+## whenever an item moves, so a neighbour-dependent bonus stays in sync with the
+## live pack without GameState ever seeing a cell or an origin.
+func set_layout_bonus(bonus: Dictionary) -> void:
+	_layout_bonus = bonus
+	_recompute()
 
 
 func add_item(item: ItemData) -> void:
@@ -40,6 +55,7 @@ func remove_item(item: ItemData) -> void:
 ## Empties the bag without dropping the quest — this is "Pack again".
 func reset_packing() -> void:
 	packed_items.clear()
+	_layout_bonus = _zero_stats()
 	_recompute()
 
 
@@ -76,6 +92,8 @@ func _recompute() -> void:
 		var contribution := item.get_stats()
 		for key in STAT_KEYS:
 			stats[key] += int(contribution.get(key, 0))
+	for key in STAT_KEYS:
+		stats[key] += int(_layout_bonus.get(key, 0))
 	# Adventuring perks adjust the stats on top of what's packed. Each owned perk gets a
 	# say via its modify_stats hook (the forage perk's food shows from an empty bag on,
 	# so the player packs around it). RunState owns the run's earned perks; this
