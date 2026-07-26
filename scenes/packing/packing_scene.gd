@@ -34,6 +34,11 @@ var _preview_valid: bool = false
 ## Hover description tip. Shown while the cursor rests on an item; closed on leave.
 var _hover_tip: Control = null
 var _hover_view: DraggableItem = null
+## ItemData -> { ItemEffect: EffectOutcome } for every rule currently firing on the
+## board, refreshed by _refresh_layout_feedback after each placement change. Cached
+## rather than recomputed per hover so opening a tip is free, and so the warning tint
+## and its explanation are guaranteed to be reading the same evaluation.
+var _outcomes: Dictionary = {}
 
 
 func _ready() -> void:
@@ -69,6 +74,9 @@ func load_quest(quest: QuestData) -> void:
 	bag_grid.clear_preview()
 	_apply_bag_size()
 	GameState.set_quest(quest)
+	# set_quest repopulates the tray, so this runs last: it clears the stale outcomes
+	# from the previous quest and leaves the fresh tray views untinted.
+	_refresh_layout_feedback()
 
 
 ## Matches the board to RunState's backpack and re-sizes any tray items already
@@ -96,6 +104,8 @@ func reset_packing() -> void:
 	bag_grid.clear_board()
 	bag_grid.clear_preview()
 	GameState.reset_packing()
+	# The board is empty now, so every warning goes with it.
+	_refresh_layout_feedback()
 
 
 func _on_empty_bag_pressed() -> void:
@@ -116,12 +126,43 @@ func snapshot_board() -> PackLayout:
 	return bag_grid.snapshot()
 
 
-## Re-derives the live, neighbour-dependent stat bonus from the board and hands it to
-## GameState. Called after every placement change (place, remove, rotate-in-bag) so
-## NeighborStatBoostEffect-style rules track the pack as it's built, not just at
-## send-off. See BagGrid.compute_live_bonus.
-func _refresh_live_bonus() -> void:
-	GameState.set_layout_bonus(bag_grid.compute_live_bonus())
+## Re-evaluates every placed item's rules against the board and pushes the one result
+## to the three places it shows up: the live stat bars, the amber warning wash on any
+## item whose rule is currently firing against it, and the cached outcomes the hover
+## panel reads. Called after every placement change (place, remove, rotate-in-bag) so a
+## rule starts warning the moment it starts firing rather than silently at send-off.
+##
+## Warning, never blocking. A violated rule tints the item and explains itself on
+## hover, and that is the whole of it: the drop stays legal, the Send button stays
+## live, and the player can pack the bag wrong on purpose. That is still the
+## "consequence, not a wall" model (see ItemEffect) — all that changed is that the
+## consequence is now visible while it can still be acted on.
+func _refresh_layout_feedback() -> void:
+	var evaluation := bag_grid.evaluate_board()
+	GameState.set_layout_bonus(evaluation["bonus"])
+	_outcomes = evaluation["outcomes"]
+	for view in bag_grid.get_placed_views():
+		var placed := view as DraggableItem
+		placed.set_violating(_is_violating(placed.item))
+	# Rules are about the neighbourhood, so an item back in the tray has none to break.
+	for child in item_tray.item_container.get_children():
+		if child is DraggableItem:
+			(child as DraggableItem).set_violating(false)
+
+
+## Whether any of this item's rules is currently firing *against* it. A boon firing
+## (the blanket padded against something fragile) is not a violation and never tints.
+func _is_violating(item: ItemData) -> bool:
+	for outcome in _firing_for(item).values():
+		if (outcome as EffectOutcome).is_warning():
+			return true
+	return false
+
+
+## The ItemEffect -> EffectOutcome map of this item's currently-firing rules, empty for
+## a tray item or one whose rules are all dormant. What the info panel reads.
+func _firing_for(item: ItemData) -> Dictionary:
+	return _outcomes.get(item, {})
 
 
 func _on_send_pressed() -> void:
@@ -189,7 +230,7 @@ func _show_hover_tip(view: DraggableItem) -> void:
 	_close_hover_tip()
 	if view == null or view.item == null:
 		return
-	var tip := DraggableItem.build_info_panel(view.item)
+	var tip := DraggableItem.build_info_panel(view.item, _firing_for(view.item))
 	# Ignore mouse so the tip never steals hover from the item underneath.
 	_set_mouse_ignored(tip)
 	drag_layer.add_child(tip)
@@ -239,7 +280,7 @@ func _on_item_rotate_requested(view: DraggableItem) -> void:
 				view.rotate_once()
 			bag_grid.place(view, origin)
 			AudioManager.play("rotate")
-			_refresh_live_bonus()
+			_refresh_layout_feedback()
 			return
 	bag_grid.place(view, origin)
 	AudioManager.play("invalid")
@@ -255,7 +296,7 @@ func _on_item_return_requested(view: DraggableItem) -> void:
 		return
 	_close_hover_tip()
 	GameState.remove_item(view.item)
-	_refresh_live_bonus()
+	_refresh_layout_feedback()
 	item_tray.adopt(view)
 	AudioManager.play("place")
 
@@ -268,7 +309,7 @@ func _on_item_grabbed(view: DraggableItem, grab_offset: Vector2) -> void:
 	# re-adds it. A move across the bag is just those two halves.
 	if bag_grid.remove(view):
 		GameState.remove_item(view.item)
-		_refresh_live_bonus()
+		_refresh_layout_feedback()
 	_dragging = view
 	view.set_dragging(true)
 	# set_dragging() may have shrunk the item back to its shape box, so the grab
@@ -315,7 +356,7 @@ func _end_drag(attempt_drop: bool) -> void:
 		var released_at := view.global_position
 		bag_grid.place(view, _preview_origin)
 		GameState.add_item(view.item)
-		_refresh_live_bonus()
+		_refresh_layout_feedback()
 		view.play_snap_from(released_at)
 		AudioManager.play("place")
 		return

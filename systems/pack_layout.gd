@@ -51,6 +51,23 @@ func item_at(cell: Vector2i) -> ItemData:
 	return _by_cell.get(cell, null)
 
 
+## Every item on the board, in the order they were recorded. What a whole-bag rule
+## reads instead of walking cells — "is there anything sharp in here at all", which
+## no neighbour or column query can answer (see NoTraitInBagEffect).
+func packed_items() -> Array[ItemData]:
+	var items: Array[ItemData] = []
+	items.assign(_by_item.keys())
+	return items
+
+
+## Whether this item is on the board at all. A rule that fires on the *absence* of
+## something has to ask first: an item still sitting in the tray has no neighbours
+## either, and must read as dormant rather than as a violation (see
+## RequiresAdjacentTraitEffect).
+func contains(item: ItemData) -> bool:
+	return _by_item.has(item)
+
+
 ## Whether any packed item fills this cell. Off-board cells read as empty.
 func is_filled(cell: Vector2i) -> bool:
 	return _by_cell.has(cell)

@@ -278,24 +278,47 @@ func snapshot() -> PackLayout:
 	return layout
 
 
-## Sums every placed item's ItemEffect.live_bonus against the current board — the
-## packing-time counterpart to snapshot(), which effects read at send-off instead.
-## Called after every placement change (see PackingScene) so a neighbour-dependent
-## bonus updates the moment an item moves; nothing here mutates the items or board.
-func compute_live_bonus() -> Dictionary:
+## Evaluates every placed item's effects against the current board, in a single pass
+## over a single snapshot — the packing-time counterpart to send-off resolution, and
+## the one place the live feedback comes from. Returns:
+##
+##   "bonus"    -> the summed live stat delta, for GameState.set_layout_bonus
+##   "outcomes" -> ItemData -> { ItemEffect: EffectOutcome }, the *firing* rules only
+##
+## Keyed by effect so the info panel can pair a firing outcome back to the rule whose
+## general description it replaces (EffectOutcome deliberately carries no back-pointer;
+## see the note there). Nothing here mutates an item or the board — ItemEffect.evaluate
+## is pure, which is exactly why the same numbers can drive the stat bars, the amber
+## warning tint and the hover explanation without three separate implementations.
+##
+## Called after every placement change (see PackingScene._refresh_layout_feedback), so
+## a rule starts warning the moment it starts firing rather than silently at send-off.
+func evaluate_board() -> Dictionary:
 	var bonus: Dictionary = {}
+	var outcomes: Dictionary = {}
 	var layout := snapshot()
 	for view in _cells_by_view.keys():
 		var item: ItemData = (view as DraggableItem).item
 		if item == null:
 			continue
+		var firing: Dictionary = {}
 		for effect in item.effects:
 			if effect == null:
 				continue
-			var delta: Dictionary = effect.live_bonus(item, layout)
-			for key in delta:
-				bonus[key] = int(bonus.get(key, 0)) + int(delta[key])
-	return bonus
+			var outcome: EffectOutcome = effect.evaluate(item, layout)
+			if not outcome.active:
+				continue
+			firing[effect] = outcome
+			for key in outcome.stat_delta:
+				bonus[key] = int(bonus.get(key, 0)) + int(outcome.stat_delta[key])
+		if not firing.is_empty():
+			outcomes[item] = firing
+	return {"bonus": bonus, "outcomes": outcomes}
+
+
+## Just the stat half of evaluate_board(), for callers that only want the numbers.
+func compute_live_bonus() -> Dictionary:
+	return evaluate_board()["bonus"]
 
 
 func show_preview(shape: Array[Vector2i], origin: Vector2i, valid: bool) -> void:
