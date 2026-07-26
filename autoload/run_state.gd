@@ -268,6 +268,32 @@ func take_shop_stock(shop: ShopData, item: ItemData) -> bool:
 	return true
 
 
+## Puts one `item` back on `shop`'s shelf, capped at the authored max QTY. Used when
+## the player returns a purchase from the same visit (see RoadScene._on_return).
+## Resolves by id — the returned copy is an owned instance, not the shop's template.
+func return_shop_stock(shop: ShopData, item: ItemData) -> void:
+	if shop == null or item == null:
+		return
+	var shelf_item := shop.find(item.id)
+	if shelf_item == null:
+		return
+	var max_qty := shop.max_qty(shelf_item)
+	if max_qty <= 0:
+		return
+	var left := shop_stock(shop, shelf_item)
+	if left >= max_qty:
+		return
+	if not _shop_stock.has(shop.id):
+		_shop_stock[shop.id] = {}
+	var next := left + 1
+	if next >= max_qty:
+		(_shop_stock[shop.id] as Dictionary).erase(shelf_item.id)
+		if (_shop_stock[shop.id] as Dictionary).is_empty():
+			_shop_stock.erase(shop.id)
+	else:
+		_shop_stock[shop.id][shelf_item.id] = next
+
+
 ## Town days until the next restock — what the shop screen tells the player.
 func days_until_restock() -> int:
 	return maxi(RESTOCK_INTERVAL_DAYS - _days_since_restock, 0)
@@ -370,14 +396,17 @@ func spend_gold(amount: int) -> bool:
 
 ## Adds one owned copy of an item — a purchase in town. A bought item is fresh, so
 ## it enters at full durability via make_owned_copy (which also gives it its own
-## instance, independent of the shop's stock and any copy already owned). The tray
-## doesn't rebuild on inventory_changed (that fires mid-send-off), so a buy shows up
-## when the next quest's packing loads.
-func gain(item: ItemData) -> void:
+## instance, independent of the shop's stock and any copy already owned). Returns
+## the new copy so the road can track it for same-visit returns. The tray doesn't
+## rebuild on inventory_changed (that fires mid-send-off), so a buy shows up when
+## the next quest's packing loads.
+func gain(item: ItemData) -> ItemData:
 	if item == null:
-		return
-	inventory.append(item.make_owned_copy())
+		return null
+	var copy := item.make_owned_copy()
+	inventory.append(copy)
 	inventory_changed.emit(inventory)
+	return copy
 
 
 ## Puts an already-owned copy back into the inventory without cloning — used when
@@ -387,6 +416,16 @@ func restore(item: ItemData) -> void:
 		return
 	inventory.append(item)
 	inventory_changed.emit(inventory)
+
+
+## Removes this exact owned copy from the inventory (identity match, not id). Used
+## when returning a same-visit purchase so a different apple isn't taken by mistake.
+func release_exact(item: ItemData) -> bool:
+	if item == null or not inventory.has(item):
+		return false
+	inventory.erase(item)
+	inventory_changed.emit(inventory)
+	return true
 
 
 ## Drops one owned copy of an item and returns it — a sale in town. Owned copies
