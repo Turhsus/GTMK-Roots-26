@@ -30,6 +30,12 @@ const STAT_COLOR := Color("3f6b23")
 const WARN_COLOR := Color("9a4f14")
 const MUTED_COLOR := Color("6b5d4c")
 
+## Durability bar in the hover/inspect panel (non-single-use only).
+const DURA_BAR_FULL := Color("4e7a2e")
+const DURA_BAR_MID := Color("a85a24")
+const DURA_BAR_LOW := Color("9a3a2a")
+const DURA_BAR_TRACK := Color(0.25, 0.2, 0.16, 0.55)
+
 var item: ItemData
 ## 90-degree clockwise turns applied to `item.shape`.
 var rotation_steps: int = 0
@@ -267,18 +273,22 @@ static func build_info_panel(source: ItemData) -> Control:
 		none_label.add_theme_color_override("font_color", MUTED_COLOR)
 		box.add_child(none_label)
 
-	# Durability — how many more trips this copy has in it. Single-use items say so;
-	# sturdier ones show trips left out of the total.
-	var dura := Label.new()
+	# Durability — single-use is text only; multi-use gets a health bar + trips left.
 	if source.max_durability > 1:
+		var remaining := source.durability if source.durability >= 0 else source.max_durability
+		var dura := Label.new()
 		if source.durability >= 0 and source.durability < source.max_durability:
-			dura.text = "Durability: %d of %d trips left" % [source.durability, source.max_durability]
+			dura.text = "Durability: %d of %d trips left" % [remaining, source.max_durability]
 		else:
 			dura.text = "Durability: lasts %d trips" % source.max_durability
+		dura.add_theme_color_override("font_color", MUTED_COLOR)
+		box.add_child(dura)
+		box.add_child(_build_durability_bar(remaining, source.max_durability))
 	else:
+		var dura := Label.new()
 		dura.text = "Single use"
-	dura.add_theme_color_override("font_color", MUTED_COLOR)
-	box.add_child(dura)
+		dura.add_theme_color_override("font_color", MUTED_COLOR)
+		box.add_child(dura)
 
 	# Placement rules the item carries (see ItemEffect) — warned here so the durability
 	# hit at send-off isn't a surprise. Skipped entirely for a plain item.
@@ -299,6 +309,33 @@ static func build_info_panel(source: ItemData) -> Control:
 		box.add_child(flavor)
 
 	return panel
+
+
+## Thin fill bar for the inspect panel. Ratio drives color (green → amber → red).
+static func _build_durability_bar(remaining: int, maximum: int) -> ProgressBar:
+	var bar := ProgressBar.new()
+	bar.max_value = maxi(maximum, 1)
+	bar.value = clampi(remaining, 0, int(bar.max_value))
+	bar.show_percentage = false
+	bar.custom_minimum_size = Vector2(220, 12)
+	bar.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+
+	var track := StyleBoxFlat.new()
+	track.bg_color = DURA_BAR_TRACK
+	track.set_corner_radius_all(2)
+	bar.add_theme_stylebox_override("background", track)
+
+	var fill := StyleBoxFlat.new()
+	var ratio := clampf(float(remaining) / float(maxi(maximum, 1)), 0.0, 1.0)
+	if ratio > 0.5:
+		fill.bg_color = DURA_BAR_FULL
+	elif ratio > 0.25:
+		fill.bg_color = DURA_BAR_MID
+	else:
+		fill.bg_color = DURA_BAR_LOW
+	fill.set_corner_radius_all(2)
+	bar.add_theme_stylebox_override("fill", fill)
+	return bar
 
 
 ## True unless the given point (viewport space) lands on a transparent icon
