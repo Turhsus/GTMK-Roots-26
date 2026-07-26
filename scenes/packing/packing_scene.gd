@@ -24,6 +24,7 @@ const QUEST: QuestData = preload("res://data/quests/tutorial.tres")
 @onready var item_tray: ItemTray = %ItemTray
 @onready var drag_layer: Control = %DragLayer
 @onready var send_button: Button = %SendButton
+@onready var empty_bag_button: Button = %EmptyBagButton
 
 var _dragging: DraggableItem = null
 ## Where inside the item the player grabbed it, so it doesn't jump to a corner.
@@ -49,6 +50,7 @@ func _ready() -> void:
 		_on_item_ready(view)
 	GameState.quest_changed.connect(_on_quest_changed)
 	send_button.pressed.connect(_on_send_pressed)
+	empty_bag_button.pressed.connect(_on_empty_bag_pressed)
 	# Apply the run's backpack size even when Main hasn't called load_quest yet
 	# (standalone PackingScene / tests). Refresh tray views — they spawned under
 	# the default cell size before this resize.
@@ -83,16 +85,28 @@ func _apply_bag_size() -> void:
 			(child as DraggableItem).setup((child as DraggableItem).item)
 
 
-## Empties the bag and puts every item back in the tray — this is "Pack again".
+## Empties the bag and puts every item back in the tray ("Empty backpack").
 ## The views are the same nodes throughout, so returning them is a reparent.
+## Also cancels an in-progress drag so nothing is left floating on the drag layer.
 func reset_packing() -> void:
 	_close_hover_tip()
 	_close_info_menu()
+	if _dragging != null:
+		var dragged := _dragging
+		_dragging = null
+		dragged.set_dragging(false)
+		set_process(false)
+		item_tray.adopt(dragged)
 	for view in bag_grid.get_placed_views():
 		item_tray.adopt(view)
 	bag_grid.clear_board()
 	bag_grid.clear_preview()
 	GameState.reset_packing()
+
+
+func _on_empty_bag_pressed() -> void:
+	reset_packing()
+	AudioManager.play("send")
 
 
 func _on_quest_changed(quest: QuestData) -> void:

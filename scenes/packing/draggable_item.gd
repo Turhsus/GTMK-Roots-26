@@ -365,6 +365,12 @@ func is_pixel_opaque(global_pos: Vector2) -> bool:
 
 
 func _on_hover_changed(hovered: bool) -> void:
+	set_hovered(hovered)
+
+
+## Used by PackingScene (tray, normal mouse_entered) and BagGrid (synthetic
+## hover while placed items ignore the mouse for overlap hit-testing).
+func set_hovered(hovered: bool) -> void:
 	if is_dragging or icon == null:
 		return
 	if hovered:
