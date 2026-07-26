@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://bdpmfh2fl134u"
-path="res://.godot/imported/titlepage.png-370fe7e3b13de98b6b2776224d354141.ctex"
+uid="uid://cof0850umiga7"
+path="res://.godot/imported/rat_hand.png-13d38fb556172add4fe1c188ccdee681.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/backgrounds/titlepage.png"
-dest_files=["res://.godot/imported/titlepage.png-370fe7e3b13de98b6b2776224d354141.ctex"]
+source_file="res://assets/ui/rat_hand.png"
+dest_files=["res://.godot/imported/rat_hand.png-13d38fb556172add4fe1c188ccdee681.ctex"]
 
 [params]
 
