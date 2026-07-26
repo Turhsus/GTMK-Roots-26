@@ -286,16 +286,19 @@ func _rotate_item_in_place(view: DraggableItem) -> void:
 		AudioManager.play("rotate")
 		return
 	bag_grid.remove(view)
-	var next_shape := ItemData.rotate_shape(view.item.shape, posmod(view.rotation_steps + 1, 4))
-	if bag_grid.can_place(next_shape, origin):
-		view.rotate_once()
-		bag_grid.place(view, origin)
-		AudioManager.play("rotate")
-		_refresh_live_bonus()
-	else:
-		bag_grid.place(view, origin)
-		AudioManager.play("invalid")
-		view.play_shake()
+	for offset in [1, 2]: # try 90°, then fall back to 180°
+		var steps := posmod(view.rotation_steps + offset, 4)
+		var next_shape := ItemData.rotate_shape(view.item.shape, steps)
+		if bag_grid.can_place(next_shape, origin):
+			for i in offset:
+				view.rotate_once()
+			bag_grid.place(view, origin)
+			AudioManager.play("rotate")
+			_refresh_live_bonus()
+			return
+	bag_grid.place(view, origin)
+	AudioManager.play("invalid")
+	view.play_shake()
 
 
 func _close_info_menu() -> void:
