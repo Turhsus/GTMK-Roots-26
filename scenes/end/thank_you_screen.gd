@@ -10,6 +10,7 @@ extends Control
 
 const MAIN_MENU := "res://scenes/menu/MainMenu.tscn"
 
+@onready var title_label: Label = %Title
 @onready var summary_label: Label = %SummaryLabel
 
 
@@ -24,9 +25,16 @@ func show_end() -> void:
 	# continue into, and leaving it would offer a Continue that lands right back
 	# on this screen.
 	SaveManager.delete_save()
-	var cleared := RunState.completed_count
+	var cleared: int = RunState.completed_count
+	var attempted: int = RunState.attempted_count
 	var quests_word := "quest" if cleared == 1 else "quests"
-	summary_label.text = "You cleared %d %s and made it home.\nSafe travels." % [cleared, quests_word]
+	# A win needs a majority of attempted quests cleared. With no quests attempted
+	# at all (e.g. the tutorial itself ran out the clock) there is nothing to judge
+	# a win on, so that counts as a loss rather than a vacuous win.
+	var won: bool = attempted > 0 and cleared * 2 > attempted
+	var verdict := "He learned how to be happy and successful." if won else "Maybe you'll raise the next one better."
+	title_label.text = "Your Child is a Success!" if won else "Your Child Failed to Thrive!"
+	summary_label.text = "You cleared %d %s and made it home.\n%s" % [cleared, quests_word, verdict]
 
 
 func _on_menu_pressed() -> void:

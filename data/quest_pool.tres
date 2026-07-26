@@ -4,7 +4,10 @@
 [ext_resource type="Script" uid="uid://b8mpss75xj6nx" path="res://resources/quest_data.gd" id="2_qd"]
 [ext_resource type="Resource" uid="uid://d2p4tque4o3f5" path="res://data/quests/scouting.tres" id="3_fu2ai"]
 [ext_resource type="Resource" uid="uid://ba4csicviisrr" path="res://data/quests/rescue.tres" id="3_x8sy5"]
+[ext_resource type="Resource" uid="uid://bchgvk5yh5a8b" path="res://data/quests/drowning_fish.tres" id="4_drown"]
+[ext_resource type="Resource" uid="uid://dod1mnigv21wc" path="res://data/quests/jessica.tres" id="4_jess"]
+[ext_resource type="Resource" uid="uid://x312rcorem2y" path="res://data/quests/racoons.tres" id="4_racoon"]
 
 [resource]
 script = ExtResource("1_pool")
-quests = Array[ExtResource("2_qd")]([ExtResource("3_x8sy5"), ExtResource("3_fu2ai")])
+quests = Array[ExtResource("2_qd")]([ExtResource("3_x8sy5"), ExtResource("3_fu2ai"), ExtResource("4_drown"), ExtResource("4_racoon"), ExtResource("4_jess")])

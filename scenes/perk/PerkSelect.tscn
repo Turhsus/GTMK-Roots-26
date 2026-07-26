@@ -1,8 +1,8 @@
-[gd_scene load_steps=2 format=3]
+[gd_scene format=3 uid="uid://bs5i8fqy02gd3"]
 
-[ext_resource type="Script" path="res://scenes/perk/perk_select.gd" id="1_perk"]
+[ext_resource type="Script" uid="uid://duxshvu31sow4" path="res://scenes/perk/perk_select.gd" id="1_perk"]
 
-[node name="PerkSelect" type="Control"]
+[node name="PerkSelect" type="Control" unique_id=555039670]
 layout_mode = 3
 anchors_preset = 15
 anchor_right = 1.0
@@ -11,7 +11,7 @@ grow_horizontal = 2
 grow_vertical = 2
 script = ExtResource("1_perk")
 
-[node name="Background" type="ColorRect" parent="."]
+[node name="Background" type="ColorRect" parent="." unique_id=1583749869]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -21,7 +21,12 @@ grow_vertical = 2
 mouse_filter = 2
 color = Color(0.13, 0.12, 0.16, 1)
 
-[node name="Center" type="CenterContainer" parent="."]
+[node name="TextureRect" type="TextureRect" parent="." unique_id=1974789471]
+layout_mode = 0
+offset_right = 40.0
+offset_bottom = 40.0
+
+[node name="Center" type="CenterContainer" parent="." unique_id=1781937693]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -29,18 +34,18 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 
-[node name="Layout" type="VBoxContainer" parent="Center"]
+[node name="Layout" type="VBoxContainer" parent="Center" unique_id=1065937355]
 layout_mode = 2
 theme_override_constants/separation = 28
 
-[node name="Header" type="Label" parent="Center/Layout"]
+[node name="Header" type="Label" parent="Center/Layout" unique_id=214024269]
 unique_name_in_owner = true
 layout_mode = 2
 theme_override_font_sizes/font_size = 30
 text = "A lesson learned"
 horizontal_alignment = 1
 
-[node name="CardRow" type="HBoxContainer" parent="Center/Layout"]
+[node name="CardRow" type="HBoxContainer" parent="Center/Layout" unique_id=1924488497]
 unique_name_in_owner = true
 layout_mode = 2
 theme_override_constants/separation = 24
