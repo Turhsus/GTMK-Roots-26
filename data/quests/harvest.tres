@@ -17,4 +17,5 @@ target_food = 1
 target_health = 0
 target_combat = 0
 target_utility = 3
+required_empty_cells = 3
 metadata/_custom_type_script = "uid://b8mpss75xj6nx"

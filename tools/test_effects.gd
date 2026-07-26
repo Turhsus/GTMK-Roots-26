@@ -59,6 +59,45 @@ func _test_layout_queries() -> void:
 	check(above.has(Vector2i(2, 1)) and above.has(Vector2i(2, 0)) and above.size() == 2,
 		"cells_above returns the two cells over the footprint")
 
+	_test_free_cell_count()
+
+
+## The room-left count a quest's empty-space requirement is judged against (see
+## QuestData.required_empty_cells). It is measured against the *playable* board, so a
+## smaller bag really does have less to spare, and it must read as unknown rather than
+## as zero when nobody recorded a board size.
+func _test_free_cell_count() -> void:
+	var bare := PackLayout.new()
+	check(bare.free_cell_count() == -1,
+		"a layout with no board size recorded reports -1, not 0 free cells")
+
+	var board := PackLayout.new()
+	board.set_board_size(4, 4)
+	check(board.free_cell_count() == 16, "an empty 4x4 board is all free")
+	board.add(_item("blanket", []), Vector2i(0, 0), 0,
+		[Vector2i(0, 0), Vector2i(1, 0), Vector2i(0, 1), Vector2i(1, 1)] as Array[Vector2i])
+	check(board.free_cell_count() == 12, "a 2x2 item leaves 12 of 16 free")
+
+	# The same packing in a bigger bag leaves more room — the count is about the bag
+	# being carried, not the 6x6 frame it is drawn inside.
+	var roomy := PackLayout.new()
+	roomy.set_board_size(6, 6)
+	roomy.add(_item("blanket", []), Vector2i(0, 0), 0,
+		[Vector2i(0, 0), Vector2i(1, 0), Vector2i(0, 1), Vector2i(1, 1)] as Array[Vector2i])
+	check(roomy.free_cell_count() == 32, "the same item in a 6x6 bag leaves 32 free")
+
+	# A quest reads its verdict off that number, and an unmeasured board can't fail.
+	var quest := QuestData.new()
+	quest.required_empty_cells = 3
+	check(quest.empty_space_met(3) and quest.empty_space_met(9),
+		"room to spare satisfies the requirement")
+	check(not quest.empty_space_met(2), "one square short fails the requirement")
+	check(quest.empty_space_met(-1), "an unmeasured board never fails the requirement")
+	check(QuestData.new().empty_space_met(0),
+		"a quest asking for no room is satisfied by a full bag")
+	check(quest.empty_space_label() == "Leave 3 squares empty",
+		"the requirement words itself once, for every screen that shows it")
+
 
 # --- ClearAboveEffect -----------------------------------------------------------
 
@@ -556,6 +595,10 @@ func _test_board_evaluation() -> void:
 	# Nothing on top yet: no firing rules anywhere on the board.
 	check(bag.evaluate_board()["outcomes"].is_empty(),
 		"an untroubled board reports no firing rules")
+	# The sweep also carries the room left, so the packing readout and the send-off
+	# verdict are the same count rather than two implementations of it.
+	check(int(bag.evaluate_board()["free_cells"]) == 35,
+		"the live sweep reports 35 of 36 cells free with one item packed")
 
 	var axe := ItemData.new()
 	axe.id = "axe"

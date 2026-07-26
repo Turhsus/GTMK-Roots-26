@@ -70,6 +70,14 @@ theme_override_font_sizes/font_size = 15
 text = "Quest brief"
 autowrap_mode = 3
 
+[node name="SpaceRequirement" type="Label" parent="RightColumn/QuestBriefCard/BriefMargin/BriefLayout"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_font_sizes/font_size = 15
+text = "Leave 0 squares empty"
+autowrap_mode = 3
+
 [node name="StatsPanel" parent="RightColumn" unique_id=1818831373 instance=ExtResource("4_stats")]
 unique_name_in_owner = true
 layout_mode = 2

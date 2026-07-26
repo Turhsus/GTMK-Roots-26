@@ -15,7 +15,12 @@ extends RefCounted
 
 
 ## The whole log, in reading order. `stats` is a GameState-shaped stat dictionary.
-static func build_log(quest: QuestData, packed_items: Array[ItemData], stats: Dictionary) -> Array[String]:
+## `free_cells` is the sent-off board's PackLayout.free_cell_count(), which the verdict
+## needs for a quest that asked for room to be left (QuestData.required_empty_cells);
+## the default -1 means "no board measured" and simply leaves that clause out, which is
+## what a previewed or replayed log wants.
+static func build_log(quest: QuestData, packed_items: Array[ItemData], stats: Dictionary,
+		free_cells: int = -1) -> Array[String]:
 	var lines: Array[String] = []
 	if quest == null:
 		return lines
@@ -24,17 +29,19 @@ static func build_log(quest: QuestData, packed_items: Array[ItemData], stats: Di
 	for event in quest.narrative:
 		_append_resolved(lines, event, stats, tags)
 	_append_resolved(lines, quest.homecoming, stats, tags)
-	lines.append(_build_summary_line(quest, packed_items, stats))
+	lines.append(_build_summary_line(quest, packed_items, stats, free_cells))
 	return lines
 
 
-## Closing verdict line. The pass/fail call mirrors GameState.count_targets_met()
-## exactly (every stat target met, nothing more) so this line never disagrees
-## with the reward the run actually paid out. Missing secretly-required items
-## are reported alongside as context, not as a separate failure cause — they
-## don't gate the verdict (see QuestData.required_items). Built here rather
-## than read off GameState so the engine stays a pure function of its inputs.
-static func _build_summary_line(quest: QuestData, packed_items: Array[ItemData], stats: Dictionary) -> String:
+## Closing verdict line. The pass/fail call mirrors main._on_sent_off exactly — every
+## stat target met *and* the quest's room requirement satisfied, nothing more — so this
+## line never disagrees with the reward the run actually paid out. Missing
+## secretly-required items are reported alongside as context, not as a failure cause:
+## unlike the room requirement they don't gate the verdict (see QuestData.required_items
+## vs. required_empty_cells). Built here rather than read off GameState so the engine
+## stays a pure function of its inputs.
+static func _build_summary_line(quest: QuestData, packed_items: Array[ItemData],
+		stats: Dictionary, free_cells: int) -> String:
 	var targets := quest.get_targets()
 	var met_stats: Array[String] = []
 	var missed_stats: Array[String] = []
@@ -60,15 +67,29 @@ static func _build_summary_line(quest: QuestData, packed_items: Array[ItemData],
 			var label := required.display_name if not required.display_name.is_empty() else required.id
 			missing_items.append(label)
 
-	var cleared := missed_stats.is_empty()
+	# Two ways to fail now, and either alone is enough: short on a stat, or the bag was
+	# packed too full to leave the room the quest asked for.
+	var space_met: bool = quest.empty_space_met(free_cells)
+	var cleared: bool = missed_stats.is_empty() and space_met
 	var line := "Quest Succeeded: " if cleared else "Quest Failed: "
 	if cleared:
 		line += "every supply target was met (" + ", ".join(met_stats) + ")."
 	else:
-		line += "fell short on " + ", ".join(missed_stats)
+		var reasons: Array[String] = []
+		if not missed_stats.is_empty():
+			reasons.append("fell short on " + ", ".join(missed_stats))
+		if not space_met:
+			reasons.append("left only %d of the %d squares of room it needed" % [
+				maxi(free_cells, 0), quest.required_empty_cells])
+		line += " and ".join(reasons)
 		if not met_stats.is_empty():
 			line += "; met " + ", ".join(met_stats)
 		line += "."
+
+	# Room kept is worth saying out loud too — it is the thing the brief asked for, so a
+	# player who packed around it should see that it counted.
+	if space_met and quest.required_empty_cells > 0 and free_cells >= 0:
+		line += " There was room left over for everything they gathered."
 
 	if not quest.required_items.is_empty():
 		if not missing_items.is_empty():

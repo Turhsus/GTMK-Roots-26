@@ -19,10 +19,44 @@ class Placement:
 	var rotation_steps: int
 	var cells: Array[Vector2i]
 
+## The playable board this snapshot was taken from, in cells — the run's current bag
+## tier, not the 6x6 frame it is drawn inside (see BagGrid). Only free_cell_count()
+## needs it: "how much room is left" is meaningless without knowing how much there was.
+## Left at 0 by anything that builds a layout by hand (the tests, a hypothetical
+## packing), which reads as "nobody measured a board" rather than "no room".
+## Named `board_*` rather than `cols`/`rows` because `cells_above` already takes a
+## `rows` argument meaning something else entirely.
+var board_cols: int = 0
+var board_rows: int = 0
+
 ## ItemData -> Placement.
 var _by_item: Dictionary = {}
 ## Vector2i -> ItemData, one entry per occupied cell, for neighbour / above lookups.
 var _by_cell: Dictionary = {}
+
+
+## Records the playable board size. BagGrid.snapshot() calls this from the current
+## bag tier before adding any placement.
+func set_board_size(new_cols: int, new_rows: int) -> void:
+	board_cols = maxi(new_cols, 0)
+	board_rows = maxi(new_rows, 0)
+
+
+## How many playable cells nothing is packed in, or -1 when no board size was recorded
+## (see board_cols/board_rows) — an unmeasured board has to read as "unknown" so a
+## hand-built layout can't accidentally fail a quest's room requirement.
+##
+## The one implementation of this count: the live packing readout and the send-off
+## verdict both read it off a snapshot, so the number the player is shown while packing
+## is by construction the number the quest is judged against.
+func free_cell_count() -> int:
+	if board_cols <= 0 or board_rows <= 0:
+		return -1
+	var filled := 0
+	for cell in _by_cell:
+		if cell.x >= 0 and cell.y >= 0 and cell.x < board_cols and cell.y < board_rows:
+			filled += 1
+	return maxi(board_cols * board_rows - filled, 0)
 
 
 ## Records one item's footprint. BagGrid calls this per placed view while building

@@ -389,6 +389,53 @@ func _test_engine() -> void:
 	check(NarrativeEngine.build_log(null, empty, {}).is_empty(), "no quest, no log")
 
 	_test_authored_beats(quest)
+	_test_room_requirement()
+
+
+## A quest's empty-space requirement is a *gate*, not a hint: the verdict line has to
+## fail a bag that met every stat target but was packed too full, and must name the
+## shortfall. This mirrors main._on_sent_off's own clear check — if the two ever disagree,
+## the log tells the player one thing and the gold does another.
+func _test_room_requirement() -> void:
+	var quest := QuestData.new()
+	quest.id = "test_room_quest"
+	quest.target_food = 0
+	quest.target_health = 0
+	quest.target_combat = 0
+	quest.target_utility = 0
+	quest.required_empty_cells = 3
+	var nothing: Array[ItemData] = []
+	var met := _stats(0, 0, 0, 0)
+
+	var roomy := NarrativeEngine.build_log(quest, nothing, met, 5)
+	check(roomy[-1].begins_with("Quest Succeeded"),
+		"every target met with room to spare clears the quest")
+	check(roomy[-1].contains("room left over"),
+		"keeping the room the quest asked for is said out loud")
+
+	var stuffed := NarrativeEngine.build_log(quest, nothing, met, 1)
+	check(stuffed[-1].begins_with("Quest Failed"),
+		"a bag packed too full fails even with every stat target met")
+	check(stuffed[-1].contains("1 of the 3 squares"),
+		"the verdict names how much room was left against how much was needed")
+
+	# Failing on both halves at once must read as one sentence, not a mangled one.
+	quest.target_food = 4
+	var both := NarrativeEngine.build_log(quest, nothing, met, 0)
+	check(both[-1].contains("fell short on") and both[-1].contains("squares of room"),
+		"a bag that is short on stats *and* on room reports both reasons")
+
+	# A quest that asks for no room is never gated on it, however full the bag is.
+	var easy := QuestData.new()
+	easy.target_food = 0
+	easy.target_health = 0
+	easy.target_combat = 0
+	easy.target_utility = 0
+	var full := NarrativeEngine.build_log(easy, nothing, met, 0)
+	check(full[-1].begins_with("Quest Succeeded"),
+		"a quest asking for no room ignores a full bag")
+	check(not full[-1].contains("room"),
+		"and says nothing about room it never asked for")
 
 
 ## The conditional-variant machinery: tag matching, forbid rules, and authoring

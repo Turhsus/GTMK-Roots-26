@@ -271,6 +271,9 @@ func get_placed_views() -> Array:
 ## rotation and cells; the board itself is left untouched.
 func snapshot() -> PackLayout:
 	var layout := PackLayout.new()
+	# The playable region, not the 6x6 frame — a tier-2 bag genuinely has fewer cells,
+	# so a quest's "leave room" requirement is judged against the bag being carried.
+	layout.set_board_size(cols, rows)
 	for view in _cells_by_view.keys():
 		var di := view as DraggableItem
 		var cells: Array[Vector2i] = _cells_by_view[view]
@@ -282,8 +285,12 @@ func snapshot() -> PackLayout:
 ## over a single snapshot — the packing-time counterpart to send-off resolution, and
 ## the one place the live feedback comes from. Returns:
 ##
-##   "bonus"    -> the summed live stat delta, for GameState.set_layout_bonus
-##   "outcomes" -> ItemData -> { ItemEffect: EffectOutcome }, the *firing* rules only
+##   "bonus"      -> the summed live stat delta, for GameState.set_layout_bonus
+##   "outcomes"   -> ItemData -> { ItemEffect: EffectOutcome }, the *firing* rules only
+##   "free_cells" -> playable cells still empty, for a quest's room requirement
+##                   (QuestData.required_empty_cells). Carried out of this sweep rather
+##                   than counted separately so the live readout and the send-off verdict
+##                   can't disagree — both are PackLayout.free_cell_count().
 ##
 ## Keyed by effect so the info panel can pair a firing outcome back to the rule whose
 ## general description it replaces (EffectOutcome deliberately carries no back-pointer;
@@ -313,7 +320,7 @@ func evaluate_board() -> Dictionary:
 				bonus[key] = int(bonus.get(key, 0)) + int(outcome.stat_delta[key])
 		if not firing.is_empty():
 			outcomes[item] = firing
-	return {"bonus": bonus, "outcomes": outcomes}
+	return {"bonus": bonus, "outcomes": outcomes, "free_cells": layout.free_cell_count()}
 
 
 ## Just the stat half of evaluate_board(), for callers that only want the numbers.

@@ -22,6 +22,10 @@ const QUEST: QuestData = preload("res://data/quests/tutorial.tres")
 @onready var quest_title: Label = %QuestTitle
 @onready var quest_brief: Label = %QuestBrief
 @onready var quest_brief_card: PanelContainer = %QuestBriefCard
+## Live "leave N squares empty" line under the brief. Hidden for the quests that ask
+## for no room, which is most of them.
+@onready var space_requirement: Label = %SpaceRequirement
+@onready var stats_panel: StatsPanel = %StatsPanel
 @onready var bag_grid: BagGrid = %BagGrid
 @onready var item_tray: ItemTray = %ItemTray
 @onready var drag_layer: Control = %DragLayer
@@ -224,6 +228,11 @@ func _on_quest_changed(quest: QuestData) -> void:
 	quest_brief.text = brief
 	quest_brief.visible = not brief.is_empty()
 	quest_brief_card.visible = not quest.title.strip_edges().is_empty() or not brief.is_empty()
+	# The room requirement is read off the board, not the quest, so it goes through the
+	# same sweep every other live feedback does. Needed here as well as in load_quest
+	# because a standalone PackingScene (or a test) sets the quest without going through
+	# it — the readout must never be left showing the previous quest's requirement.
+	_refresh_layout_feedback()
 
 
 ## The board snapshot Main hands to send-off so each packed item's effects can read
@@ -248,6 +257,7 @@ func _refresh_layout_feedback() -> void:
 	var evaluation := bag_grid.evaluate_board()
 	GameState.set_layout_bonus(evaluation["bonus"])
 	_outcomes = evaluation["outcomes"]
+	_refresh_space_readout(int(evaluation["free_cells"]))
 	for view in bag_grid.get_placed_views():
 		var placed := view as DraggableItem
 		placed.set_violating(_is_violating(placed.item))
@@ -255,6 +265,28 @@ func _refresh_layout_feedback() -> void:
 	for child in item_tray.item_container.get_children():
 		if child is DraggableItem:
 			(child as DraggableItem).set_violating(false)
+
+
+## The live "leave N squares empty" line, against how much room the board actually has
+## left. Hidden entirely for a quest that asks for none, and coloured with the stat
+## panel's own amber/green pair — read off the panel rather than redeclared here, so
+## "not there yet" looks the same in both places against the tan card.
+##
+## This one differs from an item rule on purpose: a violated item rule is a consequence
+## (durability), but too little room *fails the quest outright* (see
+## QuestData.required_empty_cells), so it is stated as a plain requirement in the brief
+## card rather than as an amber wash on some item. Still never blocking — the bag can be
+## packed full and sent anyway.
+func _refresh_space_readout(free_cells: int) -> void:
+	var quest := GameState.current_quest
+	var needed: int = 0 if quest == null else quest.required_empty_cells
+	space_requirement.visible = needed > 0
+	if needed <= 0:
+		return
+	var free := maxi(free_cells, 0)
+	space_requirement.text = "%s  —  %d free" % [quest.empty_space_label(), free]
+	space_requirement.add_theme_color_override("font_color",
+			stats_panel.met_color if free >= needed else stats_panel.under_color)
 
 
 ## Whether any of this item's rules is currently firing *against* it. A boon firing

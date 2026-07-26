@@ -1,0 +1,19 @@
+[gd_resource type="Resource" script_class="QuestData" format=3 uid="uid://bq8fhdk07k4l"]
+
+[ext_resource type="Script" uid="uid://45ajj2ptcv0d" path="res://resources/narrative_event.gd" id="1_jyywn"]
+[ext_resource type="Script" uid="uid://du5drbi85ateb" path="res://resources/item_data.gd" id="2_h7cm3"]
+[ext_resource type="Script" uid="uid://b8mpss75xj6nx" path="res://resources/quest_data.gd" id="3_ub77g"]
+
+[resource]
+script = ExtResource("3_ub77g")
+id = "weed_wacker"
+title = "Slay the Weed Wacker"
+brief = "A dangerous weed wacker has been seen near the Tall Grass Sea. It could destroy the ecosystem, and throw the entire region out of balance. Your little one needs to slay the creature! Make sure you bring a weapon, some armor or something to defend them, and some healing items"
+difficulty = 2
+gold_reward = 25
+traits = Array[String](["defence", "weapon", "healing"])
+target_food = 2
+target_health = 5
+target_combat = 5
+target_utility = 1
+metadata/_custom_type_script = "uid://b8mpss75xj6nx"

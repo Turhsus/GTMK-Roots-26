@@ -299,6 +299,15 @@ func _build_preview_card(quest: QuestData) -> Control:
 		packing.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 		layout.add_child(packing)
 
+	# Room to leave free is a hard requirement, not a hint, so it belongs on the card the
+	# player shops against — a bag filled in town can't be emptied at send-off.
+	if quest.required_empty_cells > 0:
+		var room := Label.new()
+		room.text = quest.empty_space_label()
+		room.add_theme_font_size_override("font_size", 13)
+		room.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		layout.add_child(room)
+
 	return card
 
 

@@ -194,6 +194,10 @@ func _on_sent_off() -> void:
 	# readout wants every item's before -> after, including copies destroyed below.
 	var layout := packing_scene.snapshot_board()
 	var report := _durability_report(layout)
+	# Read the room left in the bag off the same snapshot, before send-off starts moving
+	# anything: a quest can require empty cells (QuestData.required_empty_cells), and it
+	# is judged on the bag as the player sent it, not on what survived the trip.
+	var free_cells: int = layout.free_cell_count()
 
 	# The send-off runs in a deliberate order (see the design note in run_state.gd):
 	# 1. Placement effects dock durability for a bad pack (packed upside down, next to
@@ -209,18 +213,22 @@ func _on_sent_off() -> void:
 
 	# 4. Judge the quest against what actually survived to be used. register_result pays
 	#    the reward on a clear, so the gold is on hand for the gather phase that follows.
-	var cleared := GameState.count_targets_met() == GameState.STAT_KEYS.size()
+	#    A quest that asked for room in the bag is gated on that too — every stat target
+	#    met *and* enough cells left free. NarrativeEngine's verdict line mirrors this
+	#    same pair, so the log can't disagree with the gold.
+	var cleared: bool = GameState.count_targets_met() == GameState.STAT_KEYS.size() \
+			and quest.empty_space_met(free_cells)
 	RunState.register_result(quest, cleared)
 	# Snapshot the quest verdict for the debug readout while GameState is still on this
 	# quest and holds the judged stats — the trip wear/discard below can change them.
-	var outcome := _outcome_report(cleared)
+	var outcome := _outcome_report(cleared, free_cells)
 	# Remember the outcome for the post-playout perk offer. GameState is still on this
 	# quest here, so read the shortfall now — by the time the playout ends the picker
 	# may have moved on.
 	_last_cleared = cleared
 	_last_missed_stats = _missed_stats()
 	# The log reflects the survivors too — a food item that broke won't tell its beat.
-	var lines := NarrativeEngine.build_log(quest, GameState.packed_items, GameState.stats)
+	var lines := NarrativeEngine.build_log(quest, GameState.packed_items, GameState.stats, free_cells)
 
 	# 5. The trip itself wears every surviving item by one: single-use items are spent,
 	#    sturdier ones (the blanket) come home with less durability left ...
@@ -443,13 +451,24 @@ func _durability_report(layout: PackLayout) -> Array:
 
 ## Snapshot of how the quest was judged: the per-stat have/need, whether each target
 ## was met, and the overall clear. Captured while GameState is still on this quest.
-func _outcome_report(cleared: bool) -> Dictionary:
+## A quest asking for room in the bag gets one more row in the same have/need shape,
+## so every half of the verdict is visible in the debug readout rather than just the
+## stats (see QuestData.required_empty_cells).
+func _outcome_report(cleared: bool, free_cells: int) -> Dictionary:
 	var targets := GameState.get_targets()
 	var rows: Array = []
 	for key in GameState.STAT_KEYS:
 		var have := int(GameState.stats.get(key, 0))
 		var need := int(targets.get(key, 0))
 		rows.append({"stat": key, "have": have, "need": need, "met": have >= need})
+	var quest := GameState.current_quest
+	if quest != null and quest.required_empty_cells > 0:
+		rows.append({
+			"stat": "empty room",
+			"have": maxi(free_cells, 0),
+			"need": quest.required_empty_cells,
+			"met": quest.empty_space_met(free_cells),
+		})
 	return {"cleared": cleared, "rows": rows}
 
 

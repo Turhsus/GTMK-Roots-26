@@ -119,8 +119,29 @@ never learns about stats.
   rule still isn't expressible (see the gap noted in `protect_adjacent_item_effect.gd`).
 
 `systems/` is deliberately free of scene-tree and autoload access — `NarrativeEngine` is a
-pure `(quest, packed_items, stats) -> Array[String]`, which is why the playout can be
-regenerated, previewed, or tested headless.
+pure `(quest, packed_items, stats, free_cells) -> Array[String]`, which is why the playout
+can be regenerated, previewed, or tested headless.
+
+**Quest requirements come in two strengths, and the difference is the point:**
+
+- `QuestData.required_items` is *advisory*. A missing item is reported in the verdict line
+  as context and nothing more; it never changes whether the quest cleared.
+- `QuestData.required_empty_cells` is a *gate*. Room the bag must be left with (the harvest
+  quest wants 3 cells free for the herbs), judged alongside the stat targets: `main.gd`'s
+  `cleared` is `count_targets_met() == 4 and quest.empty_space_met(free_cells)`, and
+  `NarrativeEngine._build_summary_line` mirrors that same pair so the log can never
+  disagree with the gold. Counted against the *playable* board (the bag tier), not the 6×6
+  frame.
+
+  There is exactly one implementation of the count — `PackLayout.free_cell_count()`, which
+  returns **-1** for a layout nobody recorded a board size on (a hand-built test layout, a
+  replayed log), and an unmeasured board can never fail a requirement. `BagGrid.snapshot()`
+  sets that board size, and `evaluate_board()` carries `free_cells` out of its single
+  sweep, so the live readout under the packing brief and the send-off verdict are by
+  construction the same number. Being a gate is exactly why it is on screen live: the
+  gather preview card names it before the player shops, and the packing card counts it
+  down in the stat panel's own amber/green. Still never blocking — the bag can be packed
+  full and sent anyway.
 
 ## Conventions
 
@@ -173,14 +194,14 @@ be precise.
 | File | | |
 |---|---|---|
 | `narrative_engine.gd` | 52 | Packed bag -> adventure log: resolves a quest's `departure`, `narrative` beats, then `homecoming`, all authored per-quest data. |
-| `pack_layout.gd` | 165 | Immutable send-off snapshot of the board; what effects query. Neighbour, above and *hollow/within* queries all read off the placed cells, so rotation needs no special handling. |
+| `pack_layout.gd` | 199 | Immutable send-off snapshot of the board; what effects query. Neighbour, above and *hollow/within* queries all read off the placed cells, so rotation needs no special handling. Also records the playable board size, which is what `free_cell_count()` (the quest room gate) needs. |
 | `ui.gd` | 25 | Runtime UI constructors (see the theme note above). |
 
 ### resources/ — the data schema
 | File | | |
 |---|---|---|
 | `item_data.gd` | 159 | One packable item: shape, stats, durability, traits, `effects`. `@tool`. |
-| `quest_data.gd` | 86 | Brief, offered items, stat targets, `narrative` beats plus per-quest `departure`/`homecoming` events. `@tool`. |
+| `quest_data.gd` | 123 | Brief, offered items, stat targets, `required_empty_cells` (the room gate), `narrative` beats plus per-quest `departure`/`homecoming` events. `@tool`. |
 | `quest_pool.gd` | 27 | The authored list of all quests; `RunState` draws from it. |
 | `shop_data.gd` | 27 | A shop's themed stock. Selling is per-item, not per-shop. |
 | `trait_registry.gd` | 19 | Master lists of item traits and quest traits. |
@@ -215,7 +236,10 @@ Also `scenes/gather/TownScreen.tscn` (no paired script).
 ### data/ — authored content
 - `items/` — 19: apple, axe, berries, blanket, boots, bread, cheese_wedge, crowbar, flail,
   flint_and_steel, health_potion, helmet, knife, package, rope, shield, sword, torch, wine.
-- `quests/` — **only 3**: `tutorial`, `rescue`, `scouting`. `quest_pool.tres` is the pool.
+- `quests/` — 8: `tutorial`, `rescue`, `scouting`, `drowning_fish`, `racoons`, `harvest`,
+  `wine_delivery`, `weed_wacker`. `quest_pool.tres` is the pool, and holds only the middle
+  four (`scouting`, `rescue`, `drowning_fish`, `racoons`) — see "Known drift".
+  `harvest` is the one quest using the `required_empty_cells` room gate (3 cells).
 - `narrative_events/` — authored `NarrativeEvent`s a quest's `narrative`/`departure`/
   `homecoming` fields point at. Only `tutorial` has any today: `tutorial_beat.tres` (food
   check) and `tutorial_supplies_beat.tres` (the log-crossing check, silent if the food beat
@@ -247,10 +271,11 @@ Gitignored: `.godot/`, `/android/`, `/build/`, `.vscode/`, and the built `releas
   (food, then supplies); no quest yet has a `departure` or `homecoming` authored, so
   `rescue` and `scouting`'s playouts currently open and close with nothing at all — that's
   expected until they're written, not a bug.
-- `data/quest_pool.tres` holds only `rescue` (tier 1) and `scouting` (tier 2). `racoons`,
-  `drowning_fish` and `jessica` exist but are not in the pool, so they are unreachable;
-  and **no quest sits at tier 0**, so a fresh run relies on `RunState._nearest_tier()`
-  to have anything to offer.
+- `data/quest_pool.tres` holds `scouting`, `rescue`, `drowning_fish` and `racoons`.
+  `harvest`, `wine_delivery` and `weed_wacker` exist but are **not** in the pool, so they
+  are only reachable through the debug quest picker on `QuestSelect` — which is worth
+  knowing before hand-testing `harvest`'s room requirement. **No quest sits at tier 0**,
+  so a fresh run relies on `RunState._nearest_tier()` to have anything to offer.
 - `NoRotationEffect.rotate` defaults to **0**, which docks an item for being packed
   *upright*. `data/items/flail.tres` composes the effect without setting `rotate`, so the
   flail is penalised for being packed the right way up; axe (1), wine (2) and
