@@ -100,6 +100,28 @@ func _ready() -> void:
 	check(sword.rotation_steps == 0, "returning to the tray resets rotation")
 	check(GameState.stats["combat"] == 0, "un-packing takes the stat back off")
 
+	# --- a drag out of the bag must not leave the grid owning the gesture ---
+	# BagGrid latches the view a press landed on, but a press that becomes a drag
+	# has its release eaten by PackingScene, so the latch is never cleared there.
+	# If it survives, the next press on the board is forwarded to an item that is
+	# now sitting in the tray, and the smallest nudge drags it back out.
+	bag.place(sword, Vector2i(0, 0))
+	GameState.add_item(sword.item)
+	bag._input_owner = sword
+	scene._on_item_grabbed(sword, Vector2.ZERO)
+	scene._preview_valid = false
+	scene._preview_origin = Vector2i(99, 99)
+	scene._end_drag(true)
+	check(sword.get_parent() == tray.item_container, "the dragged-out sword is back in the tray")
+	var press := InputEventMouseButton.new()
+	press.button_index = MOUSE_BUTTON_LEFT
+	press.pressed = true
+	press.global_position = bag.global_position + Vector2(cell * 1.5, cell * 1.5)
+	press.position = press.global_position - bag.global_position
+	bag._gui_input(press)
+	check(bag._input_owner == null, "a press on an empty cell claims no gesture owner")
+	check(not sword._press_active, "a press on the board is not forwarded to an item in the tray")
+
 	# --- resize board ---
 	# Clear any remaining occupancy, then shrink: a 1x3 sword must not fit on a
 	# row that doesn't exist on a 4x4... already 4x4. Grow to 6x6 and place at

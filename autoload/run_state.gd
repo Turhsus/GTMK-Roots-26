@@ -380,19 +380,28 @@ func gain(item: ItemData) -> void:
 	inventory_changed.emit(inventory)
 
 
-## Drops one owned copy of an item and reports whether it had one to drop — a sale
-## in town. Owned copies are distinct instances now (each tracks its own wear), so
-## this matches on `id` and drops the first such copy, leaving any others (and their
-## separate durability) in place.
-func release(item: ItemData) -> bool:
+## Puts an already-owned copy back into the inventory without cloning — used when
+## buying back something sold earlier in the same shop visit (durability preserved).
+func restore(item: ItemData) -> void:
 	if item == null:
-		return false
+		return
+	inventory.append(item)
+	inventory_changed.emit(inventory)
+
+
+## Drops one owned copy of an item and returns it — a sale in town. Owned copies
+## are distinct instances now (each tracks its own wear), so this matches on `id`
+## and drops the first such copy, leaving any others (and their separate
+## durability) in place. Returns null when nothing matched.
+func release(item: ItemData) -> ItemData:
+	if item == null:
+		return null
 	for owned in inventory:
 		if owned.id == item.id:
 			inventory.erase(owned)
 			inventory_changed.emit(inventory)
-			return true
-	return false
+			return owned
+	return null
 
 
 ## Lends the quest's `quest_items` to the player for the quest's duration: each
