@@ -24,7 +24,11 @@ func _ready() -> void:
 	check(views.size() == stock_size, "tray spawned the whole inventory, got %d of %d" % [views.size(), stock_size])
 	check(bag.cols == RunState.bag_cols() and bag.rows == RunState.bag_rows(),
 		"bag matches the run's backpack size (%dx%d)" % [RunState.bag_cols(), RunState.bag_rows()])
-	check(bag.cols == 4 and bag.rows == 4, "a fresh run starts with a 4x4 bag")
+	# Read the starting size off BAG_SIZES rather than writing it out — the ladder
+	# went from [4,5,6] to [3,4,5,6], and a hardcoded 4 just encodes the old tuning.
+	var start_size: int = RunState.BAG_SIZES[0]
+	check(bag.cols == start_size and bag.rows == start_size,
+		"a fresh run starts with a %dx%d bag" % [start_size, start_size])
 
 	var sword: DraggableItem = _find(views, "sword")
 	check(sword != null, "sword is in the tray")
@@ -65,26 +69,27 @@ func _ready() -> void:
 		"a point past the midpoint of cell 2 still snaps to cell 2")
 	check(bag.snap_to_cell(Vector2(-40.0, -40.0)) == Vector2i(0, 0), "near-miss above/left snaps back in")
 
-	# --- rotation (bread is 2x1 in the starter pack) ---
+	# --- rotation (the knife is the 2x1 in the starter pack) ---
 	# custom_minimum_size, not size: in the tray the flow container stretches
 	# items to the row height, so `size` is not the shape box there.
-	var bread: DraggableItem = _find(views, "bread")
-	check(bread != null, "bread is in the tray for rotation tests")
-	var before := bread.custom_minimum_size
-	check(before == Vector2(2, 1) * cell, "bread is a 2x1 box, got %s" % before)
-	bread.rotate_once()
-	check(bread.custom_minimum_size == Vector2(before.y, before.x),
-		"rotating swaps the bounding box: %s -> %s" % [before, bread.custom_minimum_size])
-	check(bag.can_place(bread.get_shape(), Vector2i(0, bag.rows - 1)) == false,
+	# This used to rotate a bread, which is no longer in STARTER_INVENTORY.
+	var knife: DraggableItem = _find(views, "knife")
+	check(knife != null, "the knife is in the tray for rotation tests")
+	var before := knife.custom_minimum_size
+	check(before == Vector2(2, 1) * cell, "the knife is a 2x1 box, got %s" % before)
+	knife.rotate_once()
+	check(knife.custom_minimum_size == Vector2(before.y, before.x),
+		"rotating swaps the bounding box: %s -> %s" % [before, knife.custom_minimum_size])
+	check(bag.can_place(knife.get_shape(), Vector2i(0, bag.rows - 1)) == false,
 		"a rotated 1x2 no longer fits on the bottom row")
-	bread.rotate_once()
-	bread.rotate_once()
-	bread.rotate_once()
-	check(bread.custom_minimum_size == before, "four rotations return to the start")
+	knife.rotate_once()
+	knife.rotate_once()
+	knife.rotate_once()
+	check(knife.custom_minimum_size == before, "four rotations return to the start")
 
 	# A drag must leave the tray at true shape size, not the stretched one.
-	scene._on_item_grabbed(bread, Vector2(150, 150))
-	check(bread.size == before, "dragged item is its shape box, got %s" % bread.size)
+	scene._on_item_grabbed(knife, Vector2(150, 150))
+	check(knife.size == before, "dragged item is its shape box, got %s" % knife.size)
 	check(scene._grab_offset.x <= before.x and scene._grab_offset.y <= before.y,
 		"grab offset clamped into the item, got %s" % scene._grab_offset)
 	scene._end_drag(false)

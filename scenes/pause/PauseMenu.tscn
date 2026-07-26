@@ -125,6 +125,11 @@ layout_mode = 2
 text = "Thank you (end)"
 metadata/phase = "thank_you"
 
+[node name="DebugToggles" type="VBoxContainer" parent="Center/DebugPanel" unique_id=1477203912]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_constants/separation = 4
+
 [node name="AddGoldButton" type="Button" parent="Center/DebugPanel" unique_id=803025042]
 unique_name_in_owner = true
 custom_minimum_size = Vector2(280, 44)

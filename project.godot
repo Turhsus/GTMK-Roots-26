@@ -22,6 +22,7 @@ RunState="*res://autoload/run_state.gd"
 SaveManager="*res://autoload/save_manager.gd"
 AudioManager="*res://autoload/audio_manager.gd"
 Traits="*res://autoload/traits.gd"
+DebugFlags="*res://autoload/debug_flags.gd"
 
 [display]
 
