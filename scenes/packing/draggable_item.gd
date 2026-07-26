@@ -37,6 +37,11 @@ const DURA_BAR_MID := Color("a85a24")
 const DURA_BAR_LOW := Color("9a3a2a")
 const DURA_BAR_TRACK := Color(0.25, 0.2, 0.16, 0.55)
 
+## Extra breathing room inside the textbox frame's own content margin — the
+## frame's margins are sized to keep the *art* unstretched, not to clear text,
+## so lettering can still sit right against the drawn border without this.
+const INFO_PANEL_PADDING := 8
+
 var item: ItemData
 ## 90-degree clockwise turns applied to `item.shape`.
 var rotation_steps: int = 0
