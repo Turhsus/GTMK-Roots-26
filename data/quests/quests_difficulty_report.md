@@ -26,12 +26,12 @@ Two escape hatches soften that:
 |---|---|---|---|---|---|---|---|---|---|
 | `tutorial` (Fetch Quest) | 0 *(default)* | no — forced first | 2 | 5 | 2 | 0 | 0 | 1 | **3** |
 | `drowning_fish` (Drowning Fish) | 1 | **yes** | 1 | 10 | 3 | 0 | 0 | 2 | **5** |
-| `harvest` (Harvest Herbs) | 1 | no | 1 | 20 | 1 | 0 | 0 | 3 | **4** |
+| `harvest` (Harvest Herbs) | 1 | **yes** | 1 | 20 | 1 | 0 | 0 | 3 | **4** |
 | `rescue` (A Trapped Chipmunk!) | 1 | **yes** | 3 *(default)* | 0 *(default)* | 2 | 2 | 0 | 4 | **8** |
 | `racoons` (Thieving Raccoons) | 2 | **yes** | 4 | 30 | 5 | 3 | 5 | 2 | **15** |
 | `scouting` (Explore the Verazon Forest) | 2 | **yes** | 5 | 25 | 6 | 2 | 3 | 4 | **15** |
-| `weed_wacker` (Slay the Weed Wacker) | 2 | no | 3 *(default)* | 25 | 2 | 5 | 5 | 1 | **13** |
-| `wine_delivery` (Wine Delivery) | 3 | no | 3 *(default)* | 40 | 2 | 1 | 5 | 1 | **9** |
+| `weed_wacker` (Slay the Weed Wacker) | 2 | **yes** | 3 *(default)* | 25 | 2 | 5 | 5 | 1 | **13** |
+| `wine_delivery` (Wine Delivery) | 3 | **yes** | 3 *(default)* | 40 | 2 | 1 | 5 | 1 | **9** |
 
 Extra requirements, per quest:
 
@@ -56,30 +56,34 @@ in the verdict line and changes nothing about whether the quest cleared.
 
 ```
 tier 0   authored: tutorial                          pool: —                (EMPTY)
-tier 1   authored: drowning_fish, harvest, rescue    pool: drowning_fish, rescue
-tier 2   authored: racoons, scouting, weed_wacker    pool: racoons, scouting
-tier 3   authored: wine_delivery                     pool: —                (EMPTY)
+tier 1   authored: drowning_fish, harvest, rescue    pool: all three
+tier 2   authored: racoons, scouting, weed_wacker    pool: all three
+tier 3   authored: wine_delivery                     pool: wine_delivery
 tier 4   authored: —                                 pool: —                (EMPTY)
 ```
 
-Only four of eight quests are in `quest_pool.tres`. The other four reach the player solely
-through the debug picker on `QuestSelect`.
+Every authored quest except `tutorial` is now in `quest_pool.tres`. `tutorial` stays out on
+purpose: `main.gd` hands it to the player directly as the forced first quest, and pooling it
+would make it redrawable later in the run.
 
 ## What that means for a real run
 
-`current_difficulty()` climbs one per clear and caps at 4, but the pool only has content at
-tiers 1 and 2. Walking a clean run:
+`current_difficulty()` climbs one per clear and caps at 4. Walking a clean run:
 
 | Clears so far | Tier asked for | Tier actually served | Offered |
 |---|---|---|---|
-| 0 (after tutorial) | 0 | 1 (fallback) | drowning_fish, rescue |
-| 1 | 1 | 1 | the other one, then both again |
-| 2 | 2 | 2 | racoons, scouting |
-| 3+ | 3, then 4 | 2 (fallback) | racoons, scouting, forever |
+| 0 (after tutorial) | 0 | 1 (fallback) | 3 of drowning_fish, harvest, rescue |
+| 1 | 1 | 1 | the tier-1 quests not yet cleared |
+| 2 | 2 | 2 | 3 of racoons, scouting, weed_wacker |
+| 3 | 3 | 3 | wine_delivery (alone) |
+| 4+ | 4 | 3 (fallback) | wine_delivery, repeating |
 
-So the difficulty ladder is effectively **two rungs deep and two quests wide**, and from the
-third clear onward the run repeats tier 2 indefinitely. The day clock (`TOTAL_DAYS = 15`)
-is what ends the run, not running out of quests.
+So the ladder now runs **three real rungs**, three quests wide at the bottom two and one at
+the top. Two soft spots remain: tier 0 has no pooled quest, so the first draw is still a
+`_nearest_tier` fallback upward into tier 1; and tier 4 is empty, so a player who clears
+four quests falls back to tier 3 and re-runs `wine_delivery`. In practice the day clock
+(`TOTAL_DAYS = 15`) usually ends the run before that, since the tier-2 quests cost 3–5
+gather days each.
 
 ## Findings worth a human call
 
@@ -89,11 +93,9 @@ is what ends the run, not running out of quests.
    quest every run sees first.
 2. **Tier 0 has no pool quest**, so the first post-tutorial draw is always a `_nearest_tier`
    fallback into tier 1. The fallback works, but it means the tier-0 rung of the ladder is
-   fiction — nothing can ever be authored *below* the first real draw without also being
-   put in the pool.
-3. **Tiers 3 and 4 are empty in the pool**, so difficulty flatlines after two clears. The
-   one tier-3 quest, `wine_delivery`, is also the highest-paying (40g) and is unreachable
-   outside the debug picker.
+   fiction — the tutorial is the only thing that ever sits there.
+3. **Tier 4 is empty and tier 3 holds one quest.** `MAX_DIFFICULTY` is 4, so a player who
+   clears four quests falls back to tier 3 and is offered `wine_delivery` on repeat.
 4. **`wine_delivery` is stamped harder than it plays.** At tier 3 its target sum is 9,
    below all three tier-2 quests (15/15/13). Its actual difficulty is concentration, not
    volume — combat 5 plus wine ×3 plus wine's `NoRotationEffect(rotate = 2)`. If tier is
@@ -103,8 +105,8 @@ is what ends the run, not running out of quests.
    `[3, 4, 5, 6]`, so tier 0 is a **3×3 = 9-cell** board and `required_empty_cells = 3`
    asks for a third of it while still hitting utility 3 and food 1. Note the docstring on
    `quest_data.gd:83` says "a tier-0 (4×4) bag" and CLAUDE.md repeats the 4×4 — the code
-   says 3×3. Trust `BAG_SIZES`. `harvest` isn't in the pool, so this is currently only
-   reachable via the debug picker.
+   says 3×3. Trust `BAG_SIZES`. Now that `harvest` is pooled at tier 1, a player can hit
+   this on a starting bag, so it wants a playtest.
 6. **Three quests use the default `days = 3`** (`rescue`, `weed_wacker`, `wine_delivery`).
    Since `days` is the gather budget the *next* town phase gets, an unset value is a real
    balance value being chosen by accident rather than by the author.

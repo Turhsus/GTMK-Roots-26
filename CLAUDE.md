@@ -237,9 +237,10 @@ Also `scenes/gather/TownScreen.tscn` (no paired script).
 - `items/` — 19: apple, axe, berries, blanket, boots, bread, cheese_wedge, crowbar, flail,
   flint_and_steel, health_potion, helmet, knife, package, rope, shield, sword, torch, wine.
 - `quests/` — 8: `tutorial`, `rescue`, `scouting`, `drowning_fish`, `racoons`, `harvest`,
-  `wine_delivery`, `weed_wacker`. `quest_pool.tres` is the pool, and holds only the middle
-  four (`scouting`, `rescue`, `drowning_fish`, `racoons`) — see "Known drift".
-  `harvest` is the one quest using the `required_empty_cells` room gate (3 cells).
+  `wine_delivery`, `weed_wacker`. `quest_pool.tres` is the pool and holds all of them
+  *except* `tutorial`, which is the forced first quest and is handed over directly —
+  see "Known drift". `harvest` is the one quest using the `required_empty_cells` room
+  gate (3 cells). `quests_difficulty_report.md` audits the tier spread.
 - `narrative_events/` — authored `NarrativeEvent`s a quest's `narrative`/`departure`/
   `homecoming` fields point at. Only `tutorial` has any today: `tutorial_beat.tres` (food
   check) and `tutorial_supplies_beat.tres` (the log-crossing check, silent if the food beat
@@ -271,11 +272,17 @@ Gitignored: `.godot/`, `/android/`, `/build/`, `.vscode/`, and the built `releas
   (food, then supplies); no quest yet has a `departure` or `homecoming` authored, so
   `rescue` and `scouting`'s playouts currently open and close with nothing at all — that's
   expected until they're written, not a bug.
-- `data/quest_pool.tres` holds `scouting`, `rescue`, `drowning_fish` and `racoons`.
-  `harvest`, `wine_delivery` and `weed_wacker` exist but are **not** in the pool, so they
-  are only reachable through the debug quest picker on `QuestSelect` — which is worth
-  knowing before hand-testing `harvest`'s room requirement. **No quest sits at tier 0**,
-  so a fresh run relies on `RunState._nearest_tier()` to have anything to offer.
+- `data/quest_pool.tres` holds all seven non-tutorial quests: `rescue`, `drowning_fish`
+  and `harvest` at tier 1, `scouting`, `racoons` and `weed_wacker` at tier 2, and
+  `wine_delivery` alone at tier 3. `tutorial` is deliberately out — `main.gd` hands it
+  over directly, and pooling it would let it be redrawn. **No pooled quest sits at tier
+  0 or tier 4**, so the first draw of a run and everything past the fourth clear both
+  rely on `RunState._nearest_tier()` to have anything to offer.
+- `data/quests/rescue.tres` sets no `gold_reward`, so it pays the default **0** — the
+  only pool quest that pays nothing, and one a tier-1 player meets early. Looks like an
+  authoring omission rather than a choice, but it is a balance number, so it is left for
+  a human to call. Same for `rescue`, `weed_wacker` and `wine_delivery` running on the
+  default `days = 3`, which silently sets the next gather's budget.
 - `NoRotationEffect.rotate` defaults to **0**, which docks an item for being packed
   *upright*. `data/items/flail.tres` composes the effect without setting `rotate`, so the
   flail is penalised for being packed the right way up; axe (1), wine (2) and

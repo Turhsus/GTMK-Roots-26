@@ -6,7 +6,10 @@
 [ext_resource type="Resource" uid="uid://ba4csicviisrr" path="res://data/quests/rescue.tres" id="3_x8sy5"]
 [ext_resource type="Resource" uid="uid://bchgvk5yh5a8b" path="res://data/quests/drowning_fish.tres" id="4_drown"]
 [ext_resource type="Resource" uid="uid://x312rcorem2y" path="res://data/quests/racoons.tres" id="4_racoon"]
+[ext_resource type="Resource" uid="uid://bxlxv731k0pb6" path="res://data/quests/harvest.tres" id="5_harvest"]
+[ext_resource type="Resource" uid="uid://bq8fhdk07k4l" path="res://data/quests/weed_wacker.tres" id="6_weed"]
+[ext_resource type="Resource" uid="uid://bjkjiu7fusyvj" path="res://data/quests/wine_delivery.tres" id="7_wine"]
 
 [resource]
 script = ExtResource("1_pool")
-quests = Array[ExtResource("2_qd")]([ExtResource("3_x8sy5"), ExtResource("3_fu2ai"), ExtResource("4_drown"), ExtResource("4_racoon")])
+quests = Array[ExtResource("2_qd")]([ExtResource("3_x8sy5"), ExtResource("4_drown"), ExtResource("5_harvest"), ExtResource("3_fu2ai"), ExtResource("4_racoon"), ExtResource("6_weed"), ExtResource("7_wine")])
