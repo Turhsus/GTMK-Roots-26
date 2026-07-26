@@ -68,6 +68,8 @@ var _open_shop: ShopData = null
 ## Copies sold during the current shop visit — shown on ShopScene's Buy back tab
 ## and cleared when leaving or opening a different shop.
 var _sold_this_visit: Array[ItemData] = []
+## Copies bought during the current shop visit — shown on the Return tab.
+var _bought_this_visit: Array[ItemData] = []
 ## True while the road fade is playing, so nothing can stack another roll / fade.
 var _travel_transitioning: bool = false
 
@@ -77,6 +79,7 @@ func _ready() -> void:
 	shop_scene.buy_pressed.connect(_on_buy)
 	shop_scene.sell_pressed.connect(_on_sell)
 	shop_scene.buyback_pressed.connect(_on_buyback)
+	shop_scene.return_pressed.connect(_on_return)
 	shop_scene.leave_pressed.connect(_end_day)
 	if ResourceLoader.exists(BACKGROUND_PATH):
 		background_art.texture = load(BACKGROUND_PATH)
@@ -115,6 +118,7 @@ func _end_day() -> void:
 	shop_scene.visible = false
 	_open_shop = null
 	_sold_this_visit.clear()
+	_bought_this_visit.clear()
 	RunState.spend_day()
 	_current_day += 1
 	if _current_day > _total_days:
@@ -323,23 +327,26 @@ func _build_preview_card(quest: QuestData) -> Control:
 ## Opens (or refreshes) the day's shop. The ShopScene is presentation only — it
 ## covers the road full-screen with its own art and signals trades back here,
 ## where the gold, inventory, and purchase counts actually move. Switching shops
-## (or opening one from the road) clears the Buy back list and starts on Buy.
+## (or opening one from the road) clears the Buy back / Return lists and starts on Buy.
 func _enter_shop(shop: ShopData) -> void:
 	var fresh_visit := _open_shop != shop
 	if fresh_visit:
 		_sold_this_visit.clear()
+		_bought_this_visit.clear()
 	_open_shop = shop
-	shop_scene.open(shop, day_label.text, _sold_this_visit, fresh_visit)
+	shop_scene.open(shop, day_label.text, _sold_this_visit, _bought_this_visit, fresh_visit)
 	shop_scene.visible = true
 
 
 ## Buys one of `item`: the shelf must have one and the purse must cover it, and only
 ## then does either move. How many are left is RunState's to track, so a purchase
-## outlives the gather it was made in.
+## outlives the gather it was made in. The gained copy is remembered for Return.
 func _on_buy(item: ItemData) -> void:
 	if RunState.shop_stock(_open_shop, item) > 0 and RunState.spend_gold(item.buy_price):
 		RunState.take_shop_stock(_open_shop, item)
-		RunState.gain(item)
+		var bought := RunState.gain(item)
+		if bought != null:
+			_bought_this_visit.append(bought)
 		AudioManager.play("place")
 	# Rebuild in place: affordability, stock and the sell list have all moved.
 	_enter_shop(_open_shop)
@@ -348,6 +355,8 @@ func _on_buy(item: ItemData) -> void:
 func _on_sell(item: ItemData) -> void:
 	var sold := RunState.release(item)
 	if sold != null:
+		# A same-visit purchase that gets sold can't also be Returned.
+		_bought_this_visit.erase(sold)
 		RunState.add_gold(sold.sell_price())
 		_sold_this_visit.append(sold)
 		AudioManager.play("send")
@@ -369,6 +378,25 @@ func _on_buyback(item: ItemData) -> void:
 	_sold_this_visit.erase(sold)
 	RunState.restore(sold)
 	AudioManager.play("place")
+	_enter_shop(_open_shop)
+
+
+## Returns one copy bought earlier in this visit: refunds the buy price, puts the
+## unit back on the shelf, and removes that exact copy from the pack.
+func _on_return(item: ItemData) -> void:
+	var bought: ItemData = null
+	for copy in _bought_this_visit:
+		if copy.id == item.id:
+			bought = copy
+			break
+	if bought == null:
+		return
+	if not RunState.release_exact(bought):
+		return
+	_bought_this_visit.erase(bought)
+	RunState.add_gold(bought.buy_price)
+	RunState.return_shop_stock(_open_shop, bought)
+	AudioManager.play("send")
 	_enter_shop(_open_shop)
 
 
