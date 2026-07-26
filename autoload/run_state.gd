@@ -53,7 +53,7 @@ const SHOPS: Array[ShopData] = [
 	preload("res://data/shops/blacksmith.tres"),
 	preload("res://data/shops/leather.tres"),
 	preload("res://data/shops/cheese_shop.tres"),
-\]
+]
 ## The one shop that sells backpack upgrades — the only place bag_tier can move.
 ## It carries no ItemData stock at all (see its `sells_bag_upgrade` flag); the
 ## "shelf" it has is a single upgrade that refills once per quest, not on the

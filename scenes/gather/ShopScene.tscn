@@ -98,7 +98,7 @@ layout_mode = 2
 size_flags_horizontal = 3
 theme_override_constants/separation = 12
 
-[node name="LeaveButton" type="Button" parent="Margin/Root"]
+[node name="LeaveButton" type="Button" parent="Margin/Root" unique_id=1296148621]
 unique_name_in_owner = true
 custom_minimum_size = Vector2(0, 48)
 layout_mode = 2
