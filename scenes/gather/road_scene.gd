@@ -171,6 +171,9 @@ func _show_road() -> void:
 		shops_row.add_child(_build_shop_button(shop))
 	body.add_child(shops_row)
 
+	body.add_child(_spacer(12))
+	body.add_child(_build_work_shift_button())
+
 	body.add_child(_spacer(16))
 	body.add_child(_subheading("Coming up — you'll choose one when you set out:"))
 	body.add_child(_build_quest_preview())
@@ -182,6 +185,24 @@ func _show_road() -> void:
 		skip.custom_minimum_size = Vector2(0, 40)
 		skip.pressed.connect(_skip_gather)
 		body.add_child(skip)
+
+
+## Alternate day action: earn a fixed wage and spend the day, same as leaving a shop.
+## Same height/font as shop buttons; width hugs the label (does not stretch with the row).
+func _build_work_shift_button() -> Button:
+	var button := Button.new()
+	button.text = "Not in a shopping mood, work a shift at the cheese shop  (+%dg, ends the day)" % WORK_SHIFT_GOLD
+	button.custom_minimum_size = Vector2(0, 56)
+	button.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
+	button.add_theme_font_size_override("font_size", 20)
+	button.pressed.connect(_on_work_shift)
+	return button
+
+
+func _on_work_shift() -> void:
+	RunState.add_gold(WORK_SHIFT_GOLD)
+	AudioManager.play("place")
+	_end_day()
 
 
 ## DEBUG: ends the gather phase immediately, whatever day it is. Still bills the
