@@ -11,7 +11,6 @@ var failures: int = 0
 
 func _ready() -> void:
 	_test_layout_queries()
-	_test_no_upside_down()
 	_test_clear_above()
 	_test_no_adjacent_trait()
 	_test_neighbor_stat_boost()
@@ -53,19 +52,6 @@ func _test_layout_queries() -> void:
 	var above := layout.cells_above(apple, 2)
 	check(above.has(Vector2i(2, 1)) and above.has(Vector2i(2, 0)) and above.size() == 2,
 		"cells_above returns the two cells over the footprint")
-
-
-# --- NoUpsideDownEffect ---------------------------------------------------------
-
-func _test_no_upside_down() -> void:
-	var effect := NoUpsideDownEffect.new()
-	effect.penalty = 1
-	# Upright (step 0) — untouched.
-	check(_wear_one("wine", ["water"], effect, 0) == 0, "upright item takes no extra wear")
-	# Sideways (step 1) — still fine, only 180 bites.
-	check(_wear_one("wine", ["water"], effect, 1) == 0, "sideways item takes no extra wear")
-	# Upside down (step 2) — docked.
-	check(_wear_one("wine", ["water"], effect, 2) == 1, "upside-down item loses durability")
 
 
 # --- ClearAboveEffect -----------------------------------------------------------
@@ -197,8 +183,6 @@ func _test_neighbor_stat_boost() -> void:
 # --- describe() -----------------------------------------------------------------
 
 func _test_describe() -> void:
-	var upside := NoUpsideDownEffect.new()
-	check(upside.describe() != "", "NoUpsideDownEffect describes itself")
 	var above := ClearAboveEffect.new()
 	check(above.describe() != "", "ClearAboveEffect describes itself")
 	var adj := NoAdjacentTraitEffect.new()

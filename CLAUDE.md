@@ -122,6 +122,13 @@ regenerated, previewed, or tested headless.
   picker), never mid-drag. The save has a "run" half owned by `RunState` and a "loop" half
   owned by `main.gd`.
 - Shop backgrounds are convention, not config: `assets/backgrounds/shop_<id>.png`.
+- The bag upgrade is sold at the **leatherworker** and nowhere else — the road has no
+  upgrade button. It is not an `ItemData` (it moves `RunState.bag_tier`, not the
+  inventory), so it can't sit in a shop's `stock`; `ShopData.sells_bag_upgrade` swaps
+  that shop's Buy tab for the bench. Two gates, both owned by
+  `RunState.bag_upgrade_available()`: one per town day, and one per quest — his bench
+  refills in `register_result`, not on the `RESTOCK_INTERVAL_DAYS` clock the item
+  shops use. Costs are `BAG_UPGRADE_COSTS` = 15 / 25 / 40 for the 4×4 / 5×5 / 6×6.
 
 ## File map
 
@@ -185,7 +192,7 @@ Also `scenes/gather/TownScreen.tscn` (no paired script).
 - `items/` — 19: apple, axe, berries, blanket, boots, bread, cheese_wedge, crowbar, flail,
   flint_and_steel, health_potion, helmet, knife, package, rope, shield, sword, torch, wine.
 - `quests/` — **only 3**: `tutorial`, `rescue`, `scouting`. `quest_pool.tres` is the pool.
-- `shops/` — grocer, blacksmith, apothecary.
+- `shops/` — grocer, blacksmith, apothecary, leatherworker.
 - `travel_events/` — found_coin, found_coin_pouch.
 - `trait_registry.tres` — the trait vocabulary.
 

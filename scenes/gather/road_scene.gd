@@ -20,7 +20,10 @@ extends Control
 ## themed stock; each item on a shelf has its own QTY and the player may buy as many
 ## as they can afford until it runs out; a bare shelf stays bare across gathers and
 ## only refills on the run's restock clock (RunState.RESTOCK_INTERVAL_DAYS); selling
-## is allowed at any shop for the item's sell_price (half).
+## is allowed at any shop for the item's sell_price (half). The backpack upgrade is
+## sold at the leatherworker and nowhere else — at most one per town day and one per
+## quest, since his bench refills when a quest is registered rather than on the day
+## clock (see RunState.bag_upgrade_available).
 ##
 ## Like QuestSelect, the layout is built in code — the .tscn is just the frame
 ## (header + a scrolling Body the views are rebuilt into).
@@ -80,6 +83,7 @@ func _ready() -> void:
 	shop_scene.sell_pressed.connect(_on_sell)
 	shop_scene.buyback_pressed.connect(_on_buyback)
 	shop_scene.return_pressed.connect(_on_return)
+	shop_scene.bag_upgrade_pressed.connect(_on_upgrade_bag)
 	shop_scene.leave_pressed.connect(_end_day)
 	if ResourceLoader.exists(BACKGROUND_PATH):
 		background_art.texture = load(BACKGROUND_PATH)
@@ -164,10 +168,6 @@ func _show_road() -> void:
 		shops_row.add_child(_build_shop_button(shop))
 	body.add_child(shops_row)
 
-	if RunState.can_upgrade_bag():
-		body.add_child(_spacer(12))
-		body.add_child(_build_bag_upgrade_button())
-
 	body.add_child(_spacer(16))
 	body.add_child(_subheading("Coming up — you'll choose one when you set out:"))
 	body.add_child(_build_quest_preview())
@@ -179,27 +179,6 @@ func _show_road() -> void:
 		skip.custom_minimum_size = Vector2(0, 40)
 		skip.pressed.connect(_skip_gather)
 		body.add_child(skip)
-
-
-## Side purchase on the road: bigger backpack for gold. Does not spend the day.
-func _build_bag_upgrade_button() -> Button:
-	var current := RunState.bag_cols()
-	var next := RunState.next_bag_size()
-	var cost := RunState.bag_upgrade_cost()
-	var button := Button.new()
-	button.text = "Buy a larger bag  %d×%d → %d×%d   %dg" % [current, current, next, next, cost]
-	button.custom_minimum_size = Vector2(0, 48)
-	button.add_theme_font_size_override("font_size", 18)
-	button.disabled = RunState.gold < cost
-	button.pressed.connect(_on_upgrade_bag)
-	return button
-
-
-func _on_upgrade_bag() -> void:
-	if RunState.upgrade_bag():
-		AudioManager.play("place")
-		_refresh_header()
-		_show_road()
 
 
 ## DEBUG: ends the gather phase immediately, whatever day it is. Still bills the
@@ -378,6 +357,17 @@ func _on_buyback(item: ItemData) -> void:
 	_sold_this_visit.erase(sold)
 	RunState.restore(sold)
 	AudioManager.play("place")
+	_enter_shop(_open_shop)
+
+
+## The leatherworker's trade: gold for the next backpack size. Not an inventory move
+## at all — RunState owns the tier, the once-per-day and once-per-quest gates, and the
+## refusal when the purse is short. It does not spend the day, and there is no undo:
+## unlike a purchase, a fitted pack can't be returned on the Return tab.
+func _on_upgrade_bag() -> void:
+	if RunState.upgrade_bag():
+		AudioManager.play("place")
+		_refresh_header()
 	_enter_shop(_open_shop)
 
 

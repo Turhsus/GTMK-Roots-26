@@ -33,6 +33,13 @@ const DEFAULT_MAX_QTY := 1
 ## DEFAULT_MAX_QTY.
 @export var stock: Dictionary[ItemData, int] = {}
 
+## Marks the leatherworker: instead of a shelf of items, this shop's Buy tab offers
+## the one backpack upgrade. That trade isn't an ItemData — it moves RunState.bag_tier,
+## not the inventory — so it can't live in `stock` above, and its restock clock is
+## quests rather than days (see RunState.bag_upgrade_available). A shop may set this
+## *and* stock items; today's leatherworker just doesn't.
+@export var sells_bag_upgrade: bool = false
+
 
 ## The items on the shelves, in authored order. Nulls (an entry cleared in the
 ## inspector) are skipped so callers never have to guard for them.

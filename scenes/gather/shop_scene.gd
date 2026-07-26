@@ -11,6 +11,10 @@ extends Control
 ## Buy back lists items sold during *this* shop visit only. Return lists items
 ## bought during this visit — refunds the buy price and puts one back on the shelf.
 ##
+## The leatherworker (any shop with `sells_bag_upgrade`) swaps its Buy tab for the
+## bench: one row offering the next backpack size, or the reason it isn't on offer.
+## The other three tabs are unchanged — selling is allowed at every shop.
+##
 ## Background art is by convention: res://assets/shops/shop_<shop id>.png
 ## (1280x720). Drop real art at that path and it shows — until then the flat
 ## backdrop color stands in.
@@ -29,6 +33,9 @@ signal sell_pressed(item: ItemData)
 signal buyback_pressed(item: ItemData)
 ## Return a copy bought earlier in this visit (road refunds buy price + restocks).
 signal return_pressed(item: ItemData)
+## The leatherworker's one trade: buy the next backpack size. Carries no ItemData —
+## the road calls RunState.upgrade_bag() and reopens the shop.
+signal bag_upgrade_pressed
 ## "Leave — that's the day": the road ends the day and closes this scene.
 signal leave_pressed
 
@@ -150,6 +157,9 @@ func _on_tab_pressed(tab: Tab) -> void:
 
 
 func _rebuild_buy() -> void:
+	if _shop.sells_bag_upgrade:
+		_rebuild_bag_upgrade()
+		return
 	body.add_child(_subheading("On the shelves"))
 	var items: Array[ItemData] = _shop.items()
 	for item in items:
@@ -201,6 +211,27 @@ func _build_buy_row(item: ItemData) -> Control:
 	buy.pressed.connect(buy_pressed.emit.bind(item))
 	row.add_child(buy)
 	return row
+
+
+## The leatherworker's Buy tab: one row for the next bag size, or the reason there
+## isn't one. RunState owns every gate (maxed / already bought this quest / already
+## bought today) — this only prints what it's told (see bag_upgrade_blocked_reason).
+func _rebuild_bag_upgrade() -> void:
+	body.add_child(_subheading("On the bench"))
+	if not RunState.bag_upgrade_available():
+		body.add_child(_muted(RunState.bag_upgrade_blocked_reason()))
+		return
+
+	var current := RunState.bag_cols()
+	var next := RunState.next_bag_size()
+	var cost := RunState.bag_upgrade_cost()
+	var row := _plain_row("A larger pack  %d×%d → %d×%d" % [current, current, next, next],
+		"%d more cells to pack into" % [next * next - current * current])
+	var buy := _trade_button("Buy   %dg" % cost)
+	buy.disabled = RunState.gold < cost
+	buy.pressed.connect(bag_upgrade_pressed.emit)
+	row.add_child(buy)
+	body.add_child(row)
 
 
 ## True when every item here is at zero — the cue for the restock line.
@@ -257,11 +288,21 @@ func _trade_button(text: String) -> Button:
 ## Left-aligned row: fixed icon slot, fixed text column, then the trade button.
 ## Fixed widths keep every Buy / Sell / Buy back button on the same vertical line.
 func _trade_row(item: ItemData, name_text: String, desc_text: String) -> HBoxContainer:
+	return _row(_build_item_icon(item), name_text, desc_text)
+
+
+## The same row with nothing to picture — an empty icon slot holds the column, so the
+## leatherworker's bench line sits on the same grid as every shelf row.
+func _plain_row(name_text: String, desc_text: String) -> HBoxContainer:
+	return _row(_empty_icon_slot(), name_text, desc_text)
+
+
+func _row(icon: Control, name_text: String, desc_text: String) -> HBoxContainer:
 	var row := HBoxContainer.new()
 	row.add_theme_constant_override("separation", 12)
 	row.alignment = BoxContainer.ALIGNMENT_BEGIN
 
-	row.add_child(_build_item_icon(item))
+	row.add_child(icon)
 
 	var text_col := VBoxContainer.new()
 	text_col.custom_minimum_size = Vector2(TEXT_COLUMN_WIDTH, 0)
@@ -286,9 +327,7 @@ func _trade_row(item: ItemData, name_text: String, desc_text: String) -> HBoxCon
 ## Thumbnail centered in a fixed ICON_SLOT so differently shaped items don't
 ## shove the text/button columns around.
 func _build_item_icon(item: ItemData) -> Control:
-	var slot := Control.new()
-	slot.custom_minimum_size = ICON_SLOT
-	slot.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var slot := _empty_icon_slot()
 
 	var shape_cells := Vector2(item.get_size())
 	var art_size := shape_cells * SHOP_CELL
@@ -300,6 +339,15 @@ func _build_item_icon(item: ItemData) -> Control:
 	icon.size = art_size
 	icon.position = (ICON_SLOT - art_size) * 0.5
 	slot.add_child(icon)
+	return slot
+
+
+## The fixed-size hole an item thumbnail sits in, empty. Shared so a row with no art
+## behind it still lines its text and button up with the rows that have one.
+func _empty_icon_slot() -> Control:
+	var slot := Control.new()
+	slot.custom_minimum_size = ICON_SLOT
+	slot.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	return slot
 
 

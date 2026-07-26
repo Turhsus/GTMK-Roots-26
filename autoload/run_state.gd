@@ -51,17 +51,25 @@ const SHOPS: Array[ShopData] = [
 	preload("res://data/shops/grocer.tres"),
 	preload("res://data/shops/apothecary.tres"),
 	preload("res://data/shops/blacksmith.tres"),
+	preload("res://data/shops/leatherworker.tres"),
 ]
+## The one shop that sells backpack upgrades — the only place bag_tier can move.
+## It carries no ItemData stock at all (see its `sells_bag_upgrade` flag); the
+## "shelf" it has is a single upgrade that refills once per quest, not on the
+## RESTOCK_INTERVAL_DAYS clock the item shops run on.
+const LEATHERWORKER: ShopData = preload("res://data/shops/leatherworker.tres")
 ## Town days between restocks. Every this many days spent, every shop puts one more
 ## of each depleted item back on the shelf, up to that item's max QTY — so a shop
 ## bought out early in the run comes back slowly rather than all at once. Change this
 ## to move the whole cadence (see spend_day / _restock_shops).
 const RESTOCK_INTERVAL_DAYS := 3
-## Backpack size ladder: tier index -> side length (square bags). Starts at 4×4
-## and upgrades in town up to 6×6 (see upgrade_bag).
+## Backpack size ladder: tier index -> side length (square bags). Starts at 3×3
+## and upgrades at the leatherworker up to 6×6 (see upgrade_bag).
 const BAG_SIZES: Array[int] = [3, 4, 5, 6]
-## Gold cost to upgrade the back.
-const BAG_UPGRADE_COSTS: Array[int] = [10, 15, 25, 50]
+## Gold cost to upgrade the bag, indexed by the tier being upgraded *from* — so
+## 15 buys the 4×4, 25 the 5×5, 40 the 6×6. One entry short of BAG_SIZES on
+## purpose: the top tier has nothing to buy.
+const BAG_UPGRADE_COSTS: Array[int] = [15, 25, 40]
 
 ## The items the player owns at the start of a run. This is the whole tray now —
 ## quests no longer decide what is available, only the targets and story. Authored here (one obvious place) rather than in a .tres; list an item
@@ -122,9 +130,19 @@ var all_perks: Array[PerkData] = []
 ## and ends (see main.gd); it is not what limits an individual gather phase — that
 ## budget is still the finished quest's `days`.
 var days_remaining: int = TOTAL_DAYS
-## How big the player's backpack is this run. Index into BAG_SIZES; upgraded in
-## town with gold (see upgrade_bag). Packing reads bag_cols/bag_rows from this.
+## How big the player's backpack is this run. Index into BAG_SIZES; upgraded at
+## the leatherworker with gold (see upgrade_bag). Packing reads bag_cols/bag_rows
+## from this.
 var bag_tier: int = 0
+## Whether the leatherworker has an upgrade on the bench right now. Unlike the item
+## shops, this does not refill on the day clock: buying it empties the bench until
+## the next quest is registered (see register_result / restock_bag_upgrade), so at
+## most one upgrade is bought per quest cycle.
+var _bag_upgrade_stocked: bool = true
+## The day clock reading when the last upgrade was bought, or -1 for none this run.
+## Compared against days_remaining to hold the second upgrade of a single town day —
+## the per-day gate that sits on top of the per-quest one above.
+var _bag_upgrade_day: int = -1
 ## What the shops have left: shop id -> { item id -> how many are on the shelf }.
 ## Only *depleted* entries are held. An item with no entry is fully stocked, which
 ## keeps the save small, means an untouched shop costs nothing, and lets a retuned
@@ -228,6 +246,9 @@ func register_result(quest: QuestData, success: bool) -> void:
 			_cleared_ids.append(quest.id)
 		completed_count += 1
 		add_gold(quest.gold_reward)
+	# The leatherworker's restock clock is quests, not days: finishing one — cleared
+	# or not — puts the next upgrade back on his bench for the gather that follows.
+	restock_bag_upgrade()
 	progress_changed.emit(completed_count, current_difficulty())
 
 
@@ -356,9 +377,35 @@ func bag_rows() -> int:
 	return bag_cols()
 
 
-## True when another backpack upgrade is available (not yet at max tier).
+## True when the bag has a tier left to climb — the ladder alone, ignoring whether
+## the leatherworker will sell one today (see bag_upgrade_available).
 func can_upgrade_bag() -> bool:
 	return bag_tier < BAG_SIZES.size() - 1
+
+
+## True when an upgrade can actually be bought right now: a tier left to climb, an
+## upgrade still on the leatherworker's bench this quest, and none already bought
+## today. Gold is *not* part of this — an affordable-or-not upgrade still shows on
+## the bench, just with the button disabled (see ShopScene).
+func bag_upgrade_available() -> bool:
+	return can_upgrade_bag() and _bag_upgrade_stocked and days_remaining != _bag_upgrade_day
+
+
+## Why the bench is empty, for the shop to print — "" when an upgrade is on offer.
+func bag_upgrade_blocked_reason() -> String:
+	if not can_upgrade_bag():
+		return "Nothing bigger to build — that's the largest pack there is."
+	if not _bag_upgrade_stocked:
+		return "The bench is bare. \"Come back once they're home from the next trip.\""
+	if days_remaining == _bag_upgrade_day:
+		return "\"One pack a day, love. The glue needs the night to set.\""
+	return ""
+
+
+## Puts an upgrade back on the leatherworker's bench. Called when a quest is
+## registered, cleared or not — the restock clock here is quests, not days.
+func restock_bag_upgrade() -> void:
+	_bag_upgrade_stocked = true
 
 
 ## Gold cost of the next upgrade, or 0 if already maxed.
@@ -375,14 +422,19 @@ func next_bag_size() -> int:
 	return BAG_SIZES[bag_tier + 1]
 
 
-## Spends the upgrade cost and bumps bag_tier. Returns false if maxed or broke.
+## Spends the upgrade cost and bumps bag_tier. Returns false if maxed, broke, or the
+## leatherworker has nothing to sell today (see bag_upgrade_available). Buying clears
+## the bench until the next quest and marks the day, so the next upgrade needs both a
+## finished quest and a fresh morning.
 func upgrade_bag() -> bool:
-	if not can_upgrade_bag():
+	if not bag_upgrade_available():
 		return false
 	var cost := bag_upgrade_cost()
 	if not spend_gold(cost):
 		return false
 	bag_tier += 1
+	_bag_upgrade_stocked = false
+	_bag_upgrade_day = days_remaining
 	bag_changed.emit(bag_cols(), bag_rows())
 	return true
 
@@ -557,6 +609,8 @@ func reset() -> void:
 	_shop_stock.clear()
 	_days_since_restock = 0
 	bag_tier = 0
+	_bag_upgrade_stocked = true
+	_bag_upgrade_day = -1
 	bag_changed.emit(bag_cols(), bag_rows())
 	progress_changed.emit(completed_count, current_difficulty())
 
@@ -595,6 +649,8 @@ func to_dict() -> Dictionary:
 		"gold": gold,
 		"days_remaining": days_remaining,
 		"bag_tier": bag_tier,
+		"bag_upgrade_stocked": _bag_upgrade_stocked,
+		"bag_upgrade_day": _bag_upgrade_day,
 		"inventory": items,
 		"perks": perk_ids,
 		"shop_stock": shelves,
@@ -615,6 +671,10 @@ func from_dict(data: Dictionary) -> void:
 	gold = maxi(int(data.get("gold", STARTING_GOLD)), 0)
 	days_remaining = int(data.get("days_remaining", TOTAL_DAYS))
 	bag_tier = clampi(int(data.get("bag_tier", 0)), 0, BAG_SIZES.size() - 1)
+	# A save written before the leatherworker existed comes back with the bench
+	# stocked and no purchase on the books — the generous reading of a missing field.
+	_bag_upgrade_stocked = bool(data.get("bag_upgrade_stocked", true))
+	_bag_upgrade_day = int(data.get("bag_upgrade_day", -1))
 
 	inventory.clear()
 	_quest_item_loans.clear()

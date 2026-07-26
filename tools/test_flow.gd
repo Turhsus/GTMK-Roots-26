@@ -95,12 +95,14 @@ func _test_progression() -> void:
 
 	# Backpack upgrades: spend gold to grow, refuse when broke or maxed. Sizes come
 	# from BAG_SIZES rather than being written out, so retuning the ladder (it went
-	# from [4,5,6] to [3,4,5,6]) doesn't silently invalidate this.
+	# from [4,5,6] to [3,4,5,6]) doesn't silently invalidate this. The leatherworker's
+	# own gates — one per day, one per quest — are exercised in test_shop.
 	RunState.reset()
 	var sizes := RunState.BAG_SIZES
 	check(RunState.bag_tier == 0 and RunState.bag_cols() == sizes[0],
 		"a fresh run starts at bag tier 0 (%dx%d)" % [sizes[0], sizes[0]])
 	check(RunState.can_upgrade_bag(), "a fresh run can upgrade the backpack")
+	check(RunState.bag_upgrade_available(), "and the leatherworker has one on the bench")
 	var cost1 := RunState.bag_upgrade_cost()
 	check(cost1 == RunState.BAG_UPGRADE_COSTS[0], "first upgrade costs the authored amount")
 	var gold_before := RunState.gold
@@ -110,14 +112,19 @@ func _test_progression() -> void:
 	check(RunState.gold == gold_before - cost1, "upgrade spends its cost")
 
 	# Climb to the top of the ladder — with the purse topped up, so this tests the
-	# tier cap and not affordability (that gets its own check below).
+	# tier cap and not affordability (that gets its own check below). Each rung needs
+	# a fresh day *and* a finished quest, which is what the two calls in the loop are.
 	RunState.add_gold(1000)
 	var guard_upgrades := 0
 	while RunState.can_upgrade_bag() and guard_upgrades < sizes.size() + 1:
+		RunState.spend_day()
+		RunState.restock_bag_upgrade()
 		check(RunState.upgrade_bag(), "an affordable upgrade below the cap succeeds")
 		guard_upgrades += 1
 	check(RunState.bag_tier == sizes.size() - 1 and RunState.bag_cols() == sizes[-1],
 		"upgrading to the cap reaches %dx%d" % [sizes[-1], sizes[-1]])
+	RunState.spend_day()
+	RunState.restock_bag_upgrade()
 	check(not RunState.can_upgrade_bag() and not RunState.upgrade_bag(),
 		"a maxed bag refuses further upgrades")
 	RunState.reset()

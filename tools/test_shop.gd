@@ -19,8 +19,10 @@ func _ready() -> void:
 	_test_restock_caps_at_max()
 	_test_persists_across_gathers()
 	_test_save_round_trip()
+	_test_leatherworker()
 	await _test_road_buys()
 	await _test_buyback()
+	await _test_road_bag_upgrade()
 
 	RunState.reset()
 
@@ -40,6 +42,11 @@ func _test_authored_quantities() -> void:
 	RunState.reset()
 	for shop in RunState.SHOPS:
 		var items: Array[ItemData] = shop.items()
+		# The leatherworker sells no items at all — his one trade is the bag upgrade,
+		# which isn't an ItemData and has its own tests below.
+		if shop.sells_bag_upgrade:
+			check(items.is_empty(), "%s sells the bag upgrade and no items" % shop.id)
+			continue
 		check(not items.is_empty(), "%s has stock authored" % shop.id)
 		for item in items:
 			check(shop.max_qty(item) >= 1, "%s stocks %s with a positive max QTY" % [shop.id, item.id])
@@ -189,6 +196,57 @@ func _test_save_round_trip() -> void:
 	grocer.stock[apple] = authored
 
 
+# --- the leatherworker ----------------------------------------------------------
+
+## The bag upgrade is his alone, and it is gated twice over: at most one a day, and
+## at most one per quest. The two gates are independent, so both get their own check
+## — a new day with no quest finished is still refused, and vice versa.
+func _test_leatherworker() -> void:
+	RunState.reset()
+	var leather := RunState.find_shop("leatherworker")
+	check(leather != null, "the leatherworker is in town")
+	check(leather.sells_bag_upgrade, "and he is the shop flagged for bag upgrades")
+	for shop in RunState.SHOPS:
+		if shop != leather:
+			check(not shop.sells_bag_upgrade, "%s does not sell bag upgrades" % shop.id)
+
+	# The ladder's prices, read off the constant rather than written out again.
+	check(RunState.BAG_UPGRADE_COSTS.size() == RunState.BAG_SIZES.size() - 1,
+		"there is one authored price per rung of the ladder")
+
+	RunState.add_gold(1000)
+	check(RunState.bag_upgrade_available(), "a fresh run finds an upgrade on the bench")
+	check(RunState.upgrade_bag(), "the first upgrade is bought")
+	check(not RunState.bag_upgrade_available(), "the bench is bare straight after a purchase")
+
+	# A finished quest restocks the bench — but not on the same day it was bought.
+	RunState.register_result(null, false)
+	check(not RunState.bag_upgrade_available(),
+		"a restocked bench still refuses a second upgrade on the same day")
+	check(not RunState.upgrade_bag(), "and the purchase itself is refused")
+	var tier_before := RunState.bag_tier
+	RunState.spend_day()
+	check(RunState.bag_upgrade_available(), "the next day, with the bench restocked, it's on offer")
+	check(RunState.upgrade_bag(), "and can be bought")
+	check(RunState.bag_tier == tier_before + 1, "the second upgrade moved the tier")
+
+	# The other way round: days pass, but no quest finishes, so the bench stays bare.
+	RunState.spend_day()
+	RunState.spend_day()
+	check(not RunState.bag_upgrade_available(),
+		"days alone don't restock the bench — only a finished quest does")
+	check(RunState.bag_upgrade_blocked_reason() != "", "and the shop has a line explaining why")
+
+	# Both gates survive a save.
+	var data := RunState.to_dict()
+	RunState.reset()
+	check(RunState.bag_upgrade_available(), "reset puts an upgrade back on the bench")
+	RunState.from_dict(data)
+	check(not RunState.bag_upgrade_available(), "the bare bench survived the save")
+	RunState.register_result(null, false)
+	check(RunState.bag_upgrade_available(), "and a quest after the load restocks it")
+
+
 # --- the road's buy path --------------------------------------------------------
 
 ## End to end through the real road scene: a buy takes stock *and* gold, an
@@ -264,6 +322,42 @@ func _test_buyback() -> void:
 	check(apple.durability == durability_before, "buy back keeps the copy's durability")
 	check(RunState.gold == gold_before, "buy back costs exactly what the sale paid")
 	check(road._sold_this_visit.is_empty(), "buy back clears that sale from the visit list")
+
+	remove_child(road)
+	road.free()
+
+
+## End to end through the real road scene: the leatherworker's Buy tab moves the bag
+## tier and the purse, and refuses once his bench is bare.
+func _test_road_bag_upgrade() -> void:
+	RunState.reset()
+	var road: RoadScene = ROAD.instantiate()
+	add_child(road)
+	await get_tree().process_frame
+
+	road.begin(3, [])
+	road._enter_shop(RunState.find_shop("leatherworker"))
+
+	var gold_before := RunState.gold
+	var cost := RunState.bag_upgrade_cost()
+	var cols_before := RunState.bag_cols()
+	road._on_upgrade_bag()
+	check(RunState.gold == gold_before - cost, "the upgrade spends its price")
+	check(RunState.bag_cols() == cols_before + 1, "and the bag grows a cell each way")
+
+	# Bare bench: pressing again changes nothing, and the day is not spent either way.
+	var settled := RunState.gold
+	road._on_upgrade_bag()
+	check(RunState.gold == settled, "a second upgrade the same day spends nothing")
+	check(RunState.bag_cols() == cols_before + 1, "and leaves the bag alone")
+
+	# Broke: the tier stays put even with the bench restocked and a new day open.
+	RunState.register_result(null, false)
+	RunState.spend_day()
+	RunState.spend_gold(RunState.gold)
+	var tier_before := RunState.bag_tier
+	road._on_upgrade_bag()
+	check(RunState.bag_tier == tier_before, "an upgrade that can't be afforded is refused")
 
 	remove_child(road)
 	road.free()
