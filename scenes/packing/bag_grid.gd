@@ -114,6 +114,13 @@ func snap_global_to_cell(global_point: Vector2) -> Vector2i:
 ## real hit-test ourselves — topmost-first, skipping transparent pixels — and
 ## hand the (coordinate-adjusted) event to whichever view wins.
 func _gui_input(event: InputEvent) -> void:
+	# A gesture that turned into a drag never delivers its release here —
+	# PackingScene handles that release at the _input stage and marks it handled —
+	# so the owner from that gesture would otherwise stay latched forever, and the
+	# next press on the board would be forwarded to an item sitting in the tray.
+	# An owner is only live while it is still a placed view.
+	if _input_owner != null and (not is_instance_valid(_input_owner) or not _cells_by_view.has(_input_owner)):
+		_input_owner = null
 	if event is InputEventMouseButton:
 		if event.pressed:
 			if _input_owner == null:
@@ -222,6 +229,7 @@ func get_origin(view: DraggableItem) -> Vector2i:
 func clear_board() -> void:
 	_occupancy.clear()
 	_cells_by_view.clear()
+	_input_owner = null
 
 
 ## Every item currently on the board, in placement order.
