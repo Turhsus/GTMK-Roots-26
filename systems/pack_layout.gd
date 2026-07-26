@@ -95,6 +95,61 @@ func neighbours_of(item: ItemData, dirs: Array[Vector2i] = [Vector2i.LEFT, Vecto
 	return found
 
 
+## The cells inside this item's own bounding box that its shape does *not* fill — the
+## hollow of a C- or U-shaped item: the helmet's crown, the boot's opening. Read off
+## the placed cells, so it is already turned with the item and needs no rotation math
+## of its own. Empty for a solid rectangle, and for an item that isn't on the board.
+func hollow_cells(item: ItemData) -> Array[Vector2i]:
+	var result: Array[Vector2i] = []
+	if not _by_item.has(item):
+		return result
+	var placement := _by_item[item] as Placement
+	if placement.cells.is_empty():
+		return result
+	var own := {}
+	var top_left: Vector2i = placement.cells[0]
+	var bottom_right: Vector2i = placement.cells[0]
+	for cell in placement.cells:
+		own[cell] = true
+		top_left = Vector2i(mini(top_left.x, cell.x), mini(top_left.y, cell.y))
+		bottom_right = Vector2i(maxi(bottom_right.x, cell.x), maxi(bottom_right.y, cell.y))
+	for y in range(top_left.y, bottom_right.y + 1):
+		for x in range(top_left.x, bottom_right.x + 1):
+			var cell := Vector2i(x, y)
+			if not own.has(cell):
+				result.append(cell)
+	return result
+
+
+## The distinct items packed *inside* this one — every cell they occupy falls in its
+## hollow (see hollow_cells). What a nesting rule reads: the apple in the helmet, the
+## knife in the boot. Something merely poking into the opening is not "within" and is
+## left out, so a rule can't be half-claimed by an item that mostly sits outside (see
+## ContainsItemEffect).
+func items_within(item: ItemData) -> Array[ItemData]:
+	var found: Array[ItemData] = []
+	var hollow := {}
+	for cell in hollow_cells(item):
+		hollow[cell] = true
+	for cell in hollow:
+		var other: ItemData = _by_cell.get(cell, null)
+		if other == null or other == item or found.has(other):
+			continue
+		if _is_covered_by(other, hollow):
+			found.append(other)
+	return found
+
+
+## Whether every cell `item` occupies is in `cells` (a set keyed by Vector2i).
+func _is_covered_by(item: ItemData, cells: Dictionary) -> bool:
+	if not _by_item.has(item):
+		return false
+	for cell in (_by_item[item] as Placement).cells:
+		if not cells.has(cell):
+			return false
+	return true
+
+
 ## The cells directly above the item's footprint, up to `rows` rows up — the space
 ## over its top edge in each column it spans. Used by "keep the space above clear".
 ## Cells off the top of the board are included (they simply read as empty).

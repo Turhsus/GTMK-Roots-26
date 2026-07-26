@@ -16,6 +16,7 @@ func _ready() -> void:
 	_test_no_trait_in_bag()
 	_test_requires_adjacent_trait()
 	_test_neighbor_stat_boost()
+	_test_contains_item()
 	_test_describe()
 	_test_evaluate_is_pure()
 	_test_appliers_agree_with_evaluate()
@@ -286,6 +287,129 @@ func _test_neighbor_stat_boost() -> void:
 	bag.queue_free()
 
 
+# --- ContainsItemEffect -----------------------------------------------------------
+
+## The nesting rule: a hollow item (helmet, boots) acting on whatever is packed inside
+## its opening. The one rule whose durability lands on a *different* item, so the
+## target of the delta is as much under test as the trigger.
+func _test_contains_item() -> void:
+	# A helmet: 3x2 with a one-cell hollow at its middle-bottom, placed at (1,1).
+	var helmet := _item("helmet", ["armor"])
+	helmet.display_name = "Helmet"
+	var helmet_cells := [Vector2i(1, 1), Vector2i(2, 1), Vector2i(3, 1),
+		Vector2i(1, 2), Vector2i(3, 2)] as Array[Vector2i]
+	var apple := _item("apple", ["food", "fragile"])
+	apple.display_name = "Apple"
+	apple.max_durability = 5
+
+	# PackLayout's hollow queries first — the geometry the rule stands on.
+	var nested := PackLayout.new()
+	nested.add(helmet, Vector2i(1, 1), 0, helmet_cells)
+	nested.add(apple, Vector2i(2, 2), 0, [Vector2i(2, 2)] as Array[Vector2i])
+	var hollow := nested.hollow_cells(helmet)
+	check(hollow.size() == 1 and hollow[0] == Vector2i(2, 2),
+		"hollow_cells finds the gap inside the shape's bounding box")
+	check(nested.hollow_cells(apple).is_empty(), "a solid item has no hollow")
+	check(nested.hollow_cells(_item("ghost", [])).is_empty(), "an unplaced item has no hollow")
+	var inside := nested.items_within(helmet)
+	check(inside.size() == 1 and inside[0] == apple,
+		"items_within finds the item sitting in the hollow")
+	check(nested.items_within(apple).is_empty(), "a solid item contains nothing")
+
+	# The cushioning helmet: +1 durability to whatever is inside it.
+	var cradle := ContainsItemEffect.new()
+	cradle.durability_delta = 1
+	helmet.durability = 5
+	apple.durability = 1
+	cradle.resolve_send_off(helmet, nested)
+	check(apple.durability == 2, "the nested item gets the durability, not the container")
+	check(helmet.durability == 5, "the container's own durability is untouched")
+
+	# Cushioning gives back the trip's wear, never more than new.
+	apple.durability = apple.max_durability
+	cradle.resolve_send_off(helmet, nested)
+	check(apple.durability == apple.max_durability, "a cushioned item is never pushed past new")
+	# A destroyed copy is past saving.
+	apple.durability = 0
+	cradle.resolve_send_off(helmet, nested)
+	check(apple.durability == 0, "a worn-out nested item isn't resurrected")
+
+	var outcome := cradle.evaluate(helmet, nested)
+	check(outcome.active, "a filled hollow fires")
+	check(outcome.is_boon() and not outcome.is_warning(), "a cushioning hollow is a boon")
+	check(outcome.line.contains("Apple") and outcome.line.contains("Helmet"),
+		"the line names both the nested item and its container")
+
+	# Empty hollow — dormant, and nothing is applied.
+	var empty := PackLayout.new()
+	empty.add(helmet, Vector2i(1, 1), 0, helmet_cells)
+	check(not cradle.evaluate(helmet, empty).active, "an empty hollow stays dormant")
+	apple.durability = 1
+	cradle.resolve_send_off(helmet, empty)
+	check(apple.durability == 1, "an empty hollow hands out nothing")
+
+	# Adjacent is not inside: an item beside the helmet doesn't count.
+	var beside := PackLayout.new()
+	beside.add(helmet, Vector2i(1, 1), 0, helmet_cells)
+	beside.add(apple, Vector2i(4, 1), 0, [Vector2i(4, 1)] as Array[Vector2i])
+	check(not cradle.evaluate(helmet, beside).active, "a neighbour is not 'within'")
+
+	# Poking in: a 2x1 item half in the hollow and half out is not contained.
+	var poking := PackLayout.new()
+	poking.add(helmet, Vector2i(1, 1), 0, helmet_cells)
+	poking.add(apple, Vector2i(2, 2), 0, [Vector2i(2, 2), Vector2i(2, 3)] as Array[Vector2i])
+	check(not cradle.evaluate(helmet, poking).active,
+		"an item only partly in the hollow isn't contained")
+
+	# Trait filter: only listed traits are affected.
+	var picky := ContainsItemEffect.new()
+	picky.trait_names = ["liquid"] as Array[String]
+	picky.durability_delta = 1
+	check(not picky.evaluate(helmet, nested).active, "the wrong nested trait doesn't fire")
+	picky.trait_names = ["fragile"] as Array[String]
+	check(picky.evaluate(helmet, nested).active, "a listed nested trait fires")
+
+	# A squashing hollow docks the nested item and reads as a mistake.
+	var squash := ContainsItemEffect.new()
+	squash.durability_delta = -1
+	apple.durability = 3
+	squash.resolve_send_off(helmet, nested)
+	check(apple.durability == 2, "a squashing hollow docks the nested item")
+	check(squash.get_violation_message(helmet, nested).contains("Apple"),
+		"a squashing hollow reaches the mistakes modal")
+
+	# The live half: a stat bonus while the hollow is filled, no durability moved.
+	var stowed := ContainsItemEffect.new()
+	stowed.utility_bonus = 1
+	apple.durability = 3
+	helmet.durability = 5
+	check(stowed.live_bonus(helmet, nested).get("utility", 0) == 1,
+		"a filled hollow grants its live stat bonus")
+	check(stowed.live_bonus(helmet, empty).is_empty(), "an empty hollow grants nothing")
+	stowed.resolve_send_off(helmet, nested)
+	check(apple.durability == 3 and helmet.durability == 5,
+		"a live-only hollow moves no durability at send-off")
+	check(stowed.get_violation_message(helmet, nested) == "", "a live bonus is not a mistake")
+
+	# Rotation is already baked into the placed cells: a boot turned on its side still
+	# has its hollow, and the rule doesn't care which way round it is.
+	var boot := _item("boots", ["armor"])
+	boot.display_name = "Boots"
+	var turned := PackLayout.new()
+	turned.add(boot, Vector2i(0, 0), 1, [Vector2i(0, 0), Vector2i(0, 1),
+		Vector2i(1, 0), Vector2i(2, 0), Vector2i(2, 1)] as Array[Vector2i])
+	turned.add(apple, Vector2i(1, 1), 0, [Vector2i(1, 1)] as Array[Vector2i])
+	var in_boot := turned.items_within(boot)
+	check(in_boot.size() == 1 and in_boot[0] == apple,
+		"a rotated hollow still contains what's inside it")
+
+	# Purity: asking never moves anything.
+	apple.durability = 4
+	for _i in range(5):
+		cradle.evaluate(helmet, nested)
+	check(apple.durability == 4, "evaluate never mutates the nested item either")
+
+
 # --- describe() -----------------------------------------------------------------
 
 func _test_describe() -> void:
@@ -304,6 +428,10 @@ func _test_describe() -> void:
 	needs.trait_names = ["armor"] as Array[String]
 	check(needs.describe().contains("armor"), "a requirement names the trait it wants")
 	check(RequiresAdjacentTraitEffect.new().describe() == "", "an unset requirement says nothing")
+	var hollow_rule := ContainsItemEffect.new()
+	hollow_rule.durability_delta = 1
+	check(hollow_rule.describe().contains("inside"), "a hollow describes what it does for what's in it")
+	check(ContainsItemEffect.new().describe() == "", "a hollow that gives nothing says nothing")
 
 
 # --- evaluate(): the pure hook ---------------------------------------------------

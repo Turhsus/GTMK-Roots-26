@@ -1,0 +1,20 @@
+[gd_resource type="Resource" script_class="QuestData" format=3 uid="uid://bxlxv731k0pb6"]
+
+[ext_resource type="Script" uid="uid://45ajj2ptcv0d" path="res://resources/narrative_event.gd" id="1_6byaf"]
+[ext_resource type="Script" uid="uid://du5drbi85ateb" path="res://resources/item_data.gd" id="2_aknjg"]
+[ext_resource type="Script" uid="uid://b8mpss75xj6nx" path="res://resources/quest_data.gd" id="3_wr4if"]
+
+[resource]
+script = ExtResource("3_wr4if")
+id = "harvest"
+title = "Harvest Herbs"
+brief = "The local apothecary needs some herbs collected to test out a few new recipes. You'll need to be crafty in order to get through the herb gardens, so bring some versatile items! Lastly, make sure to leave 3 squares open in the pack to store the herbs you'll need!"
+difficulty = 1
+days = 1
+gold_reward = 20
+traits = Array[String](["versatile"])
+target_food = 1
+target_health = 0
+target_combat = 0
+target_utility = 3
+metadata/_custom_type_script = "uid://b8mpss75xj6nx"

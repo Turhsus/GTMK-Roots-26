@@ -1,0 +1,22 @@
+[gd_resource type="Resource" script_class="QuestData" format=3 uid="uid://bjkjiu7fusyvj"]
+
+[ext_resource type="Script" uid="uid://45ajj2ptcv0d" path="res://resources/narrative_event.gd" id="1_xom24"]
+[ext_resource type="Script" uid="uid://du5drbi85ateb" path="res://resources/item_data.gd" id="2_gd2lr"]
+[ext_resource type="Resource" uid="uid://de2u8bqn3wgoi" path="res://data/items/wine.tres" id="3_gd2lr"]
+[ext_resource type="Script" uid="uid://b8mpss75xj6nx" path="res://resources/quest_data.gd" id="3_lbn1t"]
+
+[resource]
+script = ExtResource("3_lbn1t")
+id = "wine_delivery"
+title = "Wine Delivery"
+brief = "The local tavern needs a new shipment of wine. Its a short walk, but there's been some fox banditry on the route lately who have a hankerin' for wine. Make sure to bring the wine, without breaking it, and a weapon to defend yourself."
+difficulty = 3
+gold_reward = 40
+traits = Array[String](["weapon", "liquid"])
+quest_items = Array[ExtResource("2_gd2lr")]([ExtResource("3_gd2lr"), ExtResource("3_gd2lr"), ExtResource("3_gd2lr")])
+required_items = Array[ExtResource("2_gd2lr")]([ExtResource("3_gd2lr"), ExtResource("3_gd2lr"), ExtResource("3_gd2lr")])
+target_food = 2
+target_health = 1
+target_combat = 5
+target_utility = 1
+metadata/_custom_type_script = "uid://b8mpss75xj6nx"

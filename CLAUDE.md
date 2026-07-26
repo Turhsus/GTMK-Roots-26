@@ -112,6 +112,11 @@ never learns about stats.
   `stat_delta` vs `durability_delta` is what makes a rule live-only or send-off-only —
   the timing is a property of the field, not of a separate hook (see
   `neighbor_stat_boost_effect.gd`, which fills only the former).
+  One rule, `contains_item_effect.gd`, also overrides `resolve_send_off` — it is the
+  only effect whose consequence lands on a *different* item (whatever is nested in the
+  carrier's hollow), so the applier redirects the delta while `evaluate` stays the sole
+  source of the number and the line. Redirecting is fine; *suppressing* another item's
+  rule still isn't expressible (see the gap noted in `protect_adjacent_item_effect.gd`).
 
 `systems/` is deliberately free of scene-tree and autoload access — `NarrativeEngine` is a
 pure `(quest, packed_items, stats) -> Array[String]`, which is why the playout can be
@@ -168,7 +173,7 @@ be precise.
 | File | | |
 |---|---|---|
 | `narrative_engine.gd` | 52 | Packed bag -> adventure log: resolves a quest's `departure`, `narrative` beats, then `homecoming`, all authored per-quest data. |
-| `pack_layout.gd` | 97 | Immutable send-off snapshot of the board; what effects query. |
+| `pack_layout.gd` | 165 | Immutable send-off snapshot of the board; what effects query. Neighbour, above and *hollow/within* queries all read off the placed cells, so rotation needs no special handling. |
 | `ui.gd` | 25 | Runtime UI constructors (see the theme note above). |
 
 ### resources/ — the data schema
@@ -183,7 +188,7 @@ be precise.
 | `narrative_event.gd` / `narrative_line.gd` | 18 / 31 | A beat and its conditional variants — first passing variant wins, so authored order is priority. |
 | `perk_data.gd` | 45 | Perk base class. |
 | `perks/` | | `perk_registry.gd` (the `TYPES` list), `forage_perk.gd`, `crafty_perk.gd`. |
-| `effects/` | | `item_effect.gd` (base: the pure `evaluate` hook, plus the `resolve_send_off` / `live_bonus` / `get_violation_message` appliers over it), `effect_outcome.gd` (`EffectOutcome` — one rule's whole verdict: `active`, `durability_delta`, `stat_delta`, `line`), `clear_above_effect.gd`, `no_adjacent_trait_effect.gd`, `no_rotation_effect.gd`, `protect_adjacent_item_effect.gd`, `neighbor_stat_boost_effect.gd` (live-only neighbour stat bonus). No `.tres` registry needed — effects are picked straight off `class_name` in the inspector. |
+| `effects/` | | `item_effect.gd` (base: the pure `evaluate` hook, plus the `resolve_send_off` / `live_bonus` / `get_violation_message` appliers over it), `effect_outcome.gd` (`EffectOutcome` — one rule's whole verdict: `active`, `durability_delta`, `stat_delta`, `line`), `clear_above_effect.gd`, `no_adjacent_trait_effect.gd`, `no_rotation_effect.gd`, `no_trait_in_bag_effect.gd`, `requires_adjacent_trait_effect.gd`, `protect_adjacent_item_effect.gd`, `neighbor_stat_boost_effect.gd` (live-only neighbour stat bonus), `contains_item_effect.gd` (a hollow item acting on whatever is nested inside it — the only rule that applies its durability to another item). No `.tres` registry needed — effects are picked straight off `class_name` in the inspector. |
 | `ui/*.tres` | | `roots_theme.tres`, `panel_content_theme.tres`, `panel_frame.tres`, `button_{normal,hover,pressed,focus,disabled}.tres`. |
 
 ### scenes/
