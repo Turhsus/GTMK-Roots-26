@@ -1,0 +1,10 @@
+[gd_resource type="Resource" script_class="ShopData" format=3]
+
+[ext_resource type="Script" path="res://resources/shop_data.gd" id="1_script"]
+
+[resource]
+script = ExtResource("1_script")
+id = "cheese"
+display_name = "Skip shopping and work a shift at The Cheese Shop"
+blurb = "Pick two tasks and we'll call it a day's work."
+offers_cheese_shift = true
