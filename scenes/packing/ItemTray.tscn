@@ -69,3 +69,12 @@ size_flags_horizontal = 3
 size_flags_vertical = 3
 theme_override_constants/h_separation = 8
 theme_override_constants/v_separation = 8
+
+[node name="Divider" type="Label" parent="Margin/Layout/Scroll/ItemContainer"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 34)
+layout_mode = 2
+visible = false
+text = "Doesn't give"
+horizontal_alignment = 1
+vertical_alignment = 1
