@@ -198,7 +198,12 @@ Also `scenes/gather/TownScreen.tscn` (no paired script).
 
 ### assets/
 `items/` (18 png), `shops/` (3), `backgrounds/road.png`, `ui/` (textbox, textbox_small,
-finalpacking_bg), `sfx/` (place, rotate, invalid, send).
+finalpacking_bg, tray, tray_side), `sfx/` (place, rotate, invalid, send).
+
+`ui/tray_side.png` is `tray.png` rotated 90° CCW and cropped to its opaque bounds, so
+the drawer's lip and handle sit on the *right* edge — the direction the tray slides. The
+crop matters: a `StyleBoxTexture` stretches the whole image across the panel rect, so
+transparent padding pushes the drawn border inside the layout rect and clips content.
 
 ### tools/
 The five test harnesses and `Screenshot.tscn` above, plus asset generators
