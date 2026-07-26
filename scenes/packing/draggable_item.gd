@@ -104,11 +104,11 @@ func get_shape() -> Array[Vector2i]:
 func rotate_once() -> void:
 	rotation_steps = posmod(rotation_steps + 1, 4)
 	_rot_target += 90.0
-	_refresh()
 	_kill(_rot_tween)
 	_rot_tween = create_tween()
 	_rot_tween.tween_property(icon, "rotation_degrees", _rot_target, 0.12) \
 		.set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	_refresh()
 
 
 func reset_rotation() -> void:
