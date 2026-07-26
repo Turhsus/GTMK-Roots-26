@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://d4d8jff1squp2"
-path="res://.godot/imported/shop_leather.png-0d972a2a12f372ec2fa1e287c3ab185a.ctex"
+uid="uid://c2q0bxw8hnxjj"
+path="res://.godot/imported/shop_leatherworker.png-9391c7d40400bfb354dfa0d610f30de0.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/shops/shop_leather.png"
-dest_files=["res://.godot/imported/shop_leather.png-0d972a2a12f372ec2fa1e287c3ab185a.ctex"]
+source_file="res://assets/shops/shop_leatherworker.png"
+dest_files=["res://.godot/imported/shop_leatherworker.png-9391c7d40400bfb354dfa0d610f30de0.ctex"]
 
 [params]
 

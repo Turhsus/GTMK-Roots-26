@@ -13,15 +13,18 @@ extends Control
 ##
 ## The leatherworker (any shop with `sells_bag_upgrade`) swaps its Buy tab for the
 ## bench: one row offering the next backpack size, or the reason it isn't on offer.
-## The cheese shop (`offers_cheese_shift`) skips the trade tabs entirely and shows
-## only the pick-2-of-3 work shift. Elsewhere the four tabs are unchanged.
+## That shop also omits Return — a fitted pack can't be undone, and he has no
+## ItemData purchases to refund. The cheese shop (`offers_cheese_shift`) skips the
+## trade tabs entirely and shows only the pick-2-of-3 work shift. Elsewhere the
+## four tabs are unchanged.
 ##
 ## Background art is by convention: res://assets/shops/shop_<shop id>.png
 ## (1280x720). Drop real art at that path and it shows — until then the flat
 ## backdrop color stands in.
 ##
 ## Like the road, the trade list is built in code — the .tscn is just the frame
-## (background + header + a scrolling Body).
+## (background + header + a scrolling Body). Leave sits under the scroll so it
+## stays pinned to the bottom of the screen.
 
 enum Tab { BUY, SELL, BUYBACK, RETURN }
 
@@ -67,6 +70,8 @@ const TRADE_BUTTON_SIZE := Vector2(140, 40)
 @onready var day_label: Label = %DayLabel
 @onready var gold_label: Label = %GoldLabel
 @onready var body: VBoxContainer = %Body
+@onready var leave_button: Button = %LeaveButton
+
 
 ## The shop on display, handed in by open(); this scene never picks it.
 var _shop: ShopData = null
@@ -88,6 +93,7 @@ var _cheese_picks: Dictionary = {
 
 func _ready() -> void:
 	RunState.gold_changed.connect(_on_gold_changed)
+	leave_button.pressed.connect(leave_pressed.emit)
 
 
 ## Shows `shop`. `day_text` is the road's day line ("Day 2 of 3 in town"), repeated
@@ -136,10 +142,15 @@ func _rebuild() -> void:
 	# Cheese shop is shift-only — no Buy/Sell tabs and no Leave. Pick two jobs
 	# and "Get to work" applies the rewards and ends the day.
 	if _shop.offers_cheese_shift:
+		leave_button.visible = false
 		body.add_child(_spacer(8))
 		_rebuild_cheese_shift()
 		return
 
+	leave_button.visible = true
+	# Bag upgrades aren't inventory purchases — no Return tab at the leatherworker.
+	if _shop.sells_bag_upgrade and _tab == Tab.RETURN:
+		_tab = Tab.BUY
 	body.add_child(_build_tabs())
 	body.add_child(_spacer(8))
 
@@ -153,23 +164,13 @@ func _rebuild() -> void:
 		Tab.RETURN:
 			_rebuild_return()
 
-	body.add_child(_spacer(12))
-	body.add_child(_build_leave_button())
-
-
-func _build_leave_button() -> Button:
-	var leave := Button.new()
-	leave.text = "Leave — that's the day"
-	leave.custom_minimum_size = Vector2(0, 48)
-	leave.add_theme_font_size_override("font_size", 18)
-	leave.pressed.connect(leave_pressed.emit)
-	return leave
-
 
 func _build_tabs() -> HBoxContainer:
 	var row := HBoxContainer.new()
 	row.add_theme_constant_override("separation", 8)
 	for i in TAB_LABELS.size():
+		if i == Tab.RETURN and _shop.sells_bag_upgrade:
+			continue
 		var button := Button.new()
 		button.text = TAB_LABELS[i]
 		button.toggle_mode = true
