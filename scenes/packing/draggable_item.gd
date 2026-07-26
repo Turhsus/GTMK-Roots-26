@@ -111,11 +111,11 @@ func get_shape() -> Array[Vector2i]:
 func rotate_once() -> void:
 	rotation_steps = posmod(rotation_steps + 1, 4)
 	_rot_target += 90.0
-	_refresh()
 	_kill(_rot_tween)
 	_rot_tween = create_tween()
 	_rot_tween.tween_property(icon, "rotation_degrees", _rot_target, 0.12) \
 		.set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	_refresh()
 
 
 func reset_rotation() -> void:
@@ -253,9 +253,14 @@ func _refresh() -> void:
 static func build_info_panel(source: ItemData) -> Control:
 	var panel := Ui.card()
 
+	var pad := MarginContainer.new()
+	for side in ["left", "top", "right", "bottom"]:
+		pad.add_theme_constant_override("margin_%s" % side, INFO_PANEL_PADDING)
+	panel.add_child(pad)
+
 	var box := VBoxContainer.new()
 	box.add_theme_constant_override("separation", 4)
-	panel.add_child(box)
+	pad.add_child(box)
 
 	var name_label := Label.new()
 	name_label.text = source.display_name
