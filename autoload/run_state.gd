@@ -42,7 +42,7 @@ const CHOICE_COUNT := 3
 const STARTING_GOLD := 25
 ## The whole run's length: a global day clock that counts down across town visits.
 ## When it runs out the game is wrapping up — one last quest, then the end screen.
-const TOTAL_DAYS := 10
+const TOTAL_DAYS := 15
 ## The shops in town. Held here rather than on the road because a shop's shelves are
 ## *run* state now: they deplete as the player buys and refill on the run's day clock,
 ## which has to keep ticking with no shop — and no road — on screen. RoadScene reads

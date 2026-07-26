@@ -9,6 +9,7 @@ extends Control
 ## summary line off RunState just before the screen is revealed.
 
 const MAIN_MENU := "res://scenes/menu/MainMenu.tscn"
+const MIN_QUESTS_ATTEMPTED := 4
 
 @onready var title_label: Label = %Title
 @onready var summary_label: Label = %SummaryLabel
@@ -30,8 +31,10 @@ func show_end() -> void:
 	var quests_word := "quest" if cleared == 1 else "quests"
 	# A win needs a majority of attempted quests cleared. With no quests attempted
 	# at all (e.g. the tutorial itself ran out the clock) there is nothing to judge
-	# a win on, so that counts as a loss rather than a vacuous win.
-	var won: bool = attempted > 0 and cleared * 2 > attempted
+	# a win on, so that counts as a loss rather than a vacuous win. A run also needs
+	# at least MIN_QUESTS_ATTEMPTED attempts so a short run can't win on a lucky
+	# handful of quests.
+	var won: bool = attempted >= MIN_QUESTS_ATTEMPTED and cleared * 2 > attempted
 	var verdict := "He learned how to be happy and successful." if won else "Maybe you'll raise the next one better."
 	title_label.text = "Your Child is a Success!" if won else "Your Child Failed to Thrive!"
 	summary_label.text = "You cleared %d %s and made it home.\n%s" % [cleared, quests_word, verdict]
