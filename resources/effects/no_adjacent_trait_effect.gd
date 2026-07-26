@@ -29,11 +29,26 @@ func describe() -> String:
 	if trait_names.is_empty():
 		return ""
 	var where := "above this item!" if direction == "up" \
-		else "below this item! " if direction == "down" \
+		else "below this item!" if direction == "down" \
 		else "to its left!" if direction == "left" \
 		else "to its right!" if direction == "right" \
 		else "next to it"
 	return "Don't pack %s items %s (−%d durability)." % [", ".join(trait_names), where, penalty]
+
+
+func get_violation_message(item: ItemData, layout: PackLayout) -> String:
+	if trait_names.is_empty():
+		return ""
+	for other in layout.neighbours_of(item, _directions()):
+		for trait_name in trait_names:
+			if other.traits.has(trait_name):
+				var direction_text := "above" if direction == "up" \
+					else "below" if direction == "down" \
+					else "left of" if direction == "left" \
+					else "right of" if direction == "right" \
+					else "next to"
+				return "%s was packed %s a %s item!" % [item.display_name, direction_text, trait_name]
+	return ""
 
 
 ## The edge offset(s) matching `direction`, for PackLayout.neighbours_of. Board y grows

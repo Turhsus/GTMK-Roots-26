@@ -42,3 +42,10 @@ func live_bonus(_item: ItemData, _layout: PackLayout) -> Dictionary:
 ## The base rule has nothing to say; a blank line is skipped by the panel.
 func describe() -> String:
 	return ""
+
+
+## Hook — called after resolve_send_off to check if a violation occurred. If so, return a
+## player-friendly message explaining what went wrong (e.g. "Wine was packed upside down!").
+## Return empty string if no violation occurred. Used to populate the send-off feedback screen.
+func get_violation_message(_item: ItemData, _layout: PackLayout) -> String:
+	return ""

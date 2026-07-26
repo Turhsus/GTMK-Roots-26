@@ -187,7 +187,7 @@ func _on_sent_off() -> void:
 	# The send-off runs in a deliberate order (see the design note in run_state.gd):
 	# 1. Placement effects dock durability for a bad pack (packed upside down, next to
 	#    the wrong thing) ...
-	RunState.resolve_item_effects(GameState.packed_items, layout)
+	var violations := RunState.resolve_item_effects(GameState.packed_items, layout)
 	# 2. ... then perks get the last, kindest word (crafty can repair a combat item) ...
 	RunState.apply_perks_to_items(GameState.packed_items)
 	# 3. ... and a copy the pack itself destroyed is gone *before* the quest is judged:
@@ -224,17 +224,25 @@ func _on_sent_off() -> void:
 	# Debug: hold the flow on a durability + quest-outcome readout until it's dismissed,
 	# then carry on exactly as an undebugged send-off would.
 	if DebugFlags.is_on("durability_report"):
-		_show_durability_debug(report, outcome, _proceed_after_send.bind(lines))
+		_show_durability_debug(report, outcome, violations, _proceed_after_send.bind(lines, violations))
 		return
-	_proceed_after_send(lines)
+	_proceed_after_send(lines, violations)
 
 
 ## What a finished send-off does next: skip straight past the log (debug) or play it.
-func _proceed_after_send(lines: Array[String]) -> void:
+## If any packing violations occurred, show them first so the player understands the
+## consequences of their choices.
+func _proceed_after_send(lines: Array[String], violations: Array[String]) -> void:
 	if DebugFlags.is_on("skip_playout"):
 		# Skip showing the log; go straight to what the "continue" button would do.
 		_on_playout_done()
 		return
+	
+	# If any violations occurred, show them first before the playout
+	if not violations.is_empty():
+		_show_violations(violations, _on_violations_closed.bind(lines))
+		return
+	
 	_show(playout_scene)
 	playout_scene.play(lines)
 
@@ -415,7 +423,7 @@ func _outcome_report(cleared: bool) -> Dictionary:
 ## clear) and lists each packed item's before -> after durability so a placement effect's
 ## extra bite is visible (an upside-down wine drops two, not one). Sits on its own
 ## CanvasLayer above every screen; `on_dismiss` resumes the loop.
-func _show_durability_debug(report: Array, outcome: Dictionary, on_dismiss: Callable) -> void:
+func _show_durability_debug(report: Array, outcome: Dictionary, violations: Array[String], on_dismiss: Callable) -> void:
 	var layer := CanvasLayer.new()
 	layer.layer = 100
 	add_child(layer)
@@ -501,9 +509,87 @@ func _show_durability_debug(report: Array, outcome: Dictionary, on_dismiss: Call
 			row.add_theme_color_override("font_color", Color("d08b52"))
 		box.add_child(row)
 
+	# Packing violations — what went wrong (upside down, crushed, etc)
+	if not violations.is_empty():
+		var violation_separator := HSeparator.new()
+		box.add_child(violation_separator)
+
+		var violation_title := Label.new()
+		violation_title.text = "Packing mistakes"
+		box.add_child(violation_title)
+
+		for violation in violations:
+			var violation_label := Label.new()
+			violation_label.text = "⚠ " + violation
+			violation_label.add_theme_color_override("font_color", Color("d08b52"))
+			violation_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+			violation_label.custom_minimum_size.x = 300
+			box.add_child(violation_label)
+
 	var button := Button.new()
 	button.text = "Continue"
 	box.add_child(button)
 	button.pressed.connect(func() -> void:
 		layer.queue_free()
 		on_dismiss.call())
+
+
+## Modal overlay showing what packing mistakes were made: which items were damaged
+## by being packed upside down, crushed, or placed next to incompatible items.
+## Sits on its own CanvasLayer above every screen; `on_continue` is called when dismissed.
+func _show_violations(violations: Array[String], on_continue: Callable) -> void:
+	var layer := CanvasLayer.new()
+	layer.layer = 100
+	add_child(layer)
+
+	var dim := ColorRect.new()
+	dim.color = Color(0, 0, 0, 0.6)
+	dim.set_anchors_preset(Control.PRESET_FULL_RECT)
+	layer.add_child(dim)
+
+	var center := CenterContainer.new()
+	center.set_anchors_preset(Control.PRESET_FULL_RECT)
+	layer.add_child(center)
+
+	var panel := PanelContainer.new()
+	var style := StyleBoxFlat.new()
+	style.bg_color = Color(0.12, 0.09, 0.08, 0.98)
+	style.border_color = Color(0.55, 0.42, 0.26)
+	style.set_border_width_all(2)
+	style.set_corner_radius_all(6)
+	style.set_content_margin_all(16)
+	panel.add_theme_stylebox_override("panel", style)
+	center.add_child(panel)
+
+	var box := VBoxContainer.new()
+	box.add_theme_constant_override("separation", 6)
+	panel.add_child(box)
+
+	var title := Label.new()
+	title.text = "Packing Mistakes"
+	title.add_theme_font_size_override("font_size", 20)
+	box.add_child(title)
+
+	var divider := HSeparator.new()
+	box.add_child(divider)
+
+	for violation in violations:
+		var label := Label.new()
+		label.text = "⚠ " + violation
+		label.add_theme_color_override("font_color", Color("d08b52"))
+		label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		label.custom_minimum_size.x = 300
+		box.add_child(label)
+
+	var button := Button.new()
+	button.text = "Continue"
+	box.add_child(button)
+	button.pressed.connect(func() -> void:
+		layer.queue_free()
+		on_continue.call())
+
+
+## Called after the violations modal is closed — proceed to show the playout.
+func _on_violations_closed(lines: Array[String]) -> void:
+	_show(playout_scene)
+	playout_scene.play(lines)

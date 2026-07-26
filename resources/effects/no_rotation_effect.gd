@@ -15,3 +15,10 @@ func resolve_send_off(item: ItemData, layout: PackLayout) -> void:
 
 func describe() -> String:
 	return "Don't rotate it %d times! (−%d durability)." % [rotate, penalty]
+
+
+func get_violation_message(item: ItemData, layout: PackLayout) -> String:
+	if layout.rotation_of(item) == rotate:
+		var rotation_name := "rotated" if rotate != 2 else "packed upside down"
+		return "%s was %s!" % [item.display_name, rotation_name]
+	return ""
