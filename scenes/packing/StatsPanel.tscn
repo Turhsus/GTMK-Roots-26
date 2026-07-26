@@ -25,7 +25,7 @@ theme_override_constants/separation = 8
 
 [node name="Title" type="Label" parent="Margin/Layout"]
 layout_mode = 2
-text = "Supplies"
+text = "Supplies Requirements"
 
 [node name="Rows" type="VBoxContainer" parent="Margin/Layout"]
 unique_name_in_owner = true
